@@ -1,0 +1,60 @@
+Uses 4 separate layers and 1 DOM attached layer.
+
+BG     = Background tiles - Tile grid-aligned, no alpha.
+SPRITE = Sprite tiles     - Tile pixel-aligned, with alpha.
+TEXT   = Text tiles       - Tile grid-aligned, with alpha.
+FADE   = Fade layer       - Used for Fading. General purpose bitmap canvas.
+OUTPUT = Output canvas    - Combination of the other 4 layers. (no alpha.)
+
+A "game.runOnce" function must be created in your game. It will be called right before your game starts.
+The "game.runOnce" function will setup the following:
+	settingsSetup : From gamesettings.json.
+	DOMSetup      : DOM cache for any DOM in your game. Should include a reference to "gameCanvas_DIV".
+	canvasSetup   : Sets up the canvas and ctx for each canvas, dimensions, and adds the output canvas layer to "gameCanvas_DIV".
+	vramSetup     : Creates (blank) ArrayBuffers for the VRAMs.
+	soundsSetup   : Likely async so should return a promise. Downloads and caches references to game sounds.
+	graphicsSetup : Likely async so should return a promise. Downloads and caches graphics.
+
+// ************************************************
+//  Init conversion functions - Removed after use.
+// ************************************************
+
+core.FUNCS.graphics.init
+
+// ************************
+//  Layer update functions
+// ************************
+
+core.FUNCS.graphics.update_layer_BG
+core.FUNCS.graphics.update_layer_SPRITE
+core.FUNCS.graphics.update_layer_TEXT
+core.FUNCS.graphics.update_layer_FADE
+core.FUNCS.graphics.update_layer_OUTPUT
+core.FUNCS.graphics.update_allLayers
+
+// ************************
+//  VRAM update functions.
+// ************************
+
+core.FUNCS.graphics.SetTileTable
+core.FUNCS.graphics.ClearVram
+core.FUNCS.graphics.SetTile
+core.FUNCS.graphics.DrawMap2
+core.FUNCS.graphics.Fill
+
+// **************************
+//  SPRITE update functions.
+// **************************
+
+core.FUNCS.graphics.SetSpritesTileBank
+core.FUNCS.graphics.MapSprite2
+core.FUNCS.graphics.MoveSprite
+
+// ************************
+//  TEXT update functions.
+// ************************
+
+core.FUNCS.graphics.Print
+core.FUNCS.graphics.SetFontTileset
+core.FUNCS.graphics.SetFontTable
+

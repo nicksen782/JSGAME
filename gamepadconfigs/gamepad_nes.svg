@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+	xmlns               = "http://www.w3.org/2000/svg"
+	xmlns:xlink         = "http://www.w3.org/1999/xlink"
+	preserveAspectRatio = "xMinYMin meet"
+	viewBox  = "0 0 420 160"
+	version  = "1.1"
+	class    = "gamepad_nes"
+	pad      = "1"
+>
+	<!-- width    = "420"
+	height   = "160" -->
+    <style>
+		/* HOVER GROUPS */
+		.hover_group        { opacity: 0.95; fill: rgba(66, 44, 255, 0.45); stroke: goldenrod; stroke-width: 2px; cursor: pointer; }
+		.hover_group:hover  { fill: rgba(255, 171, 44, 0.65); }
+		.hover_group.active { fill: rgba(255, 153, 0, 0.9); }
+
+		/* .hover_group:active { fill: rgba(255, 153, 0, 0.9); } */
+		/* .hover_group:hover  { fill: rgba(66, 44, 255, 0.65); } */
+		/* .hover_group:active { fill: rgba(80, 44, 128, 0.80); } */
+
+		/* DPAD */
+		.button_type1 { font-size: 10px; fill: white; font-weight: bold; }
+
+		/* START, SELECT */
+		.button_type2 { font-size: 10px; fill: white; font-weight: bold; }
+
+		/* A, B */
+		.button_type3 { font-size: 10px; fill: white; font-weight: bold; }
+	</style>
+
+	<!-- BACKGROUND IMAGE -->
+    <image xlink:href="img/nesController.png"></image>
+
+	<!-- width="420" height="160" -->
+
+	<!-- GAMEPAD LABEL -->
+	<text x="25" y="16" style="font-size:18px;font-weight:bold;" fill="black">Player 1</text>
+
+	<!-- TEXT LABELS -->
+	<!-- <text x="72"  y="48"  width="26" height="21" class="button_type1" button="BTN_UP"    >UP</text> -->
+	<!-- <text x="72"  y="150" width="26" height="21" class="button_type1" button="BTN_DOWN"  >DN</text> -->
+	<!-- <text x="18"  y="100" width="26" height="21" class="button_type1" button="BTN_LEFT"  >LT</text> -->
+	<!-- <text x="125" y="100" width="26" height="21" class="button_type1" button="BTN_RIGHT" >RT</text> -->
+	<!-- <text x="162" y="140" width="30" height="30" class="button_type2" button="BTN_SELECT">SPACE</text> -->
+	<!-- <text x="206" y="140" width="30" height="30" class="button_type2" button="BTN_START" >ENTER</text> -->
+	<!-- <text x="290" y="120" width="75" height="15" class="button_type3" button="BTN_B"     >A</text> -->
+	<!-- <text x="348" y="120" width="75" height="15" class="button_type3" button="BTN_A"     >S</text> -->
+
+	<!-- BUTTON HIGHLIGHTS -->
+	<rect pad="1" button="BTN_UP"     kb="ArrowUp"    class="hover_group" x="64"  y="52"  width="28" height="28"></rect>
+	<rect pad="1" button="BTN_DOWN"   kb="ArrowDown"  class="hover_group" x="64"  y="110" width="28" height="29"></rect>
+	<rect pad="1" button="BTN_LEFT"   kb="ArrowLeft"  class="hover_group" x="35"  y="81"  width="28" height="28"></rect>
+	<rect pad="1" button="BTN_RIGHT"  kb="ArrowRight" class="hover_group" x="93"  y="81"  width="28" height="28"></rect>
+	<rect pad="1" button="BTN_SELECT" kb="Space"      class="hover_group" x="159" y="100" width="40" height="30"></rect>
+	<rect pad="1" button="BTN_START"  kb="Enter"      class="hover_group" x="204" y="100" width="40" height="30"></rect>
+	<rect pad="1" button="BTN_B"      kb="KeyA"       class="hover_group" x="270" y="92"  width="47" height="47"></rect>
+	<rect pad="1" button="BTN_A"      kb="KeyS"       class="hover_group" x="328" y="92"  width="47" height="47"></rect>
+
+</svg>

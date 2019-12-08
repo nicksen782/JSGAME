@@ -1,0 +1,20 @@
+// ************************************************
+//  Init conversion functions - Removed after use.
+// ************************************************
+
+core.FUNCS.audio.init
+
+// *********************
+//  Sound/audio control
+// *********************
+
+core.FUNCS.audio.cancelAllSounds
+core.FUNCS.audio.playSound
+core.FUNCS.audio.changeMasterVolume
+
+	// core.FUNCS.audio.play_midi  ( "music1", "C_THEME" );
+	// core.FUNCS.audio.resume_midi( "music1" );
+	// core.FUNCS.audio.pause_midi ( "music1" );
+
+
+https://medium.com/swinginc/playing-with-midi-in-javascript-b6999f2913c3
