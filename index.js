@@ -306,7 +306,9 @@ JSGAME.INIT={
 		return new Promise(function(resolve,reject){
 			var audio = document.createElement("audio");
 			audio.src="snd/tick.mp3";
-			audio.volume=0.025;
+			audio.volume=0.0;
+
+			audio.load();
 
 			var promise = audio.play();
 			if (promise !== undefined) {
@@ -418,10 +420,11 @@ JSGAME.INIT={
 		}
 
 		// DOM cache.
-		JSGAME.DOM["gameSelector"]         = document.getElementById  ("gameSelector");
-		JSGAME.DOM["gameControls"]         = document.getElementById  ("gameControls");
-		JSGAME.DOM["gameControls_br"]      = document.getElementById  ("gameControls_br");
-		JSGAME.DOM["siteContainerDiv"]     = document.getElementById  ("siteContainerDiv");
+		JSGAME.DOM["gameSelector"]     = document.getElementById  ("gameSelector");
+		JSGAME.DOM["gameControls"]     = document.getElementById  ("gameControls");
+		JSGAME.DOM["gameControls_br"]  = document.getElementById  ("gameControls_br");
+		JSGAME.DOM["siteContainerDiv"] = document.getElementById  ("siteContainerDiv");
+		JSGAME.DOM["sideDiv"]          = document.getElementById  ("sideDiv");
 
 		// Can we load the game?
 		if(JSGAME.PRELOAD.PHP_VARS.CANLOADGAME){
@@ -582,9 +585,8 @@ JSGAME.INIT={
 		JSGAME.GUI.gameInputListeners();
 
 		// Hidden gamepads?
-		if(JSGAME.SHARED.gamepads==false){
-			JSGAME.GUI.toggleGamepads();
-		}
+		if(JSGAME.SHARED.gamepads==true){ JSGAME.GUI.toggleGamepads(); }
+		else{}
 
 		// When done.
 		JSGAME.INIT.__GAMESTART();
@@ -605,37 +607,43 @@ JSGAME.INIT={
 					function(res){
 						console.log("GAME CORES ARE READY");
 
-						// PERFORMANCE:
-						let isUpperCase = function (str) { return str === str.toUpperCase(); }
-						let _FULLSETUP = 0;
-						let perf={ "PARTS":{}, "CORES":{}, "CORE_ALL":0 };
-						let keys = Object.keys(JSGAME.CORE_SETUP_PERFORMANCE.times);
-						for(let i=0; i<keys.length; i+=1){
-							let key = keys[i];
-							//
-							if( isUpperCase(key) ){
-								_FULLSETUP += JSGAME.CORE_SETUP_PERFORMANCE.times[ key ];
-								perf.CORES[key]=JSGAME.CORE_SETUP_PERFORMANCE.times[ key ];
-							}
-							else{
-								perf.PARTS[key]=JSGAME.CORE_SETUP_PERFORMANCE.times[ key ];
-							}
-						}
-						perf.CORE_ALL = _FULLSETUP;
-
-						console.log(
-							"CORE_SETUP_PERFORMANCE:",
-							"\n  CORE_ALL :", perf.CORE_ALL.toFixed(2), "ms, ",
-							"\n  CORES    :", perf.CORES,
-							"\n  PARTS    :", perf.PARTS,
-						);
-						JSGAME.CORE_SETUP_PERFORMANCE.times._FULLSETUP = _FULLSETUP;
+						JSGAME.INIT.PERFORMANCE();
 					},
 					function(err){ console.error("ERROR: ", err); }
 				);
 			}
 		);
 
+	},
+	// PERFORMANCE
+	PERFORMANCE : function(){
+		// PERFORMANCE:
+		let isUpperCase = function (str) { return str === str.toUpperCase(); }
+		let _FULLSETUP = 0;
+		let perf={ "PARTS":{}, "CORES":{}, "CORE_ALL":0 };
+		let keys = Object.keys(JSGAME.CORE_SETUP_PERFORMANCE.times);
+		keys.sort();
+
+		for(let i=0; i<keys.length; i+=1){
+			let key = keys[i];
+			//
+			if( isUpperCase(key) ){
+				_FULLSETUP += JSGAME.CORE_SETUP_PERFORMANCE.times[ key ];
+				perf.CORES[key] = (JSGAME.CORE_SETUP_PERFORMANCE.times[ key ].toFixed(3)).padStart(9, " ");
+			}
+			else{
+				perf.PARTS[key.padEnd(32, "_")] = (JSGAME.CORE_SETUP_PERFORMANCE.times[ key ].toFixed(3)).padStart(9, " ");
+			}
+		}
+		perf.CORE_ALL = _FULLSETUP.toFixed(3).padStart(9, " ");
+
+		console.log(
+			"CORE_SETUP_PERFORMANCE:",
+			"\n  CORE_ALL :", JSON.stringify(perf.CORE_ALL,null,2),
+			"\n  CORES    :", JSON.stringify(perf.CORES,null,2),
+			"\n  PARTS    :", JSON.stringify(perf.PARTS,null,2),
+		);
+		JSGAME.CORE_SETUP_PERFORMANCE.times._FULLSETUP = _FULLSETUP;
 	},
 };
 
@@ -734,22 +742,42 @@ JSGAME.GUI={
 	//
 	toggleGamepads      : function(){
 		// The gameControls.
-		let elem1 = JSGAME.DOM["gameControls"];
-		let isHidden1 = elem1.classList.contains("hide") ;
+		let gameControls_hidden = JSGAME.DOM["gameControls"].classList.contains("hide") ;
+		let DEBUG_DIV           = document.getElementById("DEBUG_DIV");
 
-		if(isHidden1){ elem1.classList.remove("hide"); }
-		else         { elem1.classList   .add("hide");    }
+		JSGAME.DOM["gameControls"].classList.add("top");
 
-		// The <br> after gameControls.
-		let elem2 = JSGAME.DOM["gameControls_br"];
-		let isHidden2 = elem2.classList.contains("hide") ;
+		// Are the game controls hidden?
+		if(gameControls_hidden){
+			// console.log("showing gamepads");
+			// Make sure the inline_block class is applied to the site container.
+			JSGAME.DOM["siteContainerDiv"].classList.add("inline_block");
 
-		if(isHidden2){ elem2.classList.remove("hide"); }
-		else         { elem2.classList   .add("hide");    }
+			// Show the game controls.
+			JSGAME.DOM["gameControls"].classList.remove("hide");
+
+			// Show the side div
+			JSGAME.DOM["sideDiv"].classList.remove("hide");
+
+		}
+		// Are the game controls visible?
+		else         {
+			// console.log("HIDING gamepads");
+			// Do we remove the inline_block class from the site container?
+			if(!DEBUG_DIV){ JSGAME.DOM["siteContainerDiv"].classList.remove("inline_block"); }
+
+			// Hide the game controls.
+			JSGAME.DOM["gameControls"].classList.add("hide");
+
+			// Do we hide the side div?
+			if(!DEBUG_DIV){ JSGAME.DOM["sideDiv"].classList.add("hide"); }
+		}
 
 	},
 	// Gamepad/keyboard button listeners.
 	gameInputListeners  : function(){
+		// JSGAME.DOM["gamepads"]
+
 		// Add a listener for each gamepad button.
 		JSGAME.DOM["gamepads_svg"].forEach(
 			function(d){
@@ -776,6 +804,9 @@ JSGAME.GUI={
 		// Add listener for the document (keyboard-based user input.)
 		document.addEventListener('keydown', JSGAME.GUI.document_keydown          , false);
 		document.addEventListener('keyup'  , JSGAME.GUI.document_keyup            , false);
+
+		// For mobile devices, convert touchend to click. (This will disable the double-tap to zoom feature.)
+		JSGAME.DOM["gameControls"].addEventListener("touchend", function(e){ e.preventDefault(); this.click(); }, true) ;
 
 	},
 	// Used for user input when clicking on the gamepad buttonsws.

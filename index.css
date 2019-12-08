@@ -47,7 +47,9 @@ canvas {
 }
 
 body {
-    background-color: black;
+    /* background-color: #1c253c; */
+    background-color: #101115;
+    /* background-color: black; */
     min-height: 1em;
     position: relative;
     text-align: center;
@@ -55,42 +57,53 @@ body {
 
 #titleBar {
     /* text-align: center; */
-    background-color: #caac84;
-    border: 5px solid #977448;
+    /* background-color: #caac84; */
+    /* background-color: #7590b9; */
+    /* background-color: #8693b5; */
+    /* border: 5px solid #977448; */
+    /* background-color: antiquewhite; */
+    background-color: skyblue;
     padding: 5px;
     position: relative;
 }
 
 #mainCenter {
-    background-color: #d1882d;
-    /* min-height: 560px; */
-    min-height: 300px;
+    background-color: #1c253c;
+    /* min-height: 460px; */
+    min-height: 445px;
     position: relative;
     text-align: center;
-    padding-bottom: 5px;
-    padding-top: 5px;
+    /* padding-bottom: 5px; */
+    /* padding-top: 5px; */
 }
 
 #bottomBar {
     background-color: skyblue;
     min-height: 3em;
-    background-color: #caac84;
-    border: 5px solid #977448;
+    /* background-color: #caac84; */
+    /* background-color: #8693b5; */
+    /* background-color: antiquewhite; */
+    /* border: 5px solid #977448; */
     padding: 5px;
 }
 
 #gameCanvas_DIV {
     width: 192px;
     height: 192px;
-    background-color: #a38b6c;
+    /* background-color: #a38b6c; */
     /* padding: 5px; */
-    /* border: 5px solid #977448; */
+    /* border: 5px solid #1c253c; */
+    /* border: 5px solid #8693b5; */
+    border: 5px solid #000000;
     margin: auto;
     border-radius: 5px;
     display: inline-block;
     vertical-align: text-top;
     position: relative;
     background-color: black;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    /* background-color: rgb(134, 147, 181); */
 }
 
 #canvas_OUTPUT {
@@ -100,35 +113,38 @@ body {
 }
 
 #gameControls {
-	background-color: #caac84;
-	border: 5px solid #977448;
-	display: inline-flex;
-	padding: 4px;
-	margin-bottom: 5px;
+	/* background-color: #caac84; */
+	/* 	background-color: #8693b5; */
+	background-color: #87ceeb;
+	/* background-color: #caac84;;/* border: 5px solid #977448; */
+	/* padding-top: 4px; */
+	padding: 0px;
+	padding-left: 5px;
+	position: relative;
+	touch-action: manipulation;
 }
 #gameControls.hide {
 	display:none;
 }
-
-#gameControls .gamepad_nes {
-    display: inline-block;
+#gameControls.top    {
+	top: 0px;
 }
 
-#gameControls .gamepad_snes {
-    display: inline-block;
-}
+/* If one gamepad then make it wide and block*/
+/* If two gamepads then make it narrow and inline-block */
 
-#gameControls .gamepad_nes svg {
-    width: 300px;
-    display: block;
-}
+#gameControls .gamepad_nes  svg { width: 240px; margin-right: 5px; }
+#gameControls .gamepad_snes svg { width: 240px; height: 100%; background-color: rgba(255, 255, 255, 0.25); }
 
-#gameControls .gamepad_snes svg {
-    width: 300px;
-    height: 100%;
-}
+#gameControls .gamepad_nes.oneGamepad      { display:block; vertical-align: top; }
+#gameControls .gamepad_nes.oneGamepad svg  { width:480px; margin:0px; }
+#gameControls .gamepad_nes.twoGamepads     { display:inline-block; vertical-align: top; }
+#gameControls .gamepad_nes.twoGamepads svg { width:240px; margin:0px; }
 
-#gameControls_br.hide{ display: none; }
+#gameControls .gamepad_snes.oneGamepad     { display:block; vertical-align: top; }
+#gameControls .gamepad_snes.oneGamepad svg { width:480px; margin:0px; }
+#gameControls .gamepad_snes.twoGamepads    { display:inline-block; vertical-align: top; }
+#gameControls .gamepad_snes.twoGamepads svg{ width:240px; margin:0px; }
 
 
 div#titleBar_logo_div {
@@ -186,10 +202,11 @@ div#titleBar_logo_div {}
 }
 
 div#siteContainerDiv {
-    /* width: 800px; */
     width: 700px;
+    min-width: 700px;
     margin: auto;
     text-align: left;
+    border: 5px solid skyblue;
 }
 
 #indicator {
@@ -233,5 +250,27 @@ div#siteContainerDiv {
 #masterVolumeSlider_td2.hide{ visibility: hidden;}
 
 div#panel_game {
-    background-color: rgb(28, 37, 60);
+    /* background-color: rgb(28, 37, 60); */
+    /* background-color: rgb(134, 147, 181); */
+}
+
+div#sideDiv {
+	vertical-align: top;
+	/* max-height: 600px; */
+	/* overflow: auto; */
+	display: inline-block;
+	position: relative;
+	border: 5px solid skyblue;
+	max-width: 700px;
+}
+div#sideDiv.hide {
+	display: none;
+}
+
+/* ************************* */
+/* Affects the framework DOM */
+/* ************************* */
+#siteContainerDiv.inline_block{
+	display:inline-block;
+	vertical-align: top;
 }

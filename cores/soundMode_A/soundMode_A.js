@@ -18,13 +18,18 @@ core.AUDIO.midiData   = {} ; // MIDI data used by TinySynth
 
 // *** Init conversion functions - Removed after use. ***
 core.FUNCS.audio.init = function(){
-	return new Promise(function(resolve,reject){
+	return new Promise(function(audio_init_resolve, audio_init_reject){
+		JSGAME.CORE_SETUP_PERFORMANCE.starts.SOUND      = performance.now();
+
 		// Preload all sounds. (mp3 format)
 		let soundsSetup_mp3 = function(){
 			return new Promise(function(SNDresolve,SNDreject){
+				JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_mp3  = performance.now();
+
 				// ['mp3_files']
-				let audio_proms = [];
 				let gamedir     = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'].replace("../", "");
+
+				let audio_proms=[];
 
 				// JSGAME.PRELOAD.gamesettings_json['RAM_TILES_COUNT'];
 				core.AUDIO['elems']          = {};
@@ -32,229 +37,216 @@ core.FUNCS.audio.init = function(){
 
 				// Normal .mp3 audio.
 				JSGAME.PRELOAD.gamesettings_json['mp3_files'].forEach(function(d){
-					core.AUDIO['elems'][ d.key ] = {};
-					// core.AUDIO['keys'][ d.key ]['elem']    = document.createElement("audio");
-					core.AUDIO['elems'][ d.key ]    = document.createElement("audio");
+					let audioElem = document.createElement("audio");
 
 					// Add entry to the lookup table.
 					d['names'].forEach(function(dd){
-						core.ASSETS.audio['lookups'][ dd ] = {};
-						core.ASSETS.audio['lookups'][ dd ]['key']  = d.key;
-						core.ASSETS.audio['lookups'][ dd ]['type'] = d.type;
+						let audioLookup = {
+							"key"  : d.key  ,
+							"type" : d.type ,
+						}
+						core.ASSETS.audio['lookups'][ dd ] = audioLookup;
 					});
 
 					// Get the audio file as-is.
-					core.AUDIO['elems'][ d.key ].src = gamedir + "/" + d['fileurl'];
-					core.AUDIO['elems'][ d.key ].volume=0.0;
-					let prom ;
-					prom = core.AUDIO['elems'][ d.key ].play();
+					audioElem.src = gamedir + "/" + d['fileurl'];
+					audioElem.volume=0.0;
+					audioElem.load();
+					// audioElem.play();
 
-					// Ask the server to gzip it before sending.
-					// TODO
+					// Check to make sure that the audio element is ready.
+					// if( ! (audioElem.readyState > 2) ){ audio_proms.push( audioElem.play() ); }
 
-					// Immediately pause, and reset the audio when the promise resolves.
-					prom.then(
-						function(){
-							var isPlaying = function (currentAudio) {
-								return  currentAudio
-									&&  currentAudio.currentTime > 0
-									&& !currentAudio.paused
-									&& !currentAudio.ended
-									&&  currentAudio.readyState > 2;
-							}
-							if(isPlaying){ core.AUDIO['elems'][ d.key ].pause(); }
-							core.AUDIO['elems'][ d.key ].currentTime=0;
-							core.AUDIO['elems'][ d.key ].volume=1.0;
-						},
-						function(err){
-							console.error("ERROR: Could not play audio.", err, d.key);
-							alert("ERROR: SEE DEV CONSOLE FOR DETAILS.");
-							throw "ERROR";
-							SNDreject();
-						});
-
-					// Add the audio to the promises array.
-					audio_proms.push(prom);
+					core.AUDIO['elems'][ d.key ] = audioElem;
 				});
 
 				// audio_proms (For normal .mp3 audio.)
 				Promise.all(audio_proms).then(function(){
+					JSGAME.CORE_SETUP_PERFORMANCE.ends  .sound_mp3  = performance.now();
+					JSGAME.CORE_SETUP_PERFORMANCE.times .sound_mp3  = JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_mp3  - JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_mp3 ;
 					SNDresolve();
 				}
 				,function(err){ console.error("ERROR: Some promises may not have resolved. ", err); SNDreject(); });
+
 			});
 		};
 
 		// Preload all sounds. (.midi format)
 		let soundsSetup_midi = function(){
-			// Get the combined MIDI binary and parse it.
-			function load_midi_bin(){
-				return new Promise(function(resolve,reject){
-					// Determine the http filepath to the file.
-					let gamedir      = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'].replace("../", "");
-					let bin_filepath = gamedir + "/"+JSGAME.PRELOAD.gamesettings_json['midi_bin'] ;
+			return new Promise(function(soundsSetup_midi_resolve, soundsSetup_midi_reject){
+				JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_0_ALL = performance.now();
 
-					// Each file download is a promise. Keep an array of the promises.
-					let proms = [];
+				// Get the combined MIDI binary and parse it.
+				function load_midi_bin(){
+					return new Promise(function(resolve,reject){
+						JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_1_load_midi_bin = performance.now();
 
-					// Start file download.
-					proms.push( JSGAME.SHARED.getFile_url_arraybuffer( bin_filepath ) );
+						// Determine the http filepath to the file.
+						let gamedir      = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'].replace("../", "");
+						let bin_filepath = gamedir + "/"+JSGAME.PRELOAD.gamesettings_json['midi_bin'] ;
 
-					// When all file downloads have completed then parse the binary data.
-					Promise.all(proms).then(
-						function(res1){
+						// Each file download is a promise. Keep an array of the promises.
+						let proms = [];
 
-							// One file should have been received. Set the res1 variable as the first array index of the results.
-							res1=res1[0];
+						// Start file download.
+						proms.push( JSGAME.SHARED.getFile_url_arraybuffer( bin_filepath ) );
 
-							// Offset.
-							let offset = 0;
+						// When all file downloads have completed then parse the binary data.
+						Promise.all(proms).then(
+							function(res1){
 
-							// *** TOP BINARY PORTION ***
+								// One file should have been received. Set the res1 variable as the first array index of the results.
+								res1=res1[0];
 
-							// Create views for the received ArrayBuffer.
-							let bin_view8  = new Uint8Array (res1) ;
-							let bin_view16 = new Uint16Array(res1) ;
-							let bin_view32 = new Uint32Array(res1) ;
+								// Offset.
+								let offset = 0;
 
-							// Bytes 0-1
-							let numSongs        = bin_view16[0] ;
-							let RESERVED        = bin_view16[1] ;
+								// *** TOP BINARY PORTION ***
 
-							// Bytes 2-4
-							let headerOffset    = bin_view32[1] ;
-							let filenamesOffset = bin_view32[2] ;
-							let dataOffset      = bin_view32[3] ;
+								// Create views for the received ArrayBuffer.
+								let bin_view8  = new Uint8Array (res1) ;
+								let bin_view16 = new Uint16Array(res1) ;
+								let bin_view32 = new Uint32Array(res1) ;
 
-							// *** READ FILENAMES FROM BINARY FILE ***
+								// Bytes 0-1
+								let numSongs        = bin_view16[0] ;
+								let RESERVED        = bin_view16[1] ;
 
-							// Expected length for filename entries.
-							let filename_length = 20;
-							// Expected length for filetype entries.
-							let filetype_length = 7;
-							// Hold the parsed filename/filetype data.
-							let filename_data = [];
-							// Reset the offset value.
-							offset = 0;
-							// Go through (for each song index) and get each entry for filename and filetype.
-							for(let i=0; i<numSongs; i+=1){
-								// Strings to hold our key and type.
-								let name  = "";
-								let type = "";
+								// Bytes 2-4
+								let headerOffset    = bin_view32[1] ;
+								let filenamesOffset = bin_view32[2] ;
+								let dataOffset      = bin_view32[3] ;
 
-								// Read through the bytes and add them to the name string. (Decode from char code to char.)
-								for(let i2=0; i2<filename_length; i2+=1){
-									let test = bin_view8[offset+filenamesOffset+i2];
-									name += String.fromCharCode(test);
+								// *** READ FILENAMES FROM BINARY FILE ***
+
+								// Expected length for filename entries.
+								let filename_length = 20;
+								// Expected length for filetype entries.
+								let filetype_length = 7;
+								// Hold the parsed filename/filetype data.
+								let filename_data = [];
+								// Reset the offset value.
+								offset = 0;
+								// Go through (for each song index) and get each entry for filename and filetype.
+								for(let i=0; i<numSongs; i+=1){
+									// Strings to hold our key and type.
+									let name  = "";
+									let type = "";
+
+									// Read through the bytes and add them to the name string. (Decode from char code to char.)
+									for(let i2=0; i2<filename_length; i2+=1){
+										let test = bin_view8[offset+filenamesOffset+i2];
+										name += String.fromCharCode(test);
+									}
+									// Adjust the offset by the expected filename length.
+									offset+=filename_length;
+
+									// Read through the bytes and add them to the type string. (Decode from char code to char.)
+									for(let i3=0; i3<filetype_length; i3+=1){
+										let test = bin_view8[offset+filenamesOffset+i3];
+										type += String.fromCharCode(test);
+									}
+									// Adjust the offset by the expected filetype length.
+									offset+=filetype_length;
+
+									// Add the new key, type to filename_data. Use "trim()" on each string.
+									filename_data.push({
+										"key"  : name.trim() ,
+										"type" : type.trim() ,
+									});
 								}
-								// Adjust the offset by the expected filename length.
-								offset+=filename_length;
 
-								// Read through the bytes and add them to the type string. (Decode from char code to char.)
-								for(let i3=0; i3<filetype_length; i3+=1){
-									let test = bin_view8[offset+filenamesOffset+i3];
-									type += String.fromCharCode(test);
+								// *** READ HEADER DATA FROM BINARY FILE ***
+
+								// Hold the parsed header data.
+								let header_data = [];
+								// Set the offset value to the header offset.
+								offset = headerOffset;
+								// Go through (for each song index) and get each entry for start and end.
+								for(let i=0; i<numSongs; i+=1){
+									// Add the new start, end to the header data.
+									header_data.push({
+										"start" : bin_view32[ (offset/4)+0 ] ,
+										"end"   : bin_view32[ (offset/4)+1 ] ,
+									});
+
+									// Go to the next entry by adjusting the offset by the byteLength of start and end.
+									offset+=8;
 								}
-								// Adjust the offset by the expected filetype length.
-								offset+=filetype_length;
 
-								// Add the new key, type to filename_data. Use "trim()" on each string.
-								filename_data.push({
-									"key"  : name.trim() ,
-									"type" : type.trim() ,
-								});
+								// *** CREATE THE MUSIC DATA OBJECT ***
+
+								// Hold the retrieved song data(s).
+								let musicData = {};
+								// Go through (for each song index) and get the song data(s).
+								for(let i=0; i<numSongs; i+=1){
+									// Copy the range of bytes for this entry.
+									let songData = bin_view8.slice(
+										dataOffset + header_data[i].start,
+										dataOffset + header_data[i].end
+									);
+
+									// Create the musicData object for this song.
+									musicData[ filename_data[i].key ] = {
+										"key" : filename_data[i].key  ,
+										"type": filename_data[i].type ,
+										"data": songData              ,
+									};
+								}
+
+								JSGAME.CORE_SETUP_PERFORMANCE.ends  .sound_midi_1_load_midi_bin = performance.now();
+								JSGAME.CORE_SETUP_PERFORMANCE.times .sound_midi_1_load_midi_bin = JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_midi_1_load_midi_bin - JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_1_load_midi_bin;
+
+								resolve(  musicData );
 							}
+							,function(err){ console.log(err); reject(); });
+					});
+				}
+				// Brings in the Tiny Synth library.
+				let import_tinysynth = function(){
+					return new Promise(function(resolve,reject){
+						JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_2_import_tinysynth = performance.now();
 
-							// *** READ HEADER DATA FROM BINARY FILE ***
+						// Create the script element.
+						let script = document.createElement("script");
 
-							// Hold the parsed header data.
-							let header_data = [];
-							// Set the offset value to the header offset.
-							offset = headerOffset;
-							// Go through (for each song index) and get each entry for start and end.
-							for(let i=0; i<numSongs; i+=1){
-								// Add the new start, end to the header data.
-								header_data.push({
-									"start" : bin_view32[ (offset/4)+0 ] ,
-									"end"   : bin_view32[ (offset/4)+1 ] ,
-								});
+						// Do this when the script has completed load.
+						script.onload=function(){
+							script.onload=null;
 
-								// Go to the next entry by adjusting the offset by the byteLength of start and end.
-								offset+=8;
-							}
+							JSGAME.CORE_SETUP_PERFORMANCE.ends  .sound_midi_2_import_tinysynth = performance.now();
+							JSGAME.CORE_SETUP_PERFORMANCE.times .sound_midi_2_import_tinysynth = JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_midi_2_import_tinysynth - JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_2_import_tinysynth;
 
-							// *** CREATE THE MUSIC DATA OBJECT ***
+							resolve();
+						};
 
-							// Hold the retrieved song data(s).
-							let musicData = {};
-							// Go through (for each song index) and get the song data(s).
-							for(let i=0; i<numSongs; i+=1){
-								// Copy the range of bytes for this entry.
-								let songData = bin_view8.slice(
-									dataOffset + header_data[i].start,
-									dataOffset + header_data[i].end
-								);
+						// Set the source of the script.
+						script.src="libs/webaudio-tinysynth.min.js"; // Minified
+						// script.src="libs/webaudio-tinysynth.js";     // Not minified.
 
-								// Create the musicData object for this song.
-								musicData[ filename_data[i].key ] = {
-									"key" : filename_data[i].key  ,
-									"type": filename_data[i].type ,
-									"data": songData              ,
-								};
-							}
+						// Add the element to the document body.
+						document.body.appendChild(script);
+					});
+				};
+				// Setup each Tiny Synth.
+				let setup_tinysynth = function(){
+					return new Promise(function(resolve,reject){
+						JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_3_setup_tinysynth = performance.now();
 
+						// Tiny Synth outputs junk to the console when starting and when a synth is created.
+						// Temporarily remove the console.log function until Tiny Synth setup is complete.
+						let old = console.log;
+						console.log = function(){};
 
-							resolve(  musicData );
-						}
-						,function(err){ console.log(err); reject(); });
-				});
-			}
-			// Brings in the Tiny Synth library.
-			let import_tinysynth = function(){
-				return new Promise(function(resolve,reject){
-					// Create the script element.
-					let script = document.createElement("script");
+						// Will contain a list of synths made by Tiny Synth. They are also promises.
+						let proms = [];
 
-					// Do this when the script has completed load.
-					script.onload=function(){
-						script.onload=null;
-						resolve();
-					};
+						let midi_synths = Object.keys( JSGAME.PRELOAD.gamesettings_json['midi_synths'] );
 
-					// Set the source of the script.
-					script.src="libs/webaudio-tinysynth.min.js"; // Minified
-					// script.src="libs/webaudio-tinysynth.js";     // Not minified.
-
-					// Add the element to the document body.
-					document.body.appendChild(script);
-				});
-			};
-
-			// Download the MIDI binary, parse the MIDI binary, load Tiny Synth.
-			return new Promise(function(resolve,reject){
-				load_midi_bin().then(
-					function(res){
-						// Save the parsed MIDI data.
-						core.AUDIO.midiData=res;
-
-						// Import Tiny Synth and then create the individual synths.
-						import_tinysynth().then(
-							function(){
-								// Tiny Synth outputs junk to the console when starting and when a synth is created.
-								// Temporarily remove the console.log function until Tiny Synth setup is complete.
-								let old = console.log;
-								console.log = function(){};
-
-								// Will contain a list of synths made by Tiny Synth. They are also promises.
-								let proms = [];
-
-								let midi_synths = Object.keys( JSGAME.PRELOAD.gamesettings_json['midi_synths'] );
-
-								// Create the synths for MIDI.
-								// JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_synth=performance.now();
-								for(let i=0; i<midi_synths.length; i+=1){
-									// if(i==1){ break; };
-
+						// Create the synths for MIDI.
+						for(let i=0; i<midi_synths.length; i+=1){
+							proms.push(
+								new Promise(function(midi_resolve, midi_reject){
 									// Get the key.
 									let key = midi_synths[i];
 									// Get the record.
@@ -267,102 +259,100 @@ core.FUNCS.audio.init = function(){
 									// Create synth with the specified settings.
 									core.AUDIO.midiSynths[key] = new WebAudioTinySynth( synthOptions );
 
-									// core.AUDIO.midiSynths.music1.setVoices(synthOptions.voices);
-									// core.AUDIO.midiSynths.music1.setQuality(synthOptions.quality);
-									// core.AUDIO.midiSynths.music1.setReverbLev(synthOptions.useReverb);
-
 									// Loop?
 									if(options.loop){ core.AUDIO.midiSynths[key].setLoop(false); }
 									else            { core.AUDIO.midiSynths[key].setLoop(false); }
 
 									// Master volume?
-									if(options.masterVol){ core.AUDIO.midiSynths[key].setMasterVol(options.masterVol); }
-									else                 { core.AUDIO.midiSynths[key].setMasterVol(1.0); }
+									core.AUDIO.midiSynths[key].setMasterVol( (100 * JSGAME.SHARED.masterVolume/100)/100 );
 
 									// Reverb level?
 									if(options.reverbLev){ core.AUDIO.midiSynths[key].setReverbLev(options.reverbLev); }
-									// else                 { core.AUDIO.midiSynths[key].reverbLev=0.3; }
 
 									// Is the synth ready?
 									if( core.AUDIO.midiSynths[key].isReady ){
-										// Already ready. No need to add a promise to the list.
-										// console.log("synth:", key, "is ready!");
-										// proms.push( new Promise(function(resolve,reject){resolve();}) );
+										midi_resolve();
 									}
 									// If it is NOT ready then wait for it by adding a promise to the proms array.
 									else{
-										// console.log("synth:", key, "is NOT ready!");
-										proms.push( core.AUDIO.midiSynths[key].ready() );
+										core.AUDIO.midiSynths[key].ready().then(
+											function(){ midi_resolve(); },
+											function(err){ console.log(err); })
+										;
 									}
-								}
+								})
+							);
 
-								// Wait for all the synths to become ready.
-								Promise.all(proms).then(function(res){
-									// JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_midi_synth=performance.now();
-									// Restore the console.log functionality.
-									console.log = old;
+						}
 
-									// JSGAME.CORE_SETUP_PERFORMANCE.times.sound_midi_synth=JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_midi_synth-JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_synth;
+						// Wait for all the synths to become ready.
+						Promise.all(proms).then(
+							function(res){
+								// Restore the console.log functionality.
+								console.log = old;
 
-									// Console the MIDI data.
-									// console.log("midiSynths:", core.AUDIO.midiSynths);
-									// console.log("midiData  :", core.AUDIO.midiData  );
+								JSGAME.CORE_SETUP_PERFORMANCE.ends  .sound_midi_3_setup_tinysynth = performance.now();
+								JSGAME.CORE_SETUP_PERFORMANCE.times .sound_midi_3_setup_tinysynth = JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_midi_3_setup_tinysynth - JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_3_setup_tinysynth;
 
-									// Resolve the outer Promise.
-									resolve();
-								}
-								,function(err){ console.log(err); reject(); });
+								// Console the MIDI data.
+								// console.log("midiSynths:", core.AUDIO.midiSynths);
+								// console.log("midiData  :", core.AUDIO.midiData  );
+
+								// Resolve the outer Promise.
+								resolve();
 							}
-							,function(err){ console.log(err); SNDreject(); });
-					}
+							,function(err){ console.log(err); reject(); }
+						);
+
+					});
+				};
+
+				// Download the MIDI binary, parse the MIDI binary, load Tiny Synth.
+				let proms = [
+					load_midi_bin()    ,
+					import_tinysynth() ,
+				];
+
+				Promise.all(proms).then(
+					function(res){
+						// Save the parsed MIDI data.
+						core.AUDIO.midiData=res[0];
+
+						setup_tinysynth().then(
+							function(){
+								JSGAME.CORE_SETUP_PERFORMANCE.ends  .sound_midi_0_ALL = performance.now();
+								JSGAME.CORE_SETUP_PERFORMANCE.times .sound_midi_0_ALL = JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_midi_0_ALL - JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi_0_ALL;
+
+								soundsSetup_midi_resolve();
+							},
+							function(err){ console.log(err); }
+						);
+					},
+					function(err){ console.log(err); }
 				);
 			});
 		};
 
-		JSGAME.CORE_SETUP_PERFORMANCE.starts.SOUND      = performance.now();
-		JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_mp3  = performance.now();
-		soundsSetup_mp3().then(
-			function(res1){
-				JSGAME.CORE_SETUP_PERFORMANCE.ends  .sound_mp3  = performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times .sound_mp3  = JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_mp3  - JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_mp3 ;
-
-				JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi = performance.now();
-				soundsSetup_midi().then(
-					function(res2){
-						JSGAME.CORE_SETUP_PERFORMANCE.ends  .sound_midi = performance.now();
-						JSGAME.CORE_SETUP_PERFORMANCE.times .sound_midi = JSGAME.CORE_SETUP_PERFORMANCE.ends.sound_midi - JSGAME.CORE_SETUP_PERFORMANCE.starts.sound_midi;
-
-						JSGAME.CORE_SETUP_PERFORMANCE.ends  .SOUND = performance.now();
-						JSGAME.CORE_SETUP_PERFORMANCE.times .SOUND = JSGAME.CORE_SETUP_PERFORMANCE.ends.SOUND      - JSGAME.CORE_SETUP_PERFORMANCE.starts.SOUND     ;
-
-						resolve();
-					},
-					function(err2){ console.error("ERROR 2: A failure has occurred while loading audio.", err2); }
-				);
-			},
-			function(err1){
-				console.error("ERROR 1: A failure has occurred while loading audio.", err1);
-			}
-		);
-
-		/*
 		// Load the support music/file types.
 		let proms1 = [
 			soundsSetup_mp3()  ,
-			soundsSetup_midi() ,
 		];
+		if(JSGAME.PRELOAD.gamesettings_json['midi_bin']){ proms1.push( soundsSetup_midi() ); }
 
 		// When loading has completed...
 		Promise.all(proms1).then(
 			function(res){
 				// Done!
-				resolve();
+				JSGAME.CORE_SETUP_PERFORMANCE.ends  .SOUND = performance.now();
+				JSGAME.CORE_SETUP_PERFORMANCE.times .SOUND = JSGAME.CORE_SETUP_PERFORMANCE.ends.SOUND      - JSGAME.CORE_SETUP_PERFORMANCE.starts.SOUND     ;
+
+				audio_init_resolve();
 			},
 			function(err){
 				console.error("ERROR: A failure has occurred while loading audio.", err);
+				audio_init_reject();
 			},
 		);
-		*/
 
 	});
 };
@@ -528,9 +518,23 @@ core.FUNCS.audio.stopAllSounds_midi = function(resetPosition){
 
 // Change the master volume (affects all sounds.)
 core.FUNCS.audio.changeMasterVolume = function(newVol){
+	// Change the master volume value.
 	JSGAME.SHARED.masterVolume=newVol;
 	JSGAME.DOM["masterVolumeSlider"].value=newVol;
 	JSGAME.DOM["masterVolumeSlider"].title=newVol;
+
+	// MP3 volume is already handled whenever a sound is started.
+
+	// Midi volume is controlled per synth.
+	let keys1 = Object.keys(core.AUDIO.midiSynths);
+	for(let i=0; i<keys1.length; i+=1){
+		let synthKey = keys1[i];
+		let synth    = core.AUDIO.midiSynths[synthKey];
+
+		try     { synth.setMasterVol( (100 * JSGAME.SHARED.masterVolume/100)/100 ) ;  }
+		catch(e){ console.log("WARNING: Unable to read the master volume."); }
+	}
+
 };
 // Pause all sounds (mp3, midi)
 core.FUNCS.audio.TODO_pauseAllSounds = function(){

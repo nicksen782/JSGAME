@@ -72,8 +72,9 @@
 			if($_GET['debug']=="true"){ $debug=true;  }
 			else                      { $debug=false; }
 
+			// Gamepads are off by default.
 			if( $_GET['gamepads'] ){ $gamepads= $_GET['gamepads']=="true" ? true : false;  }
-			else                   { $gamepads=true; }
+			else                   { $gamepads=false; }
 
 			$outputText = "";
 			$outputText_errors = "";
@@ -428,47 +429,16 @@
 			</div>
 
 			<div id="panel_game" class="panels">
-				<!-- GAME CONTROLS -->
-				<div id="gameControls">
-					<?php
-						// Only do this if the game can load.
-						if($PHP_VARS['CANLOADGAME']){
-							if($PHP_VARS['typeGamepads']=="nes" && $PHP_VARS['numGamepads'] > 0){
-								// Output the SVG.
-								for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
-									echo "<div class='gamepad gamepad_nes noSelect2' pad='".($i+1)."'>";
-									require "gamepadconfigs/gamepad_nes.svg";
-									echo "</div>";
-
-									// Output the keyboard keys.
-									//
-								}
-							}
-							else if($PHP_VARS['typeGamepads']=="snes" && $PHP_VARS['numGamepads'] > 0){
-								// Output the SVG.
-								for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
-									echo "<div class='gamepad gamepad_snes noSelect2' pad='".($i+1)."'>";
-									require "gamepadconfigs/gamepad_snes.svg";
-									echo "</div>";
-
-									// Output the keyboard keys.
-									//
-								}
-							}
-							else{
-								// No gamepads?
-								echo "\n" . '<!-- NO GAMEPADS ???-->' . "\n";
-							}
-						}
-					?>
-				</div>
-				<br id="gameControls_br">
-
 				<!-- GAME -->
 				<div id="gameCanvas_DIV">
 					<!-- INDICATOR -->
 					<div id="indicator"></div>
 				</div>
+
+				<!-- GAME CONTROLS -->
+				<!-- <div id="gameControls_br">
+					<br>
+				</div> -->
 
 			</div>
 
@@ -520,15 +490,59 @@
 		</div>
 	</div>
 
-	<?php
-		if($PHP_VARS['CANLOADGAME'] && $debug){
-			echo "\n";
-			if( file_exists ($path . '/DEBUG/debug.php') && $debug) {
-				require $path . '/DEBUG/debug.php';
+	<div id="sideDiv" class="hide">
+		<div id="gameControls" class="hide">
+			<?php
+				// Only do this if the game can load.
+				if($PHP_VARS['CANLOADGAME']){
+					if($PHP_VARS['typeGamepads']=="nes" && $PHP_VARS['numGamepads'] > 0){
+						// Output the SVG.
+						for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
+							$class="";
+							if     ($PHP_VARS['numGamepads']==1){ $class="oneGamepad"; }
+							else if($PHP_VARS['numGamepads']==2){ $class="twoGamepads"; }
+							echo "<div class='".$class." gamepad gamepad_nes noSelect2' pad='".($i+1)."'>";
+							require "gamepadconfigs/gamepad_nes.svg";
+							echo "</div>";
+							// echo "<br>";
+
+							// Output the keyboard keys.
+							//
+						}
+					}
+					else if($PHP_VARS['typeGamepads']=="snes" && $PHP_VARS['numGamepads'] > 0){
+						// Output the SVG.
+						for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
+							$class="";
+							if     ($PHP_VARS['numGamepads']==1){ $class="oneGamepad"; }
+							else if($PHP_VARS['numGamepads']==2){ $class="twoGamepads"; }
+							echo "<div class='".$class." gamepad gamepad_snes noSelect2' pad='".($i+1)."'>";
+							require "gamepadconfigs/gamepad_snes.svg";
+							echo "</div>";
+							// echo "<br>";
+
+							// Output the keyboard keys.
+							//
+						}
+					}
+					else{
+						// No gamepads?
+						echo "\n" . '<!-- NO GAMEPADS ???-->' . "\n";
+					}
+				}
+			?>
+		</div>
+
+		<?php
+			if($PHP_VARS['CANLOADGAME'] && $debug){
 				echo "\n";
+				if( file_exists ($path . '/DEBUG/debug.php') && $debug) {
+					require $path . '/DEBUG/debug.php';
+					echo "\n";
+				}
 			}
-		}
-	?>
+		?>
+	</div>
 
 	<?php
 		if($_GET["hidden"]=="true"){
