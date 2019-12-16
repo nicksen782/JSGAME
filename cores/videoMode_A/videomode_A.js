@@ -1,7 +1,8 @@
 // KEYS
 core.ASSETS  .graphics       = {} ; // Unchanging assets.
 core.FUNCS   .graphics       = {} ; // Functions for handling graphics.
-core.FUNCS   .graphics.FADER = {} ; //
+// core.FUNCS   .graphics.FADER = {} ; //
+core.GRAPHICS.FADER          = {} ; //
 core.GRAPHICS.debug          = {} ; //
 core.GRAPHICS.debug.flags    = {} ; //
 core.GRAPHICS.fonts          = {} ; //
@@ -67,18 +68,18 @@ core.GRAPHICS.flags.TEXT_force   = false ; // Forcing the drawing even if it nor
 core.GRAPHICS.flags.OUTPUT_force = false ; // Forcing the drawing even if it normally would not draw.
 
 // FLAGS - Override of the drawing of individual layers.
-core.GRAPHICS.debug.flags.BG      = true ; // If flag is unset then this layer draw will be skipped.
-core.GRAPHICS.debug.flags.SPRITE  = true ; // If flag is unset then this layer draw will be skipped.
-core.GRAPHICS.debug.flags.TEXT    = true ; // If flag is unset then this layer draw will be skipped.
-core.GRAPHICS.debug.flags.FADE    = true ; // If flag is unset then this layer draw will be skipped.
-core.GRAPHICS.debug.flags.OUTPUT  = true ; // If flag is unset then this layer draw will be skipped.
+// core.GRAPHICS.debug.flags.BG      = true ; // If flag is unset then this layer draw will be skipped.
+// core.GRAPHICS.debug.flags.SPRITE  = true ; // If flag is unset then this layer draw will be skipped.
+// core.GRAPHICS.debug.flags.TEXT    = true ; // If flag is unset then this layer draw will be skipped.
+// core.GRAPHICS.debug.flags.FADE    = true ; // If flag is unset then this layer draw will be skipped.
+// core.GRAPHICS.debug.flags.OUTPUT  = true ; // If flag is unset then this layer draw will be skipped.
 
 // PERFORMANCE MONITORING
-core.GRAPHICS.performance.BG      = [ 0, 0, 0, 0, 0 ,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0 ] ; //
-core.GRAPHICS.performance.SPRITE  = [ 0, 0, 0, 0, 0 ,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0 ] ; //
-core.GRAPHICS.performance.TEXT    = [ 0, 0, 0, 0, 0 ,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0 ] ; //
-core.GRAPHICS.performance.FADE    = [ 0, 0, 0, 0, 0 ,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0 ] ; //
-core.GRAPHICS.performance.OUTPUT  = [ 0, 0, 0, 0, 0 ,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0,  0, 0, 0, 0, 0 ] ; //
+core.GRAPHICS.performance.BG      = [ 0, 0, 0, 0, 0 ] ; //
+core.GRAPHICS.performance.SPRITE  = [ 0, 0, 0, 0, 0 ] ; //
+core.GRAPHICS.performance.TEXT    = [ 0, 0, 0, 0, 0 ] ; //
+core.GRAPHICS.performance.FADE    = [ 0, 0, 0, 0, 0 ] ; //
+core.GRAPHICS.performance.OUTPUT  = [ 0, 0, 0, 0, 0 ] ; //
 
 // Sprites
 core.GRAPHICS.sprites = [
@@ -107,13 +108,14 @@ core.CONSTS["SPRITE_BANK1"]     = 1<<6 ; // 1<<6 is 64  (B 01000000)
 core.CONSTS["SPRITE_BANK2"]     = 2<<6 ; // 2<<6 is 128 (B 10000000)
 core.CONSTS["SPRITE_BANK3"]     = 3<<6 ; // 3<<6 is 192 (B 11000000)
 
-// *** FADER ***
-// *** PART OF: core.FUNCS   .graphics.FADER ***
-
-// Fade table created by tim1724
+// *** FADER *** tim1724
 // Modified for JavaScript by nicksen782.
-core.CONSTS["FADER_STEPS"] = 12 ;
-core.CONSTS["fader"] = [
+
+core.GRAPHICS.FADER.CONSTS = {}
+core.GRAPHICS.FADER.FUNCS = {}
+
+core.GRAPHICS.FADER.CONSTS["FADER_STEPS"] = 12 ; // Number of steps in a fade.
+core.GRAPHICS.FADER.CONSTS["fader"] = [
 	//                                        BB GGG RRR   B G R     DEC       HEX
 	/* 0  */ { b: 0  , g: 0   , r: 0   } , // 00 000 000   0 0 0   , 0     ,   0x00
 	/* 1  */ { b: 33 , g: 0   , r: 0   } , // 01 000 000   1 0 0   , 64    ,   0x40
@@ -127,106 +129,153 @@ core.CONSTS["fader"] = [
 	/* 9  */ { b: 66 , g: 100 , r: 85  } , // 10 111 110   2 7 6   , 190   ,   0xBE
 	/* 10 */ { b: 66 , g: 100 , r: 100 } , // 10 111 111   2 7 7   , 191   ,   0xBF
 	/* 11 */ { b: 100, g: 100 , r: 100 } , // 11 111 111   3 7 7   , 255   ,   0xFF
-];
-core.FUNCS.graphics.FADER.fadeStep      = 0     ;
-core.FUNCS.graphics.FADER.fadeSpeed     = 0     ;
-core.FUNCS.graphics.FADER.currFadeFrame = 0     ;
-core.FUNCS.graphics.FADER.fadeDir       = 1     ;
-core.FUNCS.graphics.FADER.fadeActive    = false ;
-core.FUNCS.graphics.FADER.blocking      = false ;
-core.FUNCS.graphics.FADER.stayDark      = false ;
-core.FUNCS.graphics.FADER.lastFadeFrame = false ;
+]; // The rgb values for each fade level.
+core.GRAPHICS.FADER.prevFadeStep  = 0     ; // Previous frame step.
+core.GRAPHICS.FADER.fadeStep      = 0     ; // Current frame step.
+core.GRAPHICS.FADER.fadeSpeed     = 0     ; // Speed between fader array index changes.
+core.GRAPHICS.FADER.currFadeFrame = 0     ; // Current index into the fader array.
+core.GRAPHICS.FADER.fadeDir       = 1     ; // Direction of fade (1 is up, -1 is down.)
+core.GRAPHICS.FADER.fadeActive    = false ; // Fade is active.
+core.GRAPHICS.FADER.blocking      = false ; // Do not allow further game logic updates if true.
+core.GRAPHICS.FADER.stayDark      = false ; // Stay dark after fade completes.
+core.GRAPHICS.FADER.lastFadeFrame = false ; // Indicates that this is the last frame for the fade in/out.
+
+// WEB WORKERS - EXPERIEMENT
+// core.FLAGS = {};
+core.WORKERS = {};
+// core.WORKERS.BG     = new Worker("cores/videoMode_A/video_webworker.js");
+// core.WORKERS.SPRITE = new Worker("cores/videoMode_A/video_webworker.js");
+// core.WORKERS.TEXT   = new Worker("cores/videoMode_A/video_webworker.js");
+core.WORKERS.FADE   = new Worker("cores/videoMode_A/video_webworker.js");
+// core.WORKERS.OUTPUT = new Worker("cores/videoMode_A/video_webworker.js");
 
 // *** Init conversion functions - Removed after use. ***
 
 core.FUNCS.graphics.init = function(){
-	return new Promise(function(resolve,reject){
-		JSGAME.CORE_SETUP_PERFORMANCE.starts.VIDEO  = performance.now();
+	// TODO:
+
+	// Take performance metrics.
+
+	JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "START");
+	return new Promise(function(res_VIDEO_INIT, rej_VIDEO_INIT){
 
 		// Copy some PRELOAD settings into core.SETTINGS.
 		let settingsSetup = function(){
-			// Set the game settings and game consts.
-			core.SETTINGS['RAM_TILES_COUNT']   = JSGAME.PRELOAD.gamesettings_json['RAM_TILES_COUNT']  ;
-			core.SETTINGS['TILE_HEIGHT']       = JSGAME.PRELOAD.gamesettings_json['TILE_HEIGHT']      ;
-			core.SETTINGS['TILE_WIDTH']        = JSGAME.PRELOAD.gamesettings_json['TILE_WIDTH']       ;
-			core.SETTINGS['TRANSLUCENT_COLOR'] = JSGAME.PRELOAD.gamesettings_json['TRANSLUCENT_COLOR'];
-			core.SETTINGS['VRAM_TILES_H']      = JSGAME.PRELOAD.gamesettings_json['VRAM_TILES_H']     ;
-			core.SETTINGS['VRAM_TILES_V']      = JSGAME.PRELOAD.gamesettings_json['VRAM_TILES_V']     ;
-			core.SETTINGS['fps']               = JSGAME.PRELOAD.gamesettings_json['fps']              ;
+			return new Promise(function(res_settingsSetup, rej_settingsSetup){
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_settingsSetup"                    , "START");
 
-			// Convert the TRANSLUCENT_COLOR string to integer. (If specified as HEX then it is likely a string.)
-			core.SETTINGS['TRANSLUCENT_COLOR'] = parseInt(core.SETTINGS['TRANSLUCENT_COLOR'], 16);
+				// Set the game settings and game consts.
+				core.SETTINGS['RAM_TILES_COUNT']   = JSGAME.PRELOAD.gamesettings_json['RAM_TILES_COUNT']  ;
+				core.SETTINGS['TILE_HEIGHT']       = JSGAME.PRELOAD.gamesettings_json['TILE_HEIGHT']      ;
+				core.SETTINGS['TILE_WIDTH']        = JSGAME.PRELOAD.gamesettings_json['TILE_WIDTH']       ;
+				core.SETTINGS['TRANSLUCENT_COLOR'] = JSGAME.PRELOAD.gamesettings_json['TRANSLUCENT_COLOR'];
+				core.SETTINGS['VRAM_TILES_H']      = JSGAME.PRELOAD.gamesettings_json['VRAM_TILES_H']     ;
+				core.SETTINGS['VRAM_TILES_V']      = JSGAME.PRELOAD.gamesettings_json['VRAM_TILES_V']     ;
+				core.SETTINGS['fps']               = JSGAME.PRELOAD.gamesettings_json['fps']              ;
 
-			// These will be added in graphicsSetup.
-			// core.GRAPHICS.tilesetNames = [] ;
-			// core.GRAPHICS.ramtiles     = [] ;
-			// core.GRAPHICS.tiles        = [] ;
-			// core.GRAPHICS.tilemaps     = [] ;
+				// Convert the TRANSLUCENT_COLOR string to integer. (If specified as HEX then it is likely a string.)
+				core.SETTINGS['TRANSLUCENT_COLOR'] = parseInt(core.SETTINGS['TRANSLUCENT_COLOR'], 16);
+
+				// These will be added in graphicsSetup.
+				// core.GRAPHICS.tilesetNames = [] ;
+				// core.GRAPHICS.ramtiles     = [] ;
+				// core.GRAPHICS.tiles        = [] ;
+				// core.GRAPHICS.tilemaps     = [] ;
+
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_settingsSetup"                    , "END");
+
+				res_settingsSetup();
+			});
 		};
 		// Copies some DOM into the core DOM cache.
 		let DOMSetup    = function(){
-			// DOM cache (GAME ELEMENTS ONLY.)
-			core.DOM['gameCanvas_DIV'] = document.getElementById("gameCanvas_DIV");
+			return new Promise(function(res_DOMSetup, rej_DOMSetup){
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_DOMSetup"                         , "START");
+
+					// DOM cache (GAME ELEMENTS ONLY.)
+					core.DOM['gameCanvas_DIV'] = document.getElementById("gameCanvas_DIV");
+
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_DOMSetup"                         , "END");
+				res_DOMSetup();
+			});
 		};
 		// Configure canvases for the video mode.
 		let canvasSetup = function(){
-			// Configure the canvas(es)
+			return new Promise(function(res_canvasSetup, rej_canvasSetup){
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_canvasSetup"                      , "START");
 
-			// This video mode requires 5 canvases. 4 for the layers and 1 for the output.
+				// Configure the canvas(es)
 
-			// CANVAS
-			core.GRAPHICS.canvas.BG     = document.createElement('canvas'); // Background tiles - Tile grid-aligned, no alpha.
-			core.GRAPHICS.canvas.SPRITE = document.createElement('canvas'); // Sprite tiles     - Tile pixel-aligned, with alpha.
-			core.GRAPHICS.canvas.TEXT   = document.createElement('canvas'); // Text tiles       - Tile grid-aligned, with alpha.
-			core.GRAPHICS.canvas.FADE   = document.createElement('canvas'); // Fade layer       - Used for Fading. General purpose bitmap canvas.
-			core.GRAPHICS.canvas.OUTPUT = document.createElement('canvas'); // Output canvas    - Combination of the other 4 layers. (no alpha.)
+				// This video mode requires 5 canvases. 4 for the layers and 1 for the output.
 
-			// CANVAS CTX
-			core.GRAPHICS.ctx.BG     = core.GRAPHICS.canvas.BG    .getContext('2d', { alpha: false });
-			core.GRAPHICS.ctx.SPRITE = core.GRAPHICS.canvas.SPRITE.getContext('2d', { alpha: true  });
-			core.GRAPHICS.ctx.TEXT   = core.GRAPHICS.canvas.TEXT  .getContext('2d', { alpha: true  });
-			core.GRAPHICS.ctx.FADE   = core.GRAPHICS.canvas.FADE  .getContext('2d', { alpha: true  });
-			core.GRAPHICS.ctx.OUTPUT = core.GRAPHICS.canvas.OUTPUT.getContext('2d', { alpha: false });
+				// CANVAS
+				core.GRAPHICS.canvas.BG     = document.createElement('canvas'); // Background tiles - Tile grid-aligned, no alpha.
+				core.GRAPHICS.canvas.SPRITE = document.createElement('canvas'); // Sprite tiles     - Tile pixel-aligned, with alpha.
+				core.GRAPHICS.canvas.TEXT   = document.createElement('canvas'); // Text tiles       - Tile grid-aligned, with alpha.
+				core.GRAPHICS.canvas.FADE   = document.createElement('canvas'); // Fade layer       - Used for Fading. General purpose bitmap canvas.
+				core.GRAPHICS.canvas.OUTPUT = document.createElement('canvas'); // Output canvas    - Combination of the other 4 layers. (no alpha.)
 
-			// CANVAS ARRAY (temp.)
-			let canvases = [
-				core.GRAPHICS.canvas.BG     ,
-				core.GRAPHICS.canvas.SPRITE ,
-				core.GRAPHICS.canvas.TEXT   ,
-				core.GRAPHICS.canvas.FADE   ,
-				core.GRAPHICS.canvas.OUTPUT ,
-			];
+				// CANVAS CTX
+				core.GRAPHICS.ctx.BG     = core.GRAPHICS.canvas.BG    .getContext('2d', { alpha: false });
+				core.GRAPHICS.ctx.SPRITE = core.GRAPHICS.canvas.SPRITE.getContext('2d', { alpha: true  });
+				core.GRAPHICS.ctx.TEXT   = core.GRAPHICS.canvas.TEXT  .getContext('2d', { alpha: true  });
+				core.GRAPHICS.ctx.FADE   = core.GRAPHICS.canvas.FADE  .getContext('2d', { alpha: true  });
+				core.GRAPHICS.ctx.OUTPUT = core.GRAPHICS.canvas.OUTPUT.getContext('2d', { alpha: false });
 
-			// Set the dimensions of each canvas.
-			var width  = core.SETTINGS.VRAM_TILES_H * core.SETTINGS.TILE_WIDTH;
-			var height = core.SETTINGS.VRAM_TILES_V * core.SETTINGS.TILE_HEIGHT;
-			canvases.forEach(function(d){
-				d.width  = width  ; d.height = height ;
-				JSGAME.SHARED.setpixelated(d);                         // This may not be necessary.
-				d.getContext('2d').clearRect(0, 0, d.width, d.height); // This may not be necessary.
+				// CANVAS ARRAY (temp.)
+				let canvases = [
+					core.GRAPHICS.canvas.BG     ,
+					core.GRAPHICS.canvas.SPRITE ,
+					core.GRAPHICS.canvas.TEXT   ,
+					core.GRAPHICS.canvas.FADE   ,
+					core.GRAPHICS.canvas.OUTPUT ,
+				];
+
+				// Set the dimensions of each canvas.
+				var width  = core.SETTINGS.VRAM_TILES_H * core.SETTINGS.TILE_WIDTH;
+				var height = core.SETTINGS.VRAM_TILES_V * core.SETTINGS.TILE_HEIGHT;
+				canvases.forEach(function(d){
+					d.width  = width  ; d.height = height ;
+					JSGAME.SHARED.setpixelated(d);                         // This may not be necessary.
+					d.getContext('2d').clearRect(0, 0, d.width, d.height); // This may not be necessary.
+				});
+
+				// Set an id on the canvas_OUTPUT.
+				core.GRAPHICS.canvas.OUTPUT.id="canvas_OUTPUT";
+
+				// Attach the canvas_OUTPUT to gameCanvas_DIV.
+				core.DOM['gameCanvas_DIV'].appendChild(core.GRAPHICS.canvas.OUTPUT);
+
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_canvasSetup"                      , "END");
+
+				res_canvasSetup();
 			});
-
-			// Set an id on the canvas_OUTPUT.
-			core.GRAPHICS.canvas.OUTPUT.id="canvas_OUTPUT";
-
-			// Attach the canvas_OUTPUT to gameCanvas_DIV.
-			core.DOM['gameCanvas_DIV'].appendChild(core.GRAPHICS.canvas.OUTPUT);
 		};
 		// Create VRAM arrays.
 		let vramSetup   = function(){
-			// Get the number of tiles for VRAM.
-			let screen_wh   = (core.SETTINGS.VRAM_TILES_H * core.SETTINGS.VRAM_TILES_V);
+			return new Promise(function(res_vramSetup, rej_vramSetup){
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_vramSetup"                        , "START");
 
-			// VRAM1 (BG layer.) (Set all to tile id 0.)
-			core.GRAPHICS.VRAM1 = new Uint8ClampedArray( screen_wh );
+				// Get the number of tiles for VRAM.
+				let screen_wh   = (core.SETTINGS.VRAM_TILES_H * core.SETTINGS.VRAM_TILES_V);
 
-			// VRAM2 (TEXT layer.) (Set all to tile id 0.)
-			core.GRAPHICS.VRAM2 = new Uint8ClampedArray( screen_wh );
+				// VRAM1 (BG layer.) (Set all to tile id 0.)
+				core.GRAPHICS.VRAM1 = new Uint8ClampedArray( screen_wh );
+
+				// VRAM2 (TEXT layer.) (Set all to tile id 0.)
+				core.GRAPHICS.VRAM2 = new Uint8ClampedArray( screen_wh );
+
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_vramSetup"                        , "END");
+
+				res_vramSetup();
+			});
 		};
 		// Preload and pre-convert all graphics.
 		let graphicsSetup = function(){
 			// Download and convert the source graphics (first convert.)
-			return new Promise(function(GFXresolve,GFXreject){
+			return new Promise(function(res_graphicsSetup, rej_graphicsSetup){
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_graphicsSetup"                    , "START");
+
 				let gamedir = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'];
 				gamedir = gamedir.replace("../", "");
 
@@ -345,7 +394,9 @@ core.FUNCS.graphics.init = function(){
 						keys_bin_tilemapData  .forEach( function(d){ if(d){ core.ASSETS.graphics.tilemaps[d] = converted.bin_tilemapData[d]  ; } });
 					}
 
-					GFXresolve();
+					JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_graphicsSetup"                    , "END");
+
+					res_graphicsSetup();
 				});
 
 			});
@@ -353,53 +404,11 @@ core.FUNCS.graphics.init = function(){
 
 		// (1/2) GRAPHICS SETUP.
 		let proms1 = [
-			new Promise(function(res,rej){
-				let key = "video_p1_settingsSetup";
-				JSGAME.CORE_SETUP_PERFORMANCE.starts[key] = performance.now();
-				settingsSetup();
-				JSGAME.CORE_SETUP_PERFORMANCE.ends[key]   = performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times[key]  = JSGAME.CORE_SETUP_PERFORMANCE.ends[key] - JSGAME.CORE_SETUP_PERFORMANCE.starts[key];
-				res();
-			}) ,
-			new Promise(function(res,rej){
-				let key = "video_p1_DOMSetup";
-				JSGAME.CORE_SETUP_PERFORMANCE.starts[key] = performance.now();
-				DOMSetup()     ;
-				JSGAME.CORE_SETUP_PERFORMANCE.ends[key]   = performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times[key]  = JSGAME.CORE_SETUP_PERFORMANCE.ends[key] - JSGAME.CORE_SETUP_PERFORMANCE.starts[key];
-				res();
-			}) ,
-			new Promise(function(res,rej){
-				let key = "video_p1_canvasSetup";
-				JSGAME.CORE_SETUP_PERFORMANCE.starts[key] = performance.now();
-				canvasSetup()  ;
-				JSGAME.CORE_SETUP_PERFORMANCE.ends[key]   = performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times[key]  = JSGAME.CORE_SETUP_PERFORMANCE.ends[key] - JSGAME.CORE_SETUP_PERFORMANCE.starts[key];
-				res();
-			}) ,
-			new Promise(function(res,rej){
-				let key = "video_p1_vramSetup";
-				JSGAME.CORE_SETUP_PERFORMANCE.starts[key] = performance.now();
-				vramSetup()    ;
-				JSGAME.CORE_SETUP_PERFORMANCE.ends[key]   = performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times[key]  = JSGAME.CORE_SETUP_PERFORMANCE.ends[key] - JSGAME.CORE_SETUP_PERFORMANCE.starts[key];
-				res();
-			}) ,
-			new Promise(function(res,rej){
-				let key = "video_p1_graphicsSetup";
-				JSGAME.CORE_SETUP_PERFORMANCE.starts[key] = performance.now();
-				graphicsSetup().then(
-					function(results){
-						JSGAME.CORE_SETUP_PERFORMANCE.ends[key]  = performance.now();
-						JSGAME.CORE_SETUP_PERFORMANCE.times[key] = JSGAME.CORE_SETUP_PERFORMANCE.ends[key] - JSGAME.CORE_SETUP_PERFORMANCE.starts[key];
-						res();
-					},
-					function(err){
-						console.log("err:", err);
-						rej();
-					}
-				);
-			}) ,
+			settingsSetup() ,
+			DOMSetup()      ,
+			canvasSetup()   ,
+			vramSetup()     ,
+			graphicsSetup() ,
 		];
 
 		// (2/2) GRAPHICS SETUP.
@@ -624,36 +633,29 @@ core.FUNCS.graphics.init = function(){
 				};
 
 				// Convert core.ASSETS.graphics.tiles to an array of canvases.
-				let key ;
-				key = "video_p2_post_graphicsConversion";
-				JSGAME.CORE_SETUP_PERFORMANCE.starts[key]=performance.now();
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_post_graphicsConversion" , "START");
 				post_graphicsConversion();
-				JSGAME.CORE_SETUP_PERFORMANCE.ends[key]=performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times[key] = JSGAME.CORE_SETUP_PERFORMANCE.ends[key] - JSGAME.CORE_SETUP_PERFORMANCE.starts[key];
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_post_graphicsConversion" , "END");
 
 				// Add the font data from PRELOAD into core.GRAPHICS.fonts.
-				key = "video_p2_post_graphicsConversion";
-				JSGAME.CORE_SETUP_PERFORMANCE.starts[key]=performance.now();
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_applyFontSettings"       , "START");
 				applyFontSettings();
-				JSGAME.CORE_SETUP_PERFORMANCE.ends[key]=performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times[key] = JSGAME.CORE_SETUP_PERFORMANCE.ends[key] - JSGAME.CORE_SETUP_PERFORMANCE.starts[key];
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_applyFontSettings"       , "END");
 
 				// Make sure all canvases are cleared.
-				key = "video_p2_clearAllCanvases";
-				JSGAME.CORE_SETUP_PERFORMANCE.starts[key]=performance.now();
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_clearAllCanvases"        , "START");
 				core.FUNCS.graphics.clearAllCanvases();
-				JSGAME.CORE_SETUP_PERFORMANCE.ends[key]=performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times[key] = JSGAME.CORE_SETUP_PERFORMANCE.ends[key] - JSGAME.CORE_SETUP_PERFORMANCE.starts[key];
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_clearAllCanvases"        , "END");
 
 				// TOTAL VIDEO INIT PERFORMANCE:
-				JSGAME.CORE_SETUP_PERFORMANCE.ends  .VIDEO  = performance.now();
-				JSGAME.CORE_SETUP_PERFORMANCE.times .VIDEO  = JSGAME.CORE_SETUP_PERFORMANCE.ends.VIDEO  - JSGAME.CORE_SETUP_PERFORMANCE.starts.VIDEO ;
 
-				resolve();
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "END");
+
+				res_VIDEO_INIT();
 			},
 			function(err){
 				console.log("err:", err);
-				reject();
+				rej_VIDEO_INIT();
 			},
 		);
 
@@ -912,6 +914,8 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 
 			retval.changeDetected = true;
 		}
+		// let s=peformance.now();
+		// console.log(performance.now()-s);
 	}
 
 	return retval;
@@ -921,150 +925,176 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 
 // Read through VRAM1 and update any tiles that have changed.
 core.FUNCS.graphics.update_layer_BG     = function(){
-	let canvasLayer = core.GRAPHICS["ctx"].BG;
-	let y = 0 ;
-	let x = 0 ;
-	let thisTile;
-	let i;
-	let activeTileset = core.GRAPHICS.activeTileset["BG"];
-	if(!activeTileset){ console.log("ERROR: update_layer_BG: Missing activeTileset!"); return; }
+	return new Promise(function(res,rej){
+		let drawStart_BG;
+		if(JSGAME.SHARED.debug)       { drawStart_BG     = performance.now();      core.GRAPHICS.performance.BG.shift();     }
 
-	let force = core.GRAPHICS.flags.BG_force;
+		if(core.GRAPHICS.flags.BG || core.GRAPHICS.flags.BG_force) {
+			core.GRAPHICS.flags.OUTPUT = true;
+			let canvasLayer = core.GRAPHICS["ctx"].BG;
+			let y = 0 ;
+			let x = 0 ;
+			let thisTile;
+			let i;
+			let activeTileset = core.GRAPHICS.activeTileset["BG"];
+			if(!activeTileset){ console.log("ERROR: update_layer_BG: Missing activeTileset!"); return; }
 
-	// If force then draw EVERYTHING in VRAM1
-	if(force){
-		let len = core.GRAPHICS["VRAM1"].length;
-		for(i=0; i<len; i+=1){
-			// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
-			if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
-			if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
+			let force = core.GRAPHICS.flags.BG_force;
 
-			// Get the tile id at this region of the vram.
-			thisTile = core.GRAPHICS["VRAM1"][i];
+			// If force then draw EVERYTHING in VRAM1
+			if(force){
+				let len = core.GRAPHICS["VRAM1"].length;
+				for(i=0; i<len; i+=1){
+					// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
+					if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
+					if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
 
-			// Write the tile data to the tempCanvas.
-			canvasLayer.drawImage(
-				core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
-				(x*core.SETTINGS.TILE_WIDTH)  << 0,
-				(y*core.SETTINGS.TILE_HEIGHT) << 0
-			);
+					// Get the tile id at this region of the vram.
+					thisTile = core.GRAPHICS["VRAM1"][i];
 
-			// Increment x.
-			x+=1;
+					// Write the tile data to the tempCanvas.
+					canvasLayer.drawImage(
+						core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+						(x*core.SETTINGS.TILE_WIDTH)  << 0,
+						(y*core.SETTINGS.TILE_HEIGHT) << 0
+					);
+
+					// Increment x.
+					x+=1;
+				}
+			}
+
+			// Otherwise only draw what needs to be drawn.
+			else{
+				let len = core.GRAPHICS["VRAM1_TO_WRITE"].length;
+				for(i=0; i<len; i+=1){
+					let coord = core.GRAPHICS["VRAM1_TO_WRITE"][i] ;
+					let x     = coord.x  ;
+					let y     = coord.y  ;
+					let id    = coord.id ;
+
+					// Write the tile data to the tempCanvas.
+					canvasLayer.drawImage(
+						core.GRAPHICS.tiles[ activeTileset ][ id ],
+						(x*core.SETTINGS.TILE_WIDTH)  << 0,
+						(y*core.SETTINGS.TILE_HEIGHT) << 0
+					);
+				}
+			}
+
+			core.GRAPHICS["VRAM1_TO_WRITE"]=[];
 		}
-	}
 
-	// Otherwise only draw what needs to be drawn.
-	else{
-		let len = core.GRAPHICS["VRAM1_TO_WRITE"].length;
-		for(i=0; i<len; i+=1){
-			let coord = core.GRAPHICS["VRAM1_TO_WRITE"][i] ;
-			let x     = coord.x  ;
-			let y     = coord.y  ;
-			let id    = coord.id ;
+		if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.BG.push(performance.now()-drawStart_BG);                   }
 
-			// Write the tile data to the tempCanvas.
-			canvasLayer.drawImage(
-				core.GRAPHICS.tiles[ activeTileset ][ id ],
-				(x*core.SETTINGS.TILE_WIDTH)  << 0,
-				(y*core.SETTINGS.TILE_HEIGHT) << 0
-			);
-		}
-	}
-
-	core.GRAPHICS["VRAM1_TO_WRITE"]=[];
+		res();
+	});
 
 } ;
 // Read through core.GRAPHICS.sprites and update any sprites tiles that have changed.
 core.FUNCS.graphics.update_layer_SPRITE = function(){
 	// GETTING HERE MEANS THAT SOMETHING SPRITE-RELATED HAS CHANGED.
 
-	let canvasLayer = core.GRAPHICS["ctx"].SPRITE;
-	let changes     = core.FUNCS.graphics.getSpriteChanges();
+	return new Promise(function(res,rej){
+		let drawStart_SPRITE;
+		if(JSGAME.SHARED.debug)       { drawStart_SPRITE = performance.now();      core.GRAPHICS.performance.SPRITE.shift(); }
 
-	// Have there been any sprite changes?
-	if(changes.changeDetected){
-		// CLEAR
-		let len1 = changes.clear.length;
-		for(let i=0; i<len1; i+=1){
-			canvasLayer.clearRect(
-				(changes.clear[i].x) ,
-				(changes.clear[i].y) ,
-				core.SETTINGS.TILE_WIDTH,
-				core.SETTINGS.TILE_HEIGHT
-			);
-		}
+		//
+		if(core.GRAPHICS.flags.SPRITE) {
+			let canvasLayer = core.GRAPHICS["ctx"].SPRITE;
+			let changes     = core.FUNCS.graphics.getSpriteChanges();
 
-		// DRAW
-		let len2 = changes.draw.length;
-		for(let i=0; i<len2; i+=1){
-			// Get local copies of the sprite values and flags.
-			thisSprite = core.FUNCS.graphics.getSpriteData( changes.draw[i] );
-
-			// If this sprite is off then skip this sprite.
-			if(thisSprite.SPRITE_OFF){ console.log("sprite was off!"); return; }
-
-			// If the tileset name was not available, skip this sprite.
-			if(!thisSprite.tilesetname){ console.log("tileset name not found!"); return; }
-
-			// Get the canvas for this tile.
-			spriteTileData = core.GRAPHICS.tiles[ thisSprite.tilesetname ][ thisSprite.tileIndex ];
-
-			// Does the 'spriteTileData' need to be flipped?
-			if(thisSprite.SPRITE_FLIP_X || thisSprite.SPRITE_FLIP_Y){
-				let cachedCanvas = false;
-
-				// Check for a cached copy of this flipped tile.
-				cachedCanvas = core.FUNCS.graphics.findFlippedTileInCache(
-					thisSprite.tilesetname   ,
-					thisSprite.tileIndex     ,
-					thisSprite.SPRITE_FLIP_X ,
-					thisSprite.SPRITE_FLIP_Y
-				);
-
-				// We got a cache hit? Good, use that instead of flipping the tile again.
-				if(cachedCanvas !== false){
-					spriteTileData=cachedCanvas;
+			// Have there been any sprite changes?
+			if(changes.changeDetected){
+				// CLEAR
+				let len1 = changes.clear.length;
+				for(let i=0; i<len1; i+=1){
+					canvasLayer.clearRect(
+						(changes.clear[i].x) ,
+						(changes.clear[i].y) ,
+						core.SETTINGS.TILE_WIDTH,
+						core.SETTINGS.TILE_HEIGHT
+					);
 				}
-				// No cache hit. Flip the tile and then add it to the cache.
-				else{
-					// Flip the tile
-					spriteTileData = core.FUNCS.graphics.flipImage_canvas(
-						spriteTileData                     , // Flip this imageData.
-						(thisSprite.SPRITE_FLIP_X) ? 1 : 0 , // Flip on X?
-						(thisSprite.SPRITE_FLIP_Y) ? 1 : 0   // Flip on Y?
+
+				// DRAW
+				let len2 = changes.draw.length;
+				for(let i=0; i<len2; i+=1){
+					// Get local copies of the sprite values and flags.
+					thisSprite = core.FUNCS.graphics.getSpriteData( changes.draw[i] );
+
+					// If this sprite is off then skip this sprite.
+					if(thisSprite.SPRITE_OFF){ console.log("sprite was off!"); return; }
+
+					// If the tileset name was not available, skip this sprite.
+					if(!thisSprite.tilesetname){ console.log("tileset name not found!"); return; }
+
+					// Get the canvas for this tile.
+					spriteTileData = core.GRAPHICS.tiles[ thisSprite.tilesetname ][ thisSprite.tileIndex ];
+
+					// Does the 'spriteTileData' need to be flipped?
+					if(thisSprite.SPRITE_FLIP_X || thisSprite.SPRITE_FLIP_Y){
+						let cachedCanvas = false;
+
+						// Check for a cached copy of this flipped tile.
+						cachedCanvas = core.FUNCS.graphics.findFlippedTileInCache(
+							thisSprite.tilesetname   ,
+							thisSprite.tileIndex     ,
+							thisSprite.SPRITE_FLIP_X ,
+							thisSprite.SPRITE_FLIP_Y
 						);
 
-					// Cache the tile.
-					core.FUNCS.graphics.AddFlippedTileToCache(
-						thisSprite.tilesetname   ,
-						thisSprite.tileIndex     ,
-						thisSprite.SPRITE_FLIP_X ,
-						thisSprite.SPRITE_FLIP_Y ,
-						spriteTileData
+						// We got a cache hit? Good, use that instead of flipping the tile again.
+						if(cachedCanvas !== false){
+							spriteTileData=cachedCanvas;
+						}
+						// No cache hit. Flip the tile and then add it to the cache.
+						else{
+							// Flip the tile
+							spriteTileData = core.FUNCS.graphics.flipImage_canvas(
+								spriteTileData                     , // Flip this imageData.
+								(thisSprite.SPRITE_FLIP_X) ? 1 : 0 , // Flip on X?
+								(thisSprite.SPRITE_FLIP_Y) ? 1 : 0   // Flip on Y?
+								);
+
+							// Cache the tile.
+							core.FUNCS.graphics.AddFlippedTileToCache(
+								thisSprite.tilesetname   ,
+								thisSprite.tileIndex     ,
+								thisSprite.SPRITE_FLIP_X ,
+								thisSprite.SPRITE_FLIP_Y ,
+								spriteTileData
+							);
+
+						}
+					}
+
+					// Draw the tile.
+					canvasLayer.drawImage(
+						spriteTileData,
+						(thisSprite.x) << 0,
+						(thisSprite.y) << 0
 					);
 
 				}
+
+				// Update sprites_prev.
+				core.FUNCS.graphics.update_sprites_prev();
+
+				core.GRAPHICS.flags.OUTPUT = true;
 			}
-
-			// Draw the tile.
-			canvasLayer.drawImage(
-				spriteTileData,
-				(thisSprite.x) << 0,
-				(thisSprite.y) << 0
-			);
-
+			// No sprite changes? Nothing to do.
+			else{
+				// IGNORE
+				//
+			}
 		}
-
-		// Update sprites_prev.
-		core.FUNCS.graphics.update_sprites_prev();
-
-	}
-	// No sprite changes? Nothing to do.
-	else{
-		// IGNORE
 		//
-	}
+
+		if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.SPRITE.push(performance.now()-drawStart_SPRITE);           }
+
+		res();
+	});
 
 } ;
 // Read through VRAM2 and update any tiles that have changed.
@@ -1072,154 +1102,203 @@ core.FUNCS.graphics.update_layer_TEXT   = function(){
 	// core.GRAPHICS.fontSettings.tileset
 	// core.GRAPHICS.fontSettings.map
 
-	let canvasLayer = core.GRAPHICS["ctx"].TEXT;
+	return new Promise(function(res,rej){
+		let drawStart_TEXT;
+		if(JSGAME.SHARED.debug)       { drawStart_TEXT   = performance.now();      core.GRAPHICS.performance.TEXT.shift();   }
 
-	let y = 0 ;
-	let x = 0 ;
-	let thisTile;
-	let i;
-	let activeTileset = core.GRAPHICS.fontSettings.tileset;
+		if(core.GRAPHICS.flags.TEXT || core.GRAPHICS.flags.TEXT_force){
+			core.GRAPHICS.flags.OUTPUT = true;
 
-	if(!activeTileset){ console.log("ERROR: update_layer_TEXT: Missing activeTileset!"); return; }
+			let canvasLayer = core.GRAPHICS["ctx"].TEXT;
 
-	let force = core.GRAPHICS.flags.TEXT_force;
+			let y = 0 ;
+			let x = 0 ;
+			let thisTile;
+			let i;
+			let activeTileset = core.GRAPHICS.fontSettings.tileset;
 
-	// If force then draw EVERYTHING in VRAM2.
-	if(force){
-		// Go through each vram index.
-		let len = core.GRAPHICS["VRAM2"].length;
-		for(i=0; i<len; i+=1){
-			// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
-			if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
-			if(y>=core.SETTINGS.VRAM_TILES_V){ return;    }
+			if(!activeTileset){ console.log("ERROR: update_layer_TEXT: Missing activeTileset!"); return; }
 
-			// Get the tile id at this region of the vram.
-			thisTile      = core.GRAPHICS["VRAM2"][i];
+			let force = core.GRAPHICS.flags.TEXT_force;
 
-			canvasLayer.clearRect(
-				(x*core.SETTINGS.TILE_WIDTH)  << 0,
-				(y*core.SETTINGS.TILE_HEIGHT) << 0,
-				core.SETTINGS.TILE_WIDTH,
-				core.SETTINGS.TILE_HEIGHT
-			);
+			// If force then draw EVERYTHING in VRAM2.
+			if(force){
+				// Go through each vram index.
+				let len = core.GRAPHICS["VRAM2"].length;
+				for(i=0; i<len; i+=1){
+					// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
+					if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
+					if(y>=core.SETTINGS.VRAM_TILES_V){ return;    }
 
-			// Write the tile data to the tempCanvas.
-			canvasLayer.drawImage(
-				core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
-				(x*core.SETTINGS.TILE_WIDTH)  << 0,
-				(y*core.SETTINGS.TILE_HEIGHT) << 0
-			);
+					// Get the tile id at this region of the vram.
+					thisTile      = core.GRAPHICS["VRAM2"][i];
 
-			// Increment x.
-			x+=1;
+					canvasLayer.clearRect(
+						(x*core.SETTINGS.TILE_WIDTH)  << 0,
+						(y*core.SETTINGS.TILE_HEIGHT) << 0,
+						core.SETTINGS.TILE_WIDTH,
+						core.SETTINGS.TILE_HEIGHT
+					);
+
+					// Write the tile data to the tempCanvas.
+					canvasLayer.drawImage(
+						core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+						(x*core.SETTINGS.TILE_WIDTH)  << 0,
+						(y*core.SETTINGS.TILE_HEIGHT) << 0
+					);
+
+					// Increment x.
+					x+=1;
+				}
+			}
+			else{
+				let len = core.GRAPHICS["VRAM2_TO_WRITE"].length;
+				for(i=0; i<len; i+=1){
+					let coord = core.GRAPHICS["VRAM2_TO_WRITE"][i] ;
+					let x     = coord.x  ;
+					let y     = coord.y  ;
+					let id    = coord.id ;
+
+					canvasLayer.clearRect(
+						(x*core.SETTINGS.TILE_WIDTH)  << 0,
+						(y*core.SETTINGS.TILE_HEIGHT) << 0,
+						core.SETTINGS.TILE_WIDTH,
+						core.SETTINGS.TILE_HEIGHT
+					);
+
+					// Write the tile data to the tempCanvas.
+					canvasLayer.drawImage(
+						core.GRAPHICS.tiles[ activeTileset ][ id ],
+						(x*core.SETTINGS.TILE_WIDTH)  << 0,
+						(y*core.SETTINGS.TILE_HEIGHT) << 0
+					);
+				}
+			}
+
+		core.GRAPHICS["VRAM2_TO_WRITE"]=[];
+
 		}
-	}
-	else{
-		let len = core.GRAPHICS["VRAM2_TO_WRITE"].length;
-		for(i=0; i<len; i+=1){
-			let coord = core.GRAPHICS["VRAM2_TO_WRITE"][i] ;
-			let x     = coord.x  ;
-			let y     = coord.y  ;
-			let id    = coord.id ;
 
-			canvasLayer.clearRect(
-				(x*core.SETTINGS.TILE_WIDTH)  << 0,
-				(y*core.SETTINGS.TILE_HEIGHT) << 0,
-				core.SETTINGS.TILE_WIDTH,
-				core.SETTINGS.TILE_HEIGHT
-			);
+		if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.TEXT.push(performance.now()-drawStart_TEXT);               }
 
-			// Write the tile data to the tempCanvas.
-			canvasLayer.drawImage(
-				core.GRAPHICS.tiles[ activeTileset ][ id ],
-				(x*core.SETTINGS.TILE_WIDTH)  << 0,
-				(y*core.SETTINGS.TILE_HEIGHT) << 0
-			);
-		}
-	}
-
-	core.GRAPHICS["VRAM2_TO_WRITE"]=[];
+		res();
+	});
 } ;
-//
-core.FUNCS.graphics.update_layer_FADE   = function(){
-	let layer = core.GRAPHICS["ctx"].FADE;
-} ;
+
 // Combine each layer and then draw to the output canvas.
 core.FUNCS.graphics.update_layer_OUTPUT = function(){
 	// Combine all layers into output and then draw the attached DOM canvas.
 
-	// Create the temp output.
-	let tempOutput     = document.createElement("canvas");
-	let tempOutput_ctx = tempOutput.getContext('2d', { alpha: true });
-	// let tempOutput_ctx = tempOutput.getContext('2d', { alpha: false });
-	tempOutput.width   = core.GRAPHICS["canvas"].OUTPUT.width;
-	tempOutput.height  = core.GRAPHICS["canvas"].OUTPUT.height;
+	return new Promise(function(res,rej){
+		let drawStart_OUTPUT;
+		if(JSGAME.SHARED.debug)       { drawStart_OUTPUT = performance.now();      core.GRAPHICS.performance.OUTPUT.shift(); }
+		let COMPLETED = function(){
+			if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.OUTPUT.push(performance.now()-drawStart_OUTPUT);           }
 
-	// Combine the layers into the temp output.
-	if(core.GRAPHICS.debug.flags.BG    ){ tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].BG    , 0, 0) ; } // BG
-	if(core.GRAPHICS.debug.flags.SPRITE){ tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].SPRITE, 0, 0) ; } // SPRITE
-	if(core.GRAPHICS.debug.flags.TEXT  ){ tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].TEXT  , 0, 0) ; } // TEXT
-	if(core.GRAPHICS.debug.flags.FADE  ){ tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].FADE  , 0, 0) ; } // FADE
+			// Clear the draw flags.
+			core.GRAPHICS.flags.BG     = false ;
+			core.GRAPHICS.flags.SPRITE = false ;
+			core.GRAPHICS.flags.TEXT   = false ;
+			core.GRAPHICS.flags.FADE   = false ;
+			core.GRAPHICS.flags.OUTPUT = false ;
 
-	// Write the combined layers to the attached DOM canvas.
-	// core.GRAPHICS["ctx"].OUTPUT.clearRect(0, 0, core.GRAPHICS["ctx"].OUTPUT.canvas.width, core.GRAPHICS["ctx"].OUTPUT.canvas.height);
-	if(core.GRAPHICS.debug.flags.OUTPUT){ core.GRAPHICS["ctx"].OUTPUT.drawImage(tempOutput,0,0); } // OUTPUT
+			// Clear the force flags.
+			core.GRAPHICS.flags.BG_force     = false ;
+			core.GRAPHICS.flags.SPRITE_force = false ;
+			core.GRAPHICS.flags.TEXT_force   = false ;
+			core.GRAPHICS.flags.OUTPUT_force = false ;
+
+			res();
+		};
+
+		// Force the output flag if the fader is active.
+		if(core.GRAPHICS.FADER.fadeActive){ core.GRAPHICS.flags.OUTPUT=true; }
+
+		if(core.GRAPHICS.flags.OUTPUT || core.GRAPHICS.flags.OUTPUT_force){
+			// Create the temp output.
+			let tempOutput     = document.createElement("canvas");
+			let tempOutput_ctx = tempOutput.getContext('2d', { alpha: true });
+			tempOutput.width   = core.GRAPHICS["canvas"].OUTPUT.width;
+			tempOutput.height  = core.GRAPHICS["canvas"].OUTPUT.height;
+
+			// Combine the individual layers.
+			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].BG    , 0, 0) ; // BG
+			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].SPRITE, 0, 0) ; // SPRITE
+			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].TEXT  , 0, 0) ; // TEXT
+
+			// Process the tempOutput further before writing it?
+			core.GRAPHICS.FADER.FUNCS.ProcessFading(tempOutput_ctx).then(
+				function(){
+					// Combine the layers into the temp output.
+					// core.GRAPHICS["ctx"].OUTPUT.clearRect(0, 0, tempOutput.width, tempOutput.height);
+					core.GRAPHICS["ctx"].OUTPUT.drawImage(tempOutput,0,0); // OUTPUT
+					COMPLETED();
+				},
+				function(err){ console.log("ERR:", err); }
+			);
+
+
+		}
+		else{
+			COMPLETED();
+		}
+
+	});
+
 } ;
+
 //
 core.FUNCS.graphics.update_allLayers    = function(){
+	// let drawStart_update_allLayers;
+	// if(JSGAME.SHARED.debug)       { drawStart_update_allLayers = performance.now();      core.GRAPHICS.performance.update_allLayers.shift(); }
+	// if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.update_allLayers.push(performance.now()-drawStart_update_allLayers);           }
+
+	// While this flag is set, main will not run the logic loop or another graphics loop.
 	core.GRAPHICS.flags.INLAYERUPDATE=true;
-	let drawStart_BG;
-	let drawStart_SPRITE;
-	let drawStart_TEXT;
-	let drawStart_FADE;
-	let drawStart_OUTPUT;
 
-	// Will there be an output drawing?
-	if(
-		(core.GRAPHICS.flags.BG     || core.GRAPHICS.flags.BG_force     ) ||
-		(core.GRAPHICS.flags.SPRITE || 0 ) ||
-		(core.GRAPHICS.flags.TEXT   || core.GRAPHICS.flags.TEXT_force   ) ||
-		(core.GRAPHICS.flags.FADE   || 0   )
-	){
-		core.GRAPHICS.flags.OUTPUT=true;
-	}
-	else{ core.GRAPHICS.flags.OUTPUT=false; }
+	// core.GRAPHICS.flags.BG     = true ;
+	// core.GRAPHICS.flags.SPRITE = true ;
+	// core.GRAPHICS.flags.TEXT   = true ;
+	// core.GRAPHICS.flags.FADE   = true ;
+	// core.GRAPHICS.flags.OUTPUT = true ;
 
-	// core.GRAPHICS.flags.OUTPUT=true;
+	// core.GRAPHICS.flags.BG     = false ;
+	// core.GRAPHICS.flags.SPRITE = false ;
+	// core.GRAPHICS.flags.TEXT   = false ;
+	// core.GRAPHICS.flags.FADE   = false ;
+	// core.GRAPHICS.flags.OUTPUT = false ;
 
-	// Does the BG layer need an update?
-	if(JSGAME.SHARED.debug)       { drawStart_BG     = performance.now();      core.GRAPHICS.performance.BG.shift(); }
-	if(core.GRAPHICS.flags.BG || core.GRAPHICS.flags.BG_force)         { core.FUNCS.graphics.update_layer_BG();     core.GRAPHICS.flags.BG     = false ;  }
-	if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.BG.push(performance.now()-drawStart_BG);               }
+	// Make sure the draw flags match if the corresponding force flag is set.
+	if(core.GRAPHICS.flags.BG_force)     { core.GRAPHICS.flags.BG     = true ; }
+	if(core.GRAPHICS.flags.SPRITE_force) { core.GRAPHICS.flags.SPRITE = true ; }
+	if(core.GRAPHICS.flags.TEXT_force)   { core.GRAPHICS.flags.TEXT   = true ; }
+	if(core.GRAPHICS.flags.OUTPUT_force) { core.GRAPHICS.flags.OUTPUT = true ; }
 
-	// Does the SPRITE layer need an update?
-	if(JSGAME.SHARED.debug)       { drawStart_SPRITE = performance.now();      core.GRAPHICS.performance.SPRITE.shift(); }
-	if(core.GRAPHICS.flags.SPRITE){ core.FUNCS.graphics.update_layer_SPRITE(); core.GRAPHICS.flags.SPRITE = false ;      }
-	if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.SPRITE.push(performance.now()-drawStart_SPRITE);           }
 
-	// Does the TEXT layer need an update?
-	if(JSGAME.SHARED.debug)       { drawStart_TEXT   = performance.now();      core.GRAPHICS.performance.TEXT.shift(); }
-	if(core.GRAPHICS.flags.TEXT || core.GRAPHICS.flags.TEXT_force)     { core.FUNCS.graphics.update_layer_TEXT();   core.GRAPHICS.flags.TEXT   = false ;    }
-	if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.TEXT.push(performance.now()-drawStart_TEXT);             }
 
-	// Does the FADE layer need an update?
-	if(JSGAME.SHARED.debug)       { drawStart_FADE   = performance.now();      core.GRAPHICS.performance.FADE.shift(); }
-	if(core.GRAPHICS.flags.FADE)  { core.FUNCS.graphics.update_layer_FADE();   core.GRAPHICS.flags.FADE   = false ;    }
-	if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.FADE.push(performance.now()-drawStart_FADE);             }
+	// If an update is not needed then the promise will resolve right away.
+	let proms = [
+		core.FUNCS.graphics.update_layer_BG()     ,
+		core.FUNCS.graphics.update_layer_SPRITE() ,
+		core.FUNCS.graphics.update_layer_TEXT()   ,
+	];
 
-	// Does the OUTPUT layer need an update?
-	if(JSGAME.SHARED.debug)       { drawStart_OUTPUT = performance.now();      core.GRAPHICS.performance.OUTPUT.shift(); }
-	if(core.GRAPHICS.flags.OUTPUT || core.GRAPHICS.flags.OUTPUT_force) { core.FUNCS.graphics.update_layer_OUTPUT(); core.GRAPHICS.flags.OUTPUT = false ;      }
-	if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.OUTPUT.push(performance.now()-drawStart_OUTPUT);           }
+	Promise.all(proms).then(
+		function(){
+			// If the fade flag is set then make sure that the OUTPUT flag is also set.
+			// if(core.GRAPHICS.flags.FADE)   { core.GRAPHICS.flags.OUTPUT = true ; }
 
-	// Clear the force flags.
-	core.GRAPHICS.flags.BG_force     = false ;
-	core.GRAPHICS.flags.SPRITE_force = false ;
-	core.GRAPHICS.flags.TEXT_force   = false ;
-	core.GRAPHICS.flags.FADE_force   = false ;
-	core.GRAPHICS.flags.OUTPUT_force = false ;
+			core.FUNCS.graphics.update_layer_OUTPUT().then(
+				function(){
+					// Allowing another game loop.
+					core.GRAPHICS.flags.INLAYERUPDATE=false;
+				},
+				function(err){ console.log("ERR:", err);  }
+			);
+		},
+		function(err){ console.log("ERR:", err); },
+	);
 
-	core.GRAPHICS.flags.INLAYERUPDATE=false;
 };
 
 // *** VRAM update functions.
@@ -1610,98 +1689,214 @@ core.FUNCS.graphics.DrawMap_customDimensions = function(x, y, w, h, map, vram_st
 
 // *** FADE update functions. ***
 
-//
-core.FUNCS.graphics.FADER.ProcessFading = function(){
-	// if(this.fadeActive==true){
-	// 	if(this.currFadeFrame==0){
-	// 		this.currFadeFrame=this.fadeSpeed;
+// Processes the fade.
+core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
+	// core.GRAPHICS.flags.OUTPUT = true ;
 
-	// 		// Save the previous global color alter values.
-	// 		app.kernel.prev_maxRed   = app.kernel.maxRed  ;
-	// 		app.kernel.prev_maxGreen = app.kernel.maxGreen;
-	// 		app.kernel.prev_maxBlue  = app.kernel.maxBlue ;
+	return new Promise(function(res,rej){
+			let drawStart_FADE;
+			if(JSGAME.SHARED.debug)       { drawStart_FADE   = performance.now();      core.GRAPHICS.performance.FADE.shift();   }
 
-	// 		// Adjust the global color alter values.
-	// 		app.kernel.maxRed   = this.fader[this.fadeStep].r ;
-	// 		app.kernel.maxGreen = this.fader[this.fadeStep].g ;
-	// 		app.kernel.maxBlue  = this.fader[this.fadeStep].b ;
+			let lastIndex = core.GRAPHICS.FADER.CONSTS["FADER_STEPS"] -1 ;
 
-	// 		if(this.fadeDir==  1){ this.fadeStep+=this.fadeDir; }
+			//
+			let COMPLETED = function(){
+				// If there was a fadeOut and the stayDark flag is set then draw a black screen.
+				if(core.GRAPHICS.FADER.stayDark){
+					ctx.fillStyle = "#000022";
+					ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+				}
 
-	// 		if(this.fadeStep==0 || this.fadeStep==(this.FADER_STEPS)){
-	// 			this.fadeActive=false;
+				if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.FADE.push(performance.now()-drawStart_FADE);           }
 
-	// 			if(this.fadeDir==  1){ this.lastFadeFrame=true; return; }
-	// 			if(this.fadeDir== -1){ this.lastFadeFrame=true; return; }
-	// 		}
+				res();
+			};
+			//
+			let fadeIsInactive      = function(){
+				COMPLETED();
+				return;
+			};
+			//
+			let fadeOutHasCompleted = function(){
+				// Return the darkened version.
 
-	// 		if(this.fadeDir== -1){ this.fadeStep+=this.fadeDir; }
+				// Make sure that OUTPUT is true.
+				core.GRAPHICS.flags.OUTPUT = true ;
 
-	// 	}
-	// 	else{
-	// 		this.currFadeFrame--;
-	// 	}
-	// }
+				// Just draw what already exists for the FADE layer.
+				ctx.drawImage(core.GRAPHICS["canvas"].FADE, 0,0);
+				core.GRAPHICS["ctx"].FADE.drawImage(ctx.canvas, 0,0);
+
+				core.GRAPHICS.FADER.stayDark=true;
+				core.GRAPHICS.FADER.fadeActive=false;
+
+				core.GRAPHICS.FADER.blocking=false;
+
+				COMPLETED();
+				return;
+
+			};
+			//
+			let fadeInHasCompleted  = function(){
+				// Make sure that OUTPUT is true.
+				core.GRAPHICS.flags.OUTPUT = true ;
+
+				// No changes. No change in the passed canvas.
+				// Fading is done!
+				core.GRAPHICS.FADER.stayDark=false;
+				core.GRAPHICS.FADER.fadeActive=false;
+
+				core.GRAPHICS.FADER.blocking=false;
+
+				COMPLETED();
+				return;
+			};
+			//
+			let doNewFade          = function(fadeStep){
+				let width  = ctx.canvas.width;
+				let height = ctx.canvas.height;
+
+				let img      = ctx.getImageData(0, 0, width, height);
+
+				core.WORKERS.FADE.onmessage=function(e){
+					core.WORKERS.FADE.onmessage=null;
+
+					let arr = new Uint8ClampedArray( e.data.modbuf );
+					let processedImageData = new ImageData(arr, width, height);
+
+					// Copy the image to the FADE canvas (can be used later if the other layers do not change.)
+					core.GRAPHICS["ctx"].FADE.putImageData(processedImageData, 0,0);
+
+					// Copy the image to the passed ctx.
+					ctx.putImageData(processedImageData, 0,0);
+
+					// Reset the counter.
+					core.GRAPHICS.FADER.currFadeFrame=core.GRAPHICS.FADER.fadeSpeed;
+
+					// Record previous fade step.
+					core.GRAPHICS.FADER.prevFadeStep = fadeStep ;
+
+					// Is this the end of a fadeOut?
+					if      ( core.GRAPHICS.FADER.fadeDir == -1 && core.GRAPHICS.FADER.fadeStep==0         ){ fadeOutHasCompleted(); }
+
+					// Is this the end of a fadeIn?
+					else if ( core.GRAPHICS.FADER.fadeDir ==  1 && core.GRAPHICS.FADER.fadeStep==lastIndex ){ fadeInHasCompleted(); }
+
+					// Fade steps still remain!
+					else{
+						// Adjust to the new fade index.
+						core.GRAPHICS.FADER.fadeStep += core.GRAPHICS.FADER.fadeDir ;
+
+						COMPLETED();
+
+						return;
+					}
+
+				};
+
+				core.WORKERS.FADE   .postMessage(
+					{
+						"func"     : "fade",
+						"maxRed"   : core.GRAPHICS.FADER.CONSTS["fader"][fadeStep].r ,
+						"maxGreen" : core.GRAPHICS.FADER.CONSTS["fader"][fadeStep].g ,
+						"maxBlue"  : core.GRAPHICS.FADER.CONSTS["fader"][fadeStep].b ,
+						"buf"      : img.data.buffer,
+					} ,
+					[
+						img.data.buffer
+					]
+				);
+
+			};
+			//
+			let addExistingFade    = function(){
+				let BG     = core.GRAPHICS.flags.BG     ;
+				let SPRITE = core.GRAPHICS.flags.SPRITE ;
+				let TEXT   = core.GRAPHICS.flags.TEXT   ;
+				// let FADE   = core.GRAPHICS.flags.FADE   ;
+				// let OUTPUT = core.GRAPHICS.flags.OUTPUT ;
+
+				// If the BG, SPRITE, and TEXT layers have NOT changed then we can just redraw from cache.
+				if( !BG && !SPRITE && !TEXT ){
+					// Update the passed ctx with the cached layer.
+					ctx.drawImage(core.GRAPHICS["canvas"].FADE, 0,0);
+					COMPLETED();
+					return;
+				}
+
+				// Otherwise, a new fade must be calculated.
+				else{
+					doNewFade( core.GRAPHICS.FADER.fadeStep );
+					return;
+				}
+
+			};
+
+			// Is the fader active?
+			if(core.GRAPHICS.FADER.fadeActive==false){ fadeIsInactive(); return; }
+			// Yes the fader is active.
+			else{
+				// Shortened variables (don't use these to update with.)
+				let fadeStep     = core.GRAPHICS.FADER.fadeStep    ;
+				let prevFadeStep = core.GRAPHICS.FADER.prevFadeStep;
+
+				// Will an adjustment need to be done? (Checking for a change in fadeStep.)
+				if( prevFadeStep != fadeStep ){
+					// Are we ready for the next fade frame?
+					if(core.GRAPHICS.FADER.currFadeFrame == 0){
+						// Do the fade.
+						doNewFade(fadeStep);
+						return;
+					}
+
+					// No? Decrement the counter.
+					else{
+						core.GRAPHICS.FADER.currFadeFrame -= 1;
+
+						// Can we send the existing FADE canvas or do we need to update first?
+						if(core.GRAPHICS.flags.OUTPUT){ addExistingFade(); return; }
+					}
+				}
+				else{ addExistingFade(); return; }
+
+			}
+
+	});
 };
-//
-core.FUNCS.graphics.FADER.doFade        = function(speed, blocking){
-	// this.lastFadeFrame = false;
-	// this.stayDark      = false;
+// Starts the fade.
+core.GRAPHICS.FADER.FUNCS.doFade        = function(speed, blocking){
+	// console.log("doFade: start");
 
-	// // Save the previous global color alter values.
-	// app.kernel.prev_maxRed   = app.kernel.maxRed  ;
-	// app.kernel.prev_maxGreen = app.kernel.maxGreen;
-	// app.kernel.prev_maxBlue  = app.kernel.maxBlue ;
+	core.GRAPHICS.FADER.fadeIn_complete  = false;
+	core.GRAPHICS.FADER.fadeOut_complete = false;
 
-	// this.fadeSpeed     = speed;
-	// this.currFadeFrame = 0;
-	// this.fadeActive    = true;
-	// this.blocking      = blocking;
+	// core.GRAPHICS.FADER.lastFadeFrame = false;
+	core.GRAPHICS.FADER.stayDark      = false;
+
+	core.GRAPHICS.FADER.fadeActive    = true     ;
+	core.GRAPHICS.FADER.currFadeFrame = 0        ; //
+	core.GRAPHICS.FADER.fadeSpeed     = speed    ;
+	core.GRAPHICS.FADER.blocking      = blocking ;
 };
-//
-core.FUNCS.graphics.FADER.FadeIn        = function(speed, blocking){
-	console.log("FadeIn");
+// Sets up a fade out.
+core.GRAPHICS.FADER.FUNCS.FadeIn        = function(speed, blocking){
+	// console.log("FadeIn");
 
-	// // app.kernel.funcs.fader.FadeIn(1, false);
+	// if(speed==0){ return; }
 
-	// if(speed==0){
-	// 	// Save the previous global color alter values.
-	// 	app.kernel.prev_maxRed   = app.kernel.maxRed  ;
-	// 	app.kernel.prev_maxGreen = app.kernel.maxGreen;
-	// 	app.kernel.prev_maxBlue  = app.kernel.maxBlue ;
-
-	// 	// Adjust the global color alter values.
-	// 	app.kernel.maxRed   = 100 ;
-	// 	app.kernel.maxGreen = 100 ;
-	// 	app.kernel.maxBlue  = 100 ;
-
-	// 	return;
-	// }
-	// this.fadeStep = 1;
-	// this.fadeDir  = 1;
-	// this.doFade(speed, blocking);
+	core.GRAPHICS.FADER.prevFadeStep = 99;
+	core.GRAPHICS.FADER.fadeStep     = 0;
+	core.GRAPHICS.FADER.fadeDir      = 1;
+	core.GRAPHICS.FADER.FUNCS.doFade(speed, blocking);
 };
-//
-core.FUNCS.graphics.FADER.FadeOut       = function(speed, blocking){
-	console.log("FadeOut");
+// Sets up a fade in.
+core.GRAPHICS.FADER.FUNCS.FadeOut       = function(speed, blocking){
+	// console.log("FadeOut");
 
-	// // app.kernel.funcs.fader.FadeOut(1, false);
+	// if(speed==0){ return; }
 
-	// if(speed==0){
-	// 	// Save the previous global color alter values.
-	// 	app.kernel.prev_maxRed   = app.kernel.maxRed  ;
-	// 	app.kernel.prev_maxGreen = app.kernel.maxGreen;
-	// 	app.kernel.prev_maxBlue  = app.kernel.maxBlue ;
-
-	// 	// Adjust the global color alter values.
-	// 	app.kernel.maxRed   = 0 ;
-	// 	app.kernel.maxGreen = 0 ;
-	// 	app.kernel.maxBlue  = 0 ;
-
-	// 	return;
-	// }
-
-	// this.fadeStep=this.FADER_STEPS-1;
-	// this.fadeDir=-1;
-	// this.doFade(speed, blocking);
+	core.GRAPHICS.FADER.prevFadeStep = 99;
+	core.GRAPHICS.FADER.fadeStep     = core.GRAPHICS.FADER.CONSTS["FADER_STEPS"]-1;
+	core.GRAPHICS.FADER.fadeDir      = -1;
+	core.GRAPHICS.FADER.FUNCS.doFade(speed, blocking);
 };

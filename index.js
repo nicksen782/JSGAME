@@ -9,6 +9,117 @@ JSGAME.FLAGS={
 };
 
 JSGAME.SHARED={
+	// Function for handling time testing.
+	PERFORMANCE : {
+		//
+		stamps_start : {
+		},
+		//
+		stamps_end : {
+		},
+		//
+		key_times : {
+		},
+
+		// Clear all stamps.
+		clearAll : function(){
+			this.stamps_start = {};
+			this.stamps_end   = {};
+			this.key_times    = {};
+		},
+		//
+		stamp : function(key, startOrEnd){
+			if     (startOrEnd=="START"){
+				this.stamps_start[key] = performance.now();
+			}
+			else if(startOrEnd=="END"  ){
+				this.stamps_end[key] = performance.now();
+				this.key_times[key]  = this.stamps_end[key] - this.stamps_start[key];
+			}
+		},
+		//
+		isUpperCase : function (str) { return str === str.toUpperCase(); },
+		//
+		output : function(keyArray){
+			let _TOTALTIME = 0;
+			let perf={ "INDIVIDUAL":{}, "GROUP":{}, "GROUP_ALL":0 };
+			let keys;
+
+			//
+			if(keyArray=="ALL_KEYS" || !keyArray){ keys = Object.keys(JSGAME.SHARED.PERFORMANCE.key_times); keys.sort(); }
+			else                    { keys = keyArray; }
+
+			// Determine longest key name.
+			let pad_len_key = 0;
+			for(let i=0; i<keys.length; i+=1){
+				let key = keys[i];
+				if(key.length > pad_len_key){ pad_len_key = key.length; }
+			}
+
+			//
+			for(let i=0; i<keys.length; i+=1){
+				let key = keys[i];
+
+				//
+				if( this.isUpperCase(key) ){
+					_TOTALTIME += this.key_times[ key ];
+					perf.GROUP[key.padEnd(pad_len_key, " ") ] = (this.key_times[ key ].toFixed(3));
+				}
+				//
+				else{
+					perf.INDIVIDUAL[key.padEnd(pad_len_key, " ") ] = (this.key_times[ key ].toFixed(3));
+				}
+			}
+
+			// Determine the longest time length (as string of the time.)
+			let pad_len_timestring = 0;
+			keys2 = Object.keys(perf.GROUP);
+			keys3 = Object.keys(perf.INDIVIDUAL);
+			for(let i=0; i<keys2.length; i+=1){
+				let key = keys2[i];
+				if(perf.GROUP[key].length > pad_len_timestring){ pad_len_timestring = perf.GROUP[key].length; }
+			}
+			for(let i=0; i<keys2.length; i+=1){
+				let key = keys2[i];
+				perf.GROUP[key] = perf.GROUP[key].padStart(pad_len_timestring, " ");
+			}
+			for(let i=0; i<keys3.length; i+=1){
+				let key = keys3[i];
+				if(perf.INDIVIDUAL[key].length > pad_len_timestring){ pad_len_timestring = perf.INDIVIDUAL[key].length; }
+			}
+			for(let i=0; i<keys3.length; i+=1){
+				let key = keys3[i];
+				perf.INDIVIDUAL[key] = perf.INDIVIDUAL[key].padStart(pad_len_timestring, " ");
+			}
+
+			perf.GROUP_ALL = _TOTALTIME.toFixed(3).padStart(pad_len_timestring, " ");
+
+			console.log(
+				"PERFORMANCE VALUES:",
+				"\n  GROUP_ALL  : ", JSON.stringify(perf.GROUP_ALL , null,2) ,
+				"\n  GROUP      : ", JSON.stringify(perf.GROUP     , null,2) ,
+				"\n  INDIVIDUAL : ", JSON.stringify(perf.INDIVIDUAL, null,2) ,
+				""
+			);
+
+		},
+
+		__test : function(){
+			JSGAME.SHARED.PERFORMANCE.stamp("__test1","START");
+			JSGAME.SHARED.PERFORMANCE.stamp("__test222","START");
+
+			setTimeout(function(){
+				JSGAME.SHARED.PERFORMANCE.stamp("__test1","END");
+				JSGAME.SHARED.PERFORMANCE.stamp("__test222","END");
+
+				// JSGAME.SHARED.PERFORMANCE.output("");
+				// JSGAME.SHARED.PERFORMANCE.output([]);
+				// JSGAME.SHARED.PERFORMANCE.output("ALL_KEYS");
+				// JSGAME.SHARED.PERFORMANCE.output( ["__test222", "__test1"] );
+			}, 500);
+		},
+	},
+
 	// Set the pixelated settings for a canvas.
 	setpixelated       : function(canvas){
 		// https://stackoverflow.com/a/13294650
@@ -569,8 +680,8 @@ JSGAME.INIT={
 					let button = dd.getAttribute("button");
 
 					// Save the unique key and button values.
-					if( JSGAME.consts.allowedKeys   .indexOf(kb)    ==-1 ) { JSGAME.consts.allowedKeys   .push(kb); }
-					if( JSGAME.consts.allowedButtons.indexOf(button)==-1 ) { JSGAME.consts.allowedButtons.push(button); }
+					if( JSGAME.consts.allowedKeys   .indexOf(kb)    == -1 ) { JSGAME.consts.allowedKeys   .push(kb); }
+					if( JSGAME.consts.allowedButtons.indexOf(button)== -1 ) { JSGAME.consts.allowedButtons.push(button); }
 
 					// Set the "pad" attribute on the button.
 					dd.setAttribute("pad", pad);
@@ -607,43 +718,14 @@ JSGAME.INIT={
 					function(res){
 						console.log("GAME CORES ARE READY");
 
-						JSGAME.INIT.PERFORMANCE();
+						JSGAME.SHARED.PERFORMANCE.output();
+						JSGAME.SHARED.PERFORMANCE.clearAll();
 					},
 					function(err){ console.error("ERROR: ", err); }
 				);
 			}
 		);
 
-	},
-	// PERFORMANCE
-	PERFORMANCE : function(){
-		// PERFORMANCE:
-		let isUpperCase = function (str) { return str === str.toUpperCase(); }
-		let _FULLSETUP = 0;
-		let perf={ "PARTS":{}, "CORES":{}, "CORE_ALL":0 };
-		let keys = Object.keys(JSGAME.CORE_SETUP_PERFORMANCE.times);
-		keys.sort();
-
-		for(let i=0; i<keys.length; i+=1){
-			let key = keys[i];
-			//
-			if( isUpperCase(key) ){
-				_FULLSETUP += JSGAME.CORE_SETUP_PERFORMANCE.times[ key ];
-				perf.CORES[key] = (JSGAME.CORE_SETUP_PERFORMANCE.times[ key ].toFixed(3)).padStart(9, " ");
-			}
-			else{
-				perf.PARTS[key.padEnd(32, "_")] = (JSGAME.CORE_SETUP_PERFORMANCE.times[ key ].toFixed(3)).padStart(9, " ");
-			}
-		}
-		perf.CORE_ALL = _FULLSETUP.toFixed(3).padStart(9, " ");
-
-		console.log(
-			"CORE_SETUP_PERFORMANCE:",
-			"\n  CORE_ALL :", JSON.stringify(perf.CORE_ALL,null,2),
-			"\n  CORES    :", JSON.stringify(perf.CORES,null,2),
-			"\n  PARTS    :", JSON.stringify(perf.PARTS,null,2),
-		);
-		JSGAME.CORE_SETUP_PERFORMANCE.times._FULLSETUP = _FULLSETUP;
 	},
 };
 
@@ -972,11 +1054,3 @@ JSGAME.GUI={
 	},
 
 };
-
-
-
-
-
-
-
-

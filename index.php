@@ -499,8 +499,12 @@
 						// Output the SVG.
 						for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
 							$class="";
-							if     ($PHP_VARS['numGamepads']==1){ $class="oneGamepad"; }
-							else if($PHP_VARS['numGamepads']==2){ $class="twoGamepads"; }
+							if($debug){ $class = "twoGamepads";}
+							else{
+								if     ($PHP_VARS['numGamepads']==1){ $class="oneGamepad"; }
+								else if($PHP_VARS['numGamepads']==2){ $class="twoGamepads"; }
+							}
+
 							echo "<div class='".$class." gamepad gamepad_nes noSelect2' pad='".($i+1)."'>";
 							require "gamepadconfigs/gamepad_nes.svg";
 							echo "</div>";
@@ -514,8 +518,12 @@
 						// Output the SVG.
 						for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
 							$class="";
-							if     ($PHP_VARS['numGamepads']==1){ $class="oneGamepad"; }
-							else if($PHP_VARS['numGamepads']==2){ $class="twoGamepads"; }
+							if($debug){ $class = "twoGamepads";}
+							else{
+								if     ($PHP_VARS['numGamepads']==1){ $class="oneGamepad"; }
+								else if($PHP_VARS['numGamepads']==2){ $class="twoGamepads"; }
+							}
+
 							echo "<div class='".$class." gamepad gamepad_snes noSelect2' pad='".($i+1)."'>";
 							require "gamepadconfigs/gamepad_snes.svg";
 							echo "</div>";
@@ -548,42 +556,34 @@
 		if($_GET["hidden"]=="true"){
 		?>
 		<style>
-			.hiddenOpacityButtons{ opacity: 0.10; }
+			.hiddenOpacityButtons{ opacity: 0.25; }
 			.hiddenOpacityButtons.active{ background-color:gold; }
 		</style>
 
-		<div style="position: absolute; top: 0px; left: 0px;">
-
-			<button class="hiddenOpacityButtons" id="O_0_01" onclick='opacityAdjust(0.01, this);'>OPACITY: 0.01</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_05" onclick='opacityAdjust(0.05, this);'>OPACITY: 0.05</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_10" onclick='opacityAdjust(0.10, this);'>OPACITY: 0.10</button><br> <!-- <br> -->
+		<div style="position: absolute; top: 0px; left: 0px; ">
+			<button class="hiddenOpacityButtons" id="O_0_000" onclick='opacityAdjust(0.000, this);'>O :: 0.000</button><br>
 			<br>
-			<button class="hiddenOpacityButtons" id="O_0_15" onclick='opacityAdjust(0.15, this);'>OPACITY: 0.15</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_20" onclick='opacityAdjust(0.20, this);'>OPACITY: 0.20</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_25" onclick='opacityAdjust(0.25, this);'>OPACITY: 0.25</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_30" onclick='opacityAdjust(0.30, this);'>OPACITY: 0.30</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_35" onclick='opacityAdjust(0.35, this);'>OPACITY: 0.35</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_40" onclick='opacityAdjust(0.40, this);'>OPACITY: 0.40</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_45" onclick='opacityAdjust(0.45, this);'>OPACITY: 0.45</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_50" onclick='opacityAdjust(0.50, this);'>OPACITY: 0.50</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_55" onclick='opacityAdjust(0.55, this);'>OPACITY: 0.55</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_60" onclick='opacityAdjust(0.60, this);'>OPACITY: 0.60</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_65" onclick='opacityAdjust(0.65, this);'>OPACITY: 0.65</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_70" onclick='opacityAdjust(0.70, this);'>OPACITY: 0.70</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_75" onclick='opacityAdjust(0.75, this);'>OPACITY: 0.75</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_80" onclick='opacityAdjust(0.80, this);'>OPACITY: 0.80</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_85" onclick='opacityAdjust(0.85, this);'>OPACITY: 0.85</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_90" onclick='opacityAdjust(0.90, this);'>OPACITY: 0.90</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_0_95" onclick='opacityAdjust(0.95, this);'>OPACITY: 0.95</button><br> <!-- <br> -->
-			<button class="hiddenOpacityButtons" id="O_1_00" onclick='opacityAdjust(1.00, this);'>OPACITY: 1.00</button><br> <!-- <br> -->
 
+			<button class="hiddenOpacityButtons" id="O_0_025" onclick='opacityAdjust(0.025, this);'>O :: 0.025</button><br>
+			<button class="hiddenOpacityButtons" id="O_0_050" onclick='opacityAdjust(0.050, this);'>O :: 0.050</button><br>
+			<button class="hiddenOpacityButtons" id="O_0_100" onclick='opacityAdjust(0.100, this);'>O :: 0.100</button><br>
+			<br>
 
+			<button class="hiddenOpacityButtons" id="O_0_150" onclick='opacityAdjust(0.150, this);'>O :: 0.150</button><br>
+			<button class="hiddenOpacityButtons" id="O_0_200" onclick='opacityAdjust(0.200, this);'>O :: 0.200</button><br>
+			<button class="hiddenOpacityButtons" id="O_0_250" onclick='opacityAdjust(0.250, this);'>O :: 0.250</button><br>
+			<button class="hiddenOpacityButtons" id="O_0_500" onclick='opacityAdjust(0.500, this);'>O :: 0.500</button><br>
+			<button class="hiddenOpacityButtons" id="O_0_750" onclick='opacityAdjust(0.750, this);'>O :: 0.750</button><br>
+			<br>
+
+			<button class="hiddenOpacityButtons" id="O_1_000" onclick='opacityAdjust(1.000, this);'>O :: 1.000</button><br>
 		</div>
 
 		<script>
 			function opacityAdjust(opacity, elem){
 				document.getElementById("siteContainerDiv").style="opacity:"+opacity;
-				document.getElementById("DEBUG_DIV")       .style="opacity:"+opacity;
+				// document.getElementById("DEBUG_DIV")       .style="opacity:"+opacity;
+				document.getElementById("sideDiv")         .style="opacity:"+opacity;
 
 				let buttons = document.querySelectorAll(".hiddenOpacityButtons");
 				buttons.forEach(function(d){
@@ -591,8 +591,8 @@
 				});
 				elem.classList.add("active");
 			}
-			opacityAdjust(0.05, document.getElementById("O_0_05"));
-			// opacityAdjust(0.10, document.getElementById("O_0_10"));
+			opacityAdjust(0.000, document.getElementById("O_0_000"));
+			// opacityAdjust(0.025, document.getElementById("O_0_025"));
 		</script>
 
 		<?php
