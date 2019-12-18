@@ -513,7 +513,7 @@ core.FUNCS.audio.playSound_mp3 = function(soundKey, retrigger, volume){
 
 		// Adjust the volume against the master volume value.
 		try     { elem.volume = (100 * JSGAME.SHARED.masterVolume/100)/100 ; }
-		catch(e){ console.log("WARNING: Unable to read the master volume."); }
+		catch(e){ console.warn("WARNING: playSound_mp3 : playSound: Unable to read the master volume."); }
 
 		// Play the sound.
 		let prom = elem.play().then(
@@ -617,7 +617,7 @@ core.FUNCS.audio.changeMasterVolume = function(newVol){
 		let synth    = core.AUDIO.midiSynths[synthKey];
 
 		try     { synth.setMasterVol( (100 * JSGAME.SHARED.masterVolume/100)/100 ) ;  }
-		catch(e){ console.log("WARNING: Unable to read the master volume."); }
+		catch(e){ console.warn("WARNING: changeMasterVolume: Unable to read the master volume."); }
 	}
 
 };

@@ -4,7 +4,6 @@ core.FUNCS   .graphics       = {} ; // Functions for handling graphics.
 // core.FUNCS   .graphics.FADER = {} ; //
 core.GRAPHICS.FADER          = {} ; //
 core.GRAPHICS.debug          = {} ; //
-core.GRAPHICS.debug.flags    = {} ; //
 core.GRAPHICS.fonts          = {} ; //
 core.GRAPHICS.fontSettings   = {} ; //
 core.GRAPHICS.activeTileset  = {} ; //
@@ -67,13 +66,6 @@ core.GRAPHICS.flags.TEXT_force   = false ; // Forcing the drawing even if it nor
 // core.GRAPHICS.flags.FADE_force   = false ; // Forcing the drawing even if it normally would not draw.
 core.GRAPHICS.flags.OUTPUT_force = false ; // Forcing the drawing even if it normally would not draw.
 
-// FLAGS - Override of the drawing of individual layers.
-// core.GRAPHICS.debug.flags.BG      = true ; // If flag is unset then this layer draw will be skipped.
-// core.GRAPHICS.debug.flags.SPRITE  = true ; // If flag is unset then this layer draw will be skipped.
-// core.GRAPHICS.debug.flags.TEXT    = true ; // If flag is unset then this layer draw will be skipped.
-// core.GRAPHICS.debug.flags.FADE    = true ; // If flag is unset then this layer draw will be skipped.
-// core.GRAPHICS.debug.flags.OUTPUT  = true ; // If flag is unset then this layer draw will be skipped.
-
 // PERFORMANCE MONITORING
 core.GRAPHICS.performance.BG      = [ 0, 0, 0, 0, 0 ] ; //
 core.GRAPHICS.performance.SPRITE  = [ 0, 0, 0, 0, 0 ] ; //
@@ -130,15 +122,71 @@ core.GRAPHICS.FADER.CONSTS["fader"] = [
 	/* 10 */ { b: 66 , g: 100 , r: 100 } , // 10 111 111   2 7 7   , 191   ,   0xBF
 	/* 11 */ { b: 100, g: 100 , r: 100 } , // 11 111 111   3 7 7   , 255   ,   0xFF
 ]; // The rgb values for each fade level.
-core.GRAPHICS.FADER.prevFadeStep  = 0     ; // Previous frame step.
-core.GRAPHICS.FADER.fadeStep      = 0     ; // Current frame step.
-core.GRAPHICS.FADER.fadeSpeed     = 0     ; // Speed between fader array index changes.
-core.GRAPHICS.FADER.currFadeFrame = 0     ; // Current index into the fader array.
-core.GRAPHICS.FADER.fadeDir       = 1     ; // Direction of fade (1 is up, -1 is down.)
-core.GRAPHICS.FADER.fadeActive    = false ; // Fade is active.
-core.GRAPHICS.FADER.blocking      = false ; // Do not allow further game logic updates if true.
-core.GRAPHICS.FADER.stayDark      = false ; // Stay dark after fade completes.
-core.GRAPHICS.FADER.lastFadeFrame = false ; // Indicates that this is the last frame for the fade in/out.
+core.GRAPHICS.FADER.prevFadeStep   = 0     ; // Previous frame step.
+core.GRAPHICS.FADER.fadeStep       = 0     ; // Current frame step.
+core.GRAPHICS.FADER.fadeSpeed      = 0     ; // Speed between fader array index changes.
+core.GRAPHICS.FADER.currFadeFrame  = 0     ; // Current index into the fader array.
+core.GRAPHICS.FADER.fadeDir        = 1     ; // Direction of fade (1 is up, -1 is down.)
+core.GRAPHICS.FADER.fadeActive     = false ; // Fade is active.
+core.GRAPHICS.FADER.blocking       = false ; // Do not allow further game logic updates if true.
+core.GRAPHICS.FADER.blockAfterFade = false ; //
+core.GRAPHICS.FADER.stayDark       = false ; // Stay dark after fade completes.
+
+// JS GAME logo for this video mode.
+core.FUNCS.graphics.logo = function(){
+	return new Promise(function(res,rej){
+		// Display the JSGAME logo.
+		console.log("JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO:", JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO);
+		if(JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO){
+			let logo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACAAgMAAAC+UIlYAAAACVBMVEWV5BhWVlZfoL9BEe0FAAAA40lEQVRYw+3XQQrDIBAF0M+sxFO4LLlP7/OPkqX8UxapNI0NTktpGxpHEJWHLsYRxNmJ4wB0YoBjAkl0diAGeBooO4AmB8A8gD0DPgeyB0y5Cwr5IJgckBL6IM5dsET0QO6BAICfBVES9/yIDfBXYKrXrfSRZTCvwa2yCKQyIVbAeAcYNgAWkB1gYQvECgSejEaoAaECgsmI0t4DyQcTHQB5wF4EsaZLUgGxPaL4BLC0dJ3yAZwqCJsAhLEL5uvSAuYGTGxAaABoFdwS34KAFQAboNwASdxZZQ0wwFfAbv68PwcXhBKaWinsiHsAAAAASUVORK5CYII=";
+			let stretch ;
+			let center  ;
+
+			let img = new Image();
+			img.onload = function() {
+				let xpos   ;
+				let ypos   ;
+				let width  ;
+				let height ;
+				let output = core.GRAPHICS.ctx.OUTPUT;
+
+				// Stretch?
+				if(stretch){ width = output.canvas.width; height = output.canvas.height; }
+				else       { width = img.width;           height = img.height;           }
+
+				// Center?
+				if(center) { xpos=0; ypos=0; }
+				else       { xpos=0; ypos=0; }
+
+				// Draw the image.
+				output.drawImage( img, xpos, ypos, img.width, img.height, 0, 0, width, height );
+
+				// Hold the image for a moment. It should be cleared by the game.
+				setTimeout( res , 1500);
+			};
+
+			// Draw logo stretched and centered?
+			if(JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO == 1){
+				stretch = true;
+				center  = false;
+				img.src = logo;
+			}
+			// Draw logo just centered?
+			else if(JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO == 2){
+				stretch = false;
+				center  = true;
+				img.src = logo;
+			}
+			else{
+				console.log("Invalid value for the INTRO_LOGO ", JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO);
+			}
+		}
+		else{ res(); }
+	});
+};
+
+// Can be replaced by the game. Used for full-screen graphics changes during output.
+core.EXTERNAL.GRAPHICS = function(ctx){ return new Promise(function(res,rej){ res(ctx); }); };
 
 // WEB WORKERS - EXPERIEMENT
 // core.FLAGS = {};
@@ -171,6 +219,7 @@ core.FUNCS.graphics.init = function(){
 				core.SETTINGS['TRANSLUCENT_COLOR'] = JSGAME.PRELOAD.gamesettings_json['TRANSLUCENT_COLOR'];
 				core.SETTINGS['VRAM_TILES_H']      = JSGAME.PRELOAD.gamesettings_json['VRAM_TILES_H']     ;
 				core.SETTINGS['VRAM_TILES_V']      = JSGAME.PRELOAD.gamesettings_json['VRAM_TILES_V']     ;
+				core.SETTINGS['INTRO_LOGO']        = JSGAME.PRELOAD.gamesettings_json['INTRO_LOGO']       ;
 				core.SETTINGS['fps']               = JSGAME.PRELOAD.gamesettings_json['fps']              ;
 
 				// Convert the TRANSLUCENT_COLOR string to integer. (If specified as HEX then it is likely a string.)
@@ -648,9 +697,7 @@ core.FUNCS.graphics.init = function(){
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_clearAllCanvases"        , "END");
 
 				// TOTAL VIDEO INIT PERFORMANCE:
-
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "END");
-
 				res_VIDEO_INIT();
 			},
 			function(err){
@@ -693,13 +740,8 @@ core.FUNCS.graphics.clearAllCanvases       = function(){
 		// core.GRAPHICS["ctx"].OUTPUT.clearRect(0, 0, core.GRAPHICS["ctx"].OUTPUT.canvas.width, core.GRAPHICS["ctx"].OUTPUT.canvas.height);
 	}
 
-	// Clear VRAM1 and VRAM1_TO_WRITE.
-	core.GRAPHICS["VRAM1"].fill(0);
-	core.GRAPHICS["VRAM1_TO_WRITE"]=[];
-
-	// Clear VRAM2 and VRAM2_TO_WRITE.
-	core.GRAPHICS["VRAM2"].fill(0);
-	core.GRAPHICS["VRAM2_TO_WRITE"]=[];
+	core.FUNCS.graphics.ClearVram();
+	core.FUNCS.graphics.clearSprites();
 
 	// Set the draw flags.
 	core.GRAPHICS.flags.BG     = true ;
@@ -709,9 +751,9 @@ core.FUNCS.graphics.clearAllCanvases       = function(){
 	core.GRAPHICS.flags.OUTPUT = true ;
 
 	// Set the force draw flags.
-	core.GRAPHICS.flags.BG     = true ;
-	core.GRAPHICS.flags.TEXT   = true ;
-	core.GRAPHICS.flags.OUTPUT = true ;
+	// core.GRAPHICS.flags.BG_force     = true ;
+	// core.GRAPHICS.flags.TEXT_force   = true ;
+	core.GRAPHICS.flags.OUTPUT_force = true ;
 };
 // Add to the cache of flipped canvas files (X, Y, XY)
 core.FUNCS.graphics.AddFlippedTileToCache  = function(tilesetname, tileIndex, FLIP_X, FLIP_Y, canvas){
@@ -1184,7 +1226,6 @@ core.FUNCS.graphics.update_layer_TEXT   = function(){
 		res();
 	});
 } ;
-
 // Combine each layer and then draw to the output canvas.
 core.FUNCS.graphics.update_layer_OUTPUT = function(){
 	// Combine all layers into output and then draw the attached DOM canvas.
@@ -1227,7 +1268,13 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].TEXT  , 0, 0) ; // TEXT
 
 			// Process the tempOutput further before writing it?
-			core.GRAPHICS.FADER.FUNCS.ProcessFading(tempOutput_ctx).then(
+			core.GRAPHICS.FADER.FUNCS.ProcessFading(tempOutput_ctx)
+
+			// Additional full-screen modifications from the game code?
+			.then ( (tempOutput_ctx) => core.EXTERNAL.GRAPHICS(tempOutput_ctx) )
+
+			// Draw to the output canvas.
+			.then(
 				function(){
 					// Combine the layers into the temp output.
 					// core.GRAPHICS["ctx"].OUTPUT.clearRect(0, 0, tempOutput.width, tempOutput.height);
@@ -1235,8 +1282,9 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 					COMPLETED();
 				},
 				function(err){ console.log("ERR:", err); }
-			);
-
+			)
+			.catch(function(c1){ console.log("ERROR:", c1); })
+			;
 
 		}
 		else{
@@ -1273,8 +1321,6 @@ core.FUNCS.graphics.update_allLayers    = function(){
 	if(core.GRAPHICS.flags.SPRITE_force) { core.GRAPHICS.flags.SPRITE = true ; }
 	if(core.GRAPHICS.flags.TEXT_force)   { core.GRAPHICS.flags.TEXT   = true ; }
 	if(core.GRAPHICS.flags.OUTPUT_force) { core.GRAPHICS.flags.OUTPUT = true ; }
-
-
 
 	// If an update is not needed then the promise will resolve right away.
 	let proms = [
@@ -1321,28 +1367,36 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 	// vram_str can be 'VRAM1' or 'VRAM2'
 	// If neither is specified then both will be cleared.
 
-	let doboth = false;
-
-	// Was vram NOT specified?
-	if( vram_str == undefined ){ doboth = true; }
-
-	if(vram_str=='VRAM1' || doboth==true){
-		// Set all tiles in VRAM1 to 0.
+		// Clear VRAM1 and VRAM1_TO_WRITE.
 		core.GRAPHICS["VRAM1"].fill(0);
 
-		// Indicate that a draw is required for this layer.
-		core.GRAPHICS.flags.BG = true;
-		core.GRAPHICS.flags.BG_force     = true;
-	}
-
-	if(vram_str=='VRAM2' || doboth==true){
-		// Set all tiles in VRAM2 to 0.
+		// Clear VRAM2 and VRAM2_TO_WRITE.
 		core.GRAPHICS["VRAM2"].fill(0);
 
-		// Indicate that a draw is required for this layer.
-		core.GRAPHICS.flags.TEXT = true;
-		core.GRAPHICS.flags.TEXT_force   = true;
-	}
+		let doboth = false;
+
+		// Was vram NOT specified?
+		if( vram_str == undefined ){ doboth = true; }
+
+		if(vram_str=='VRAM1' || doboth==true){
+			// Set all tiles in VRAM1 to 0.
+			core.GRAPHICS["VRAM1"].fill(0);
+			core.GRAPHICS["VRAM1_TO_WRITE"]=[];
+
+			// Indicate that a draw is required for this layer.
+			core.GRAPHICS.flags.BG       = true;
+			core.GRAPHICS.flags.BG_force = true;
+		}
+
+		if(vram_str=='VRAM2' || doboth==true){
+			// Set all tiles in VRAM2 to 0.
+			core.GRAPHICS["VRAM2"].fill(0);
+			core.GRAPHICS["VRAM2_TO_WRITE"]=[];
+
+			// Indicate that a draw is required for this layer.
+			core.GRAPHICS.flags.TEXT       = true;
+			core.GRAPHICS.flags.TEXT_force = true;
+		}
 
 	core.GRAPHICS.flags.OUTPUT_force = true;
 
@@ -1417,7 +1471,9 @@ core.FUNCS.graphics.getTilemap   = function(tilemap_str){
 core.FUNCS.graphics.clearSprites       = function(){
 	// core.GRAPHICS.sprites.length=0;
 	core.GRAPHICS.sprites=[];
+	// core.GRAPHICS.sprites_prev=[];
 	core.GRAPHICS.flags.SPRITE = true ;
+
 };
 // Sets the tileset for the specified sprite bank.
 core.FUNCS.graphics.SetSpritesTileBank = function(bank, tileset){
@@ -1465,6 +1521,12 @@ core.FUNCS.graphics.hashSprite         = function(obj){
 };
 // Adds the tiles of a sprite map to the sprites array.
 core.FUNCS.graphics.MapSprite2         = function(startSprite, map, spriteFlags){
+	// Make sure that a map was actually passed.
+	if(map==undefined){
+		// console.log( "startSprite, map, spriteFlags:", startSprite, map, spriteFlags );
+		return;
+	}
+
 	let mapWidth  = map[0] ;
 	let mapHeight = map[1] ;
 	let x  ;
@@ -1691,8 +1753,6 @@ core.FUNCS.graphics.DrawMap_customDimensions = function(x, y, w, h, map, vram_st
 
 // Processes the fade.
 core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
-	// core.GRAPHICS.flags.OUTPUT = true ;
-
 	return new Promise(function(res,rej){
 			let drawStart_FADE;
 			if(JSGAME.SHARED.debug)       { drawStart_FADE   = performance.now();      core.GRAPHICS.performance.FADE.shift();   }
@@ -1730,7 +1790,8 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 				core.GRAPHICS.FADER.stayDark=true;
 				core.GRAPHICS.FADER.fadeActive=false;
 
-				core.GRAPHICS.FADER.blocking=false;
+				if(core.GRAPHICS.FADER.blockAfterFade){ core.GRAPHICS.FADER.blocking = true  ; }
+				else                                  { core.GRAPHICS.FADER.blocking = false ; }
 
 				COMPLETED();
 				return;
@@ -1746,7 +1807,8 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 				core.GRAPHICS.FADER.stayDark=false;
 				core.GRAPHICS.FADER.fadeActive=false;
 
-				core.GRAPHICS.FADER.blocking=false;
+				if(core.GRAPHICS.FADER.blockAfterFade){ core.GRAPHICS.FADER.blocking = true  ; }
+				else                                  { core.GRAPHICS.FADER.blocking = false ; }
 
 				COMPLETED();
 				return;
@@ -1864,14 +1926,16 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 	});
 };
 // Starts the fade.
-core.GRAPHICS.FADER.FUNCS.doFade        = function(speed, blocking){
-	// console.log("doFade: start");
+core.GRAPHICS.FADER.FUNCS.doFade        = function(speed, blocking, blockAfterFade){
+	if(blockAfterFade==undefined){ blockAfterFade=false; }
+
 
 	core.GRAPHICS.FADER.fadeIn_complete  = false;
 	core.GRAPHICS.FADER.fadeOut_complete = false;
 
-	// core.GRAPHICS.FADER.lastFadeFrame = false;
 	core.GRAPHICS.FADER.stayDark      = false;
+
+	core.GRAPHICS.FADER.blockAfterFade = blockAfterFade;
 
 	core.GRAPHICS.FADER.fadeActive    = true     ;
 	core.GRAPHICS.FADER.currFadeFrame = 0        ; //
@@ -1879,24 +1943,21 @@ core.GRAPHICS.FADER.FUNCS.doFade        = function(speed, blocking){
 	core.GRAPHICS.FADER.blocking      = blocking ;
 };
 // Sets up a fade out.
-core.GRAPHICS.FADER.FUNCS.FadeIn        = function(speed, blocking){
-	// console.log("FadeIn");
-
-	// if(speed==0){ return; }
-
+core.GRAPHICS.FADER.FUNCS.FadeIn        = function(speed, blocking, blockAfterFade){
 	core.GRAPHICS.FADER.prevFadeStep = 99;
 	core.GRAPHICS.FADER.fadeStep     = 0;
 	core.GRAPHICS.FADER.fadeDir      = 1;
-	core.GRAPHICS.FADER.FUNCS.doFade(speed, blocking);
+	core.GRAPHICS.FADER.FUNCS.doFade(speed, blocking, blockAfterFade);
 };
 // Sets up a fade in.
-core.GRAPHICS.FADER.FUNCS.FadeOut       = function(speed, blocking){
-	// console.log("FadeOut");
-
-	// if(speed==0){ return; }
-
+core.GRAPHICS.FADER.FUNCS.FadeOut       = function(speed, blocking, blockAfterFade){
 	core.GRAPHICS.FADER.prevFadeStep = 99;
 	core.GRAPHICS.FADER.fadeStep     = core.GRAPHICS.FADER.CONSTS["FADER_STEPS"]-1;
 	core.GRAPHICS.FADER.fadeDir      = -1;
-	core.GRAPHICS.FADER.FUNCS.doFade(speed, blocking);
+	core.GRAPHICS.FADER.FUNCS.doFade(speed, blocking, blockAfterFade);
+};
+
+core.GRAPHICS.FADER.FUNCS.blockLogic        = function(newValue){
+	core.GRAPHICS.FADER.blocking       = newValue;
+	core.GRAPHICS.FADER.blockAfterFade = newValue;
 };

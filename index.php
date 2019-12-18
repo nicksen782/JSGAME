@@ -9,7 +9,7 @@
 	<meta http-equiv="Pragma" content="no-cache"/>
 	<meta http-equiv="Expires" content="0"/>
 
-	<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+	<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABlBMVEVfoL9WVlZrUZ6mAAAADElEQVQI12NwYGgAAAFEAMHrWQMJAAAAAElFTkSuQmCC">
 
 	<title>JS GAME</title>
 
@@ -49,7 +49,9 @@
 			GRAPHICS   : {} , // Populated by game init code.
 			CONSTS     : {} , // Populated by video/audio kernels.
 			FUNCS      : {} , // Populated by video/audio kernels.
+			EXTERNAL   : {} , // The game can add to this. The cores determine the default contents.
 		};
+
 		var game={};
 
 		JSGAME.PRELOAD.PHP_VARS = {
@@ -145,8 +147,8 @@
 
 				// gamesettings.json
 				if( file_exists ($path . '/gamesettings.json') ) {
-					$PHP_VARS['gamesettings_json']=true;
-					$PHP_VARS['gameSelected']=true;
+					$PHP_VARS['gamesettings_json'] = true ;
+					$PHP_VARS['gameSelected']      = true ;
 
 					$gamesettings=json_decode(file_get_contents($path . '/gamesettings.json'),true) ;
 
@@ -194,6 +196,12 @@
 
 					// JavaScript files for the game:
 					$PHP_VARS['js_files'] = $gamesettings["js_files"];
+
+					// Start-up logo (type1 by default.)
+					if( isSet($gamesettings["INTRO_LOGO"]) ) { $PHP_VARS['INTRO_LOGO'] = $gamesettings["INTRO_LOGO"]; }
+					else                                     { $PHP_VARS['INTRO_LOGO'] = 1 ; }
+
+					// Start-up logo: Get the files from PHP as base64.
 
 					// Output as JavaScript variable.
 					$outputText .= "JSGAME.PRELOAD.gamesettings_json = " . json_encode($gamesettings, JSON_PRETTY_PRINT) . ";" ;
@@ -509,10 +517,10 @@
 							require "gamepadconfigs/gamepad_nes.svg";
 							echo "</div>";
 							// echo "<br>";
-
-							// Output the keyboard keys.
-							//
 						}
+
+						// Output the keyboard keys.
+						if(!$debug){ require "gamepadconfigs/keyboard_nes.html"; }
 					}
 					else if($PHP_VARS['typeGamepads']=="snes" && $PHP_VARS['numGamepads'] > 0){
 						// Output the SVG.
@@ -528,10 +536,10 @@
 							require "gamepadconfigs/gamepad_snes.svg";
 							echo "</div>";
 							// echo "<br>";
-
-							// Output the keyboard keys.
-							//
 						}
+
+						// Output the keyboard keys.
+						if(!$debug){ require "gamepadconfigs/keyboard_snes.html"; }
 					}
 					else{
 						// No gamepads?
@@ -577,13 +585,20 @@
 			<br>
 
 			<button class="hiddenOpacityButtons" id="O_1_000" onclick='opacityAdjust(1.000, this);'>O :: 1.000</button><br>
+
+			<br>
+			<button class="hiddenOpacityButtons" onclick='showOnlySideDiv();'>showOnlySideDiv</button><br>
+
 		</div>
 
 		<script>
+			function showOnlySideDiv(){
+				document.getElementById("siteContainerDiv").style.opacity = 0.00;
+				document.getElementById("sideDiv")         .style.opacity = 1.00;
+			}
 			function opacityAdjust(opacity, elem){
-				document.getElementById("siteContainerDiv").style="opacity:"+opacity;
-				// document.getElementById("DEBUG_DIV")       .style="opacity:"+opacity;
-				document.getElementById("sideDiv")         .style="opacity:"+opacity;
+				document.getElementById("siteContainerDiv").style.opacity = opacity;
+				document.getElementById("sideDiv")         .style.opacity = opacity;
 
 				let buttons = document.querySelectorAll(".hiddenOpacityButtons");
 				buttons.forEach(function(d){

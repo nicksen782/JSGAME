@@ -1,3 +1,7 @@
+var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+							window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+var cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+
 // JSGAME.PRELOAD={
 // };
 
@@ -715,11 +719,18 @@ JSGAME.INIT={
 
 				// Run the first game loop. (Inits the video, sound, and game code.)
 				game.firstLoop().then(
-					function(res){
+					function( gamestartFunction){
 						console.log("GAME CORES ARE READY");
 
-						JSGAME.SHARED.PERFORMANCE.output();
-						JSGAME.SHARED.PERFORMANCE.clearAll();
+						if(JSGAME.SHARED.debug)       {
+							JSGAME.SHARED.PERFORMANCE.output();
+							JSGAME.SHARED.PERFORMANCE.clearAll();
+						}
+
+						// Display the JS GAME logo then start the game.
+						setTimeout(function(){
+							core.FUNCS.graphics.logo().then( function(){ gamestartFunction(); } );
+						},125);
 					},
 					function(err){ console.error("ERROR: ", err); }
 				);
@@ -727,6 +738,7 @@ JSGAME.INIT={
 		);
 
 	},
+
 };
 
 JSGAME.GUI={
@@ -925,6 +937,7 @@ JSGAME.GUI={
 	// Listen for a key to be pressed.
 	document_keydown    : function(e){
 		let index = JSGAME.consts.allowedKeys.indexOf(e.code) ;
+		// let index = JSGAME.consts.allowedKeys.indexOf(e.key) ;
 		if( index == -1){ return; }
 		else{
 			JSGAME.GUI.userInput("keydown", JSGAME.consts.allowedButtons[index] , 1);

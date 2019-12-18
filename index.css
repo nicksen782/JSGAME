@@ -246,3 +246,9 @@ div#sideDiv.hide {
 	display:inline-block;
 	vertical-align: top;
 }
+
+#gamepad_keyboardKeys_div{ background-color:rgba(224, 225, 226, 0.5); border:1px solid black; margin-bottom:5px; }
+#gamepad_keyboardKeys_div table{ width:100%; }
+#gamepad_keyboardKeys_div table caption{ text-decoration:underline; }
+#gamepad_keyboardKeys_div table td{ text-align:left; border: 1px solid black; }
+#gamepad_keyboardKeys_div table th{ text-align:left; border: 1px solid black; background-color: gray; }
