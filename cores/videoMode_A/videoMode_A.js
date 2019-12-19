@@ -108,19 +108,19 @@ core.GRAPHICS.FADER.FUNCS = {}
 
 core.GRAPHICS.FADER.CONSTS["FADER_STEPS"] = 12 ; // Number of steps in a fade.
 core.GRAPHICS.FADER.CONSTS["fader"] = [
-	//                                        BB GGG RRR   B G R     DEC       HEX
-	/* 0  */ { b: 0  , g: 0   , r: 0   } , // 00 000 000   0 0 0   , 0     ,   0x00
-	/* 1  */ { b: 33 , g: 0   , r: 0   } , // 01 000 000   1 0 0   , 64    ,   0x40
-	/* 2  */ { b: 66 , g: 14  , r: 0   } , // 10 001 000   2 1 0   , 136   ,   0x88
-	/* 3  */ { b: 66 , g: 28  , r: 14  } , // 10 010 001   2 2 1   , 145   ,   0x91
-	/* 4  */ { b: 100, g: 28  , r: 28  } , // 11 010 010   3 2 2   , 210   ,   0xD2
-	/* 5  */ { b: 100, g: 57  , r: 57  } , // 11 100 100   3 4 4   , 228   ,   0xE4
-	/* 6  */ { b: 66 , g: 71  , r: 71  } , // 10 101 101   2 5 5   , 173   ,   0xAD
-	/* 7  */ { b: 66 , g: 85  , r: 71  } , // 10 110 101   2 6 5   , 181   ,   0xB5
-	/* 8  */ { b: 66 , g: 85  , r: 85  } , // 10 110 110   2 6 6   , 182   ,   0xB6
-	/* 9  */ { b: 66 , g: 100 , r: 85  } , // 10 111 110   2 7 6   , 190   ,   0xBE
-	/* 10 */ { b: 66 , g: 100 , r: 100 } , // 10 111 111   2 7 7   , 191   ,   0xBF
-	/* 11 */ { b: 100, g: 100 , r: 100 } , // 11 111 111   3 7 7   , 255   ,   0xFF
+	//                               INDEX BB GGG RRR  B G R    DEC   HEX
+	{ b: 0  , g: 0   , r: 0   } , // 0     00 000 000  0 0 0  , 0   , 0x00
+	{ b: 33 , g: 0   , r: 0   } , // 1     01 000 000  1 0 0  , 64  , 0x40
+	{ b: 66 , g: 14  , r: 0   } , // 2     10 001 000  2 1 0  , 136 , 0x88
+	{ b: 66 , g: 28  , r: 14  } , // 3     10 010 001  2 2 1  , 145 , 0x91
+	{ b: 100, g: 28  , r: 28  } , // 4     11 010 010  3 2 2  , 210 , 0xD2
+	{ b: 100, g: 57  , r: 57  } , // 5     11 100 100  3 4 4  , 228 , 0xE4
+	{ b: 66 , g: 71  , r: 71  } , // 6     10 101 101  2 5 5  , 173 , 0xAD
+	{ b: 66 , g: 85  , r: 71  } , // 7     10 110 101  2 6 5  , 181 , 0xB5
+	{ b: 66 , g: 85  , r: 85  } , // 8     10 110 110  2 6 6  , 182 , 0xB6
+	{ b: 66 , g: 100 , r: 85  } , // 9     10 111 110  2 7 6  , 190 , 0xBE
+	{ b: 66 , g: 100 , r: 100 } , // 10    10 111 111  2 7 7  , 191 , 0xBF
+	{ b: 100, g: 100 , r: 100 } , // 11    11 111 111  3 7 7  , 255 , 0xFF
 ]; // The rgb values for each fade level.
 core.GRAPHICS.FADER.prevFadeStep   = 0     ; // Previous frame step.
 core.GRAPHICS.FADER.fadeStep       = 0     ; // Current frame step.
@@ -191,11 +191,7 @@ core.EXTERNAL.GRAPHICS = function(ctx){ return new Promise(function(res,rej){ re
 // WEB WORKERS - EXPERIEMENT
 // core.FLAGS = {};
 core.WORKERS = {};
-// core.WORKERS.BG     = new Worker("cores/videoMode_A/video_webworker.js");
-// core.WORKERS.SPRITE = new Worker("cores/videoMode_A/video_webworker.js");
-// core.WORKERS.TEXT   = new Worker("cores/videoMode_A/video_webworker.js");
-core.WORKERS.FADE   = new Worker("cores/videoMode_A/video_webworker.js");
-// core.WORKERS.OUTPUT = new Worker("cores/videoMode_A/video_webworker.js");
+core.WORKERS.VIDEO = new Worker("cores/videoMode_A/videoMode_A_webworker.js");
 
 // *** Init conversion functions - Removed after use. ***
 
@@ -1820,8 +1816,8 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 
 				let img      = ctx.getImageData(0, 0, width, height);
 
-				core.WORKERS.FADE.onmessage=function(e){
-					core.WORKERS.FADE.onmessage=null;
+				core.WORKERS.VIDEO.onmessage=function(e){
+					core.WORKERS.VIDEO.onmessage=null;
 
 					let arr = new Uint8ClampedArray( e.data.modbuf );
 					let processedImageData = new ImageData(arr, width, height);
@@ -1856,7 +1852,7 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 
 				};
 
-				core.WORKERS.FADE   .postMessage(
+				core.WORKERS.VIDEO   .postMessage(
 					{
 						"func"     : "fade",
 						"maxRed"   : core.GRAPHICS.FADER.CONSTS["fader"][fadeStep].r ,
@@ -1929,7 +1925,6 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 core.GRAPHICS.FADER.FUNCS.doFade        = function(speed, blocking, blockAfterFade){
 	if(blockAfterFade==undefined){ blockAfterFade=false; }
 
-
 	core.GRAPHICS.FADER.fadeIn_complete  = false;
 	core.GRAPHICS.FADER.fadeOut_complete = false;
 
@@ -1944,6 +1939,8 @@ core.GRAPHICS.FADER.FUNCS.doFade        = function(speed, blocking, blockAfterFa
 };
 // Sets up a fade out.
 core.GRAPHICS.FADER.FUNCS.FadeIn        = function(speed, blocking, blockAfterFade){
+	if(blockAfterFade==undefined){ blockAfterFade=false; }
+
 	core.GRAPHICS.FADER.prevFadeStep = 99;
 	core.GRAPHICS.FADER.fadeStep     = 0;
 	core.GRAPHICS.FADER.fadeDir      = 1;
@@ -1951,6 +1948,8 @@ core.GRAPHICS.FADER.FUNCS.FadeIn        = function(speed, blocking, blockAfterFa
 };
 // Sets up a fade in.
 core.GRAPHICS.FADER.FUNCS.FadeOut       = function(speed, blocking, blockAfterFade){
+	if(blockAfterFade==undefined){ blockAfterFade=false; }
+
 	core.GRAPHICS.FADER.prevFadeStep = 99;
 	core.GRAPHICS.FADER.fadeStep     = core.GRAPHICS.FADER.CONSTS["FADER_STEPS"]-1;
 	core.GRAPHICS.FADER.fadeDir      = -1;

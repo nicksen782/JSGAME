@@ -259,17 +259,17 @@
 	<!-- LOAD DEBUG (IF ACTIVE) -->
 	<?php
 		if($PHP_VARS['CANLOADGAME'] && $debug){
-			echo "\n";
-			if( file_exists ($path . '/DEBUG/debug.css') && $debug) {
-				echo '<link rel="stylesheet" type="text/css" href="'.$path . '/DEBUG/debug.css'.'">'."\n";
-				echo "\n";
-			}
+			// echo "\n";
+			// if( file_exists ($path . '/DEBUG/debug.css') && $debug) {
+			// 	echo '<link rel="stylesheet" type="text/css" href="'.$path . '/DEBUG/debug.css'.'">'."\n";
+			// 	echo "\n";
+			// }
 
-			echo "\n";
-			if( file_exists ($path . '/DEBUG/debug.js')  && $debug) {
-				echo '<script src="'.$path . '/DEBUG/debug.js'.'">'."</script>\n";
-				echo "\n";
-			}
+			// echo "\n";
+			// if( file_exists ($path . '/DEBUG/debug.js')  && $debug) {
+			// 	echo '<script src="'.$path . '/DEBUG/debug.js'.'">'."</script>\n";
+			// 	echo "\n";
+			// }
 		}
 	?>
 
@@ -294,24 +294,42 @@
 		<?php
 			if($PHP_VARS['CANLOADGAME']){
 				echo "\n";
-				echo trim($videokernel) ;
+				// echo trim($videokernel) ;
 				echo "\n";
 				echo "\n";
 			}
 		?>
 	</script>
 
+	<?php
+	if($PHP_VARS['CANLOADGAME']){
+		echo "\n";
+		echo "<script purpose='video' src='".$PHP_VARS['videokernel']."'></script>";
+		echo "\n";
+		echo "\n";
+	}
+	?>
+
 	<!-- SOUND -->
 	<script purpose="sound">
 		<?php
 			if($PHP_VARS['CANLOADGAME']){
 				echo "\n";
-				echo trim($soundkernel) ;
+				// echo trim($soundkernel) ;
 				echo "\n";
 				echo "\n";
 			}
 		?>
 	</script>
+
+	<?php
+		if($PHP_VARS['CANLOADGAME']){
+			echo "\n";
+			echo "<script purpose='sound' src='".$PHP_VARS['soundkernel']."'></script>";
+			echo "\n";
+			echo "\n";
+		}
+	?>
 
 	<!-- LOADED GAME JS FILES -->
 	<?php
@@ -552,8 +570,21 @@
 		<?php
 			if($PHP_VARS['CANLOADGAME'] && $debug){
 				echo "\n";
-				if( file_exists ($path . '/DEBUG/debug.php') && $debug) {
-					require $path . '/DEBUG/debug.php';
+				if( $debug) {
+					echo "\n";
+					echo "<!-- ******* DEBUG CODE ******* --> \n";
+					echo "<!-- ******* DEBUG CODE ******* --> \n";
+					echo "<!-- ******* DEBUG CODE ******* --> \n";
+					echo "\n";
+
+					if( file_exists ($path . '/DEBUG/debug.css') ) { echo "<style>\n";  require $path . '/DEBUG/debug.css'; echo "\n</style>";  }
+					if( file_exists ($path . '/DEBUG/debug.js' ) ) { echo "<script>\n"; require $path . '/DEBUG/debug.js' ; echo "\n</script>"; }
+					if( file_exists ($path . '/DEBUG/debug.php') ) {                    require $path . '/DEBUG/debug.php'; echo "\n";          }
+
+					echo "\n";
+					echo "<!-- ******* DEBUG CODE ******* --> \n";
+					echo "<!-- ******* DEBUG CODE ******* --> \n";
+					echo "<!-- ******* DEBUG CODE ******* --> \n";
 					echo "\n";
 				}
 			}
