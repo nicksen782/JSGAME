@@ -33,6 +33,7 @@
 			DOM        : {} ,
 			INIT       : {} ,
 			GUI        : {} ,
+			GAMEPADS   : {} ,
 			consts     : {} , //
 			CORE_SETUP_PERFORMANCE : {
 				"starts" : {} ,
@@ -197,11 +198,22 @@
 					// JavaScript files for the game:
 					$PHP_VARS['js_files'] = $gamesettings["js_files"];
 
-					// Start-up logo (type1 by default.)
-					if( isSet($gamesettings["INTRO_LOGO"]) ) { $PHP_VARS['INTRO_LOGO'] = $gamesettings["INTRO_LOGO"]; }
-					else                                     { $PHP_VARS['INTRO_LOGO'] = 1 ; }
-
+					// Start-up logo (on by default.)
+					if( isSet($gamesettings["INTRO_LOGO"]) )         { $PHP_VARS['INTRO_LOGO'] = $gamesettings["INTRO_LOGO"]; }
+					else                                             { $PHP_VARS['INTRO_LOGO'] = 1 ;                          }
 					// Start-up logo: Get the files from PHP as base64.
+					switch( $PHP_VARS['INTRO_LOGO'] ){
+						case    0 : { $img_filename = '';                                                             break; }
+						case    1 : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = true;  break; }
+						case    2 : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = false; break; }
+						default   : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = true;  break; }
+					};
+					if($img_filename){
+						$image        = file_get_contents($img_filename);
+						$imageData    = base64_encode($image);
+						$src          = 'data:'.mime_content_type($img_filename).';base64,'.$imageData;
+						$PHP_VARS['INTRO_LOGO_IMGB64'] = $src;
+					}
 
 					// Output as JavaScript variable.
 					$outputText .= "JSGAME.PRELOAD.gamesettings_json = " . json_encode($gamesettings, JSON_PRETTY_PRINT) . ";" ;
@@ -223,8 +235,8 @@
 
 			// END: Output the PHP vars as JavaScript vars.
 			echo "\n";
+			echo "// ******************************************** \n";
 			foreach($PHP_VARS as $k => $v){
-				// echo "$k ";
 				if( is_array($PHP_VARS[$k]) ) {
 					$outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = "  . json_encode($PHP_VARS[$k]) . "; // \n";
 				}
@@ -235,7 +247,10 @@
 					$outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = null; // \n"  ;
 				}
 				else{
-					$outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = "  . $PHP_VARS[$k] . "; // \n"  ;
+					if     ($PHP_VARS[$k]===true) { $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = true  ; "; } // This makes sure that true/false do not come out as 0 or 1.
+					else if($PHP_VARS[$k]===false){ $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = false ; "; } // This makes sure that true/false do not come out as 0 or 1.
+					else                          { $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = " . $PHP_VARS[$k] . ";"; }
+					$outputText .= "\n";
 				}
 			}
 
@@ -410,12 +425,19 @@
 
 				<!-- GAME CONFIG -->
 				<tr>
-					<td>OPTIONS:</td>
+					<td>OPTIONS1:</td>
 					<td colspan="4">
-						<button id="btn_toggleGamepads">Gamepads</button>
-						<button id="btn_togglePause">Pause</button>
-						<button id="btn_toggleFullscreen">Fullscreen</button>
-						<button id="btn_reloadGame" class="hide">RELOAD</button>
+						<button id="btn_toggleGamepads"  >GAMEPADS</button>
+						<button id="btn_togglePause"     >PAUSE</button>
+						<button id="btn_toggleFullscreen">FULLSCREEN</button>
+					</td>
+				</tr>
+
+				<tr>
+					<td>OPTIONS2:</td>
+					<td colspan="4">
+						<button onclick="JSGAME.GUI.reloadGame();">RELOAD</button>
+						<button id="btn_config" onclick='JSGAME.GUI.showPanel_internal("panel_config_main");'>CONFIG</button>
 					</td>
 				</tr>
 
@@ -488,6 +510,32 @@
 				</div>
 			</div>
 
+			<!-- CONFIGURATION MAIN MENU -->
+			<div id="panel_config_main" class="panels panels_config">
+				<!-- <div class="oneLineVH_center"> -->
+					panel_config_main
+				<!-- </div> -->
+			</div>
+
+			<!-- CONFIGURATION GAMEPADS -->
+			<div id="panel_config_gamepads" class="panels panels_config">
+				<!-- <div class="oneLineVH_center"> -->
+					<div id="gamepad_askForConnection">To use your gamepad, connected it and then press a button.</div>
+					<div id="gamepad_buttonStatus">
+
+					</div>
+					<div id="div3">div3</div>
+					<div id="div4">div4</div>
+				<!-- </div> -->
+			</div>
+
+			<!-- CONFIGURATION SETTINGS -->
+			<div id="panel_config_settings" class="panels panels_config">
+				<!-- <div class="oneLineVH_center"> -->
+				panel_config_settings
+				<!-- </div> -->
+			</div>
+
 		</div>
 
 		<!-- BAR AT THE BOTTOM -->
@@ -501,17 +549,23 @@
 					}
 				?>
 				<!-- -->
-				DEBUG: <input type="checkbox" id="debug_mode" <?php echo ($debug ? "checked" : "") ?>>
-				<button onclick="JSGAME.GUI.reloadGame();">RELOAD</button>
+				DEBUG ON: <input type="checkbox" id="debug_mode" <?php echo ($debug ? "checked" : "") ?>>
+				<!-- <button onclick="JSGAME.GUI.reloadGame();">RELOAD</button> -->
 
 				<!-- QUICK DEBUG BUTTONS -->
-				VIEWS:
-				<button class="debug_navButtons" panel="panel_nogame"        title='nogame'        onclick='JSGAME.GUI.showPanel("panel_nogame"       ,this);'>UNLOADED</button>
-				<button class="debug_navButtons" panel="panel_loadingGame"   title='loadingGame'   onclick='JSGAME.GUI.showPanel("panel_loadingGame"  ,this);'>LOAD</button>
-				<button class="debug_navButtons" panel="panel_game"          title='game'          onclick='JSGAME.GUI.showPanel("panel_game"         ,this);'>GAME</button>
-				<button class="debug_navButtons" panel="panel_gestureNeeded" title='gestureNeeded' onclick='JSGAME.GUI.showPanel("panel_gestureNeeded",this);'>GESTURE</button>
-				<button class="debug_navButtons" panel="panel_gamelistEmpty" title='gamelistEmpty' onclick='JSGAME.GUI.showPanel("panel_gamelistEmpty",this);'>NO GAMES</button>
-
+				<div id="debug_navButtons" class="hidden">
+					VIEWS:<br>
+					<button class="debug_navButtons" panel="panel_nogame"        title='nogame'        onclick='JSGAME.GUI.showPanel("panel_nogame"       ,this);'>UNLOADED</button>
+					<button class="debug_navButtons" panel="panel_loadingGame"   title='loadingGame'   onclick='JSGAME.GUI.showPanel("panel_loadingGame"  ,this);'>LOAD</button>
+					<button class="debug_navButtons" panel="panel_game"          title='game'          onclick='JSGAME.GUI.showPanel("panel_game"         ,this);'>GAME</button>
+					<button class="debug_navButtons" panel="panel_gestureNeeded" title='gestureNeeded' onclick='JSGAME.GUI.showPanel("panel_gestureNeeded",this);'>GESTURE</button>
+					<button class="debug_navButtons" panel="panel_gamelistEmpty" title='gamelistEmpty' onclick='JSGAME.GUI.showPanel("panel_gamelistEmpty",this);'>NO GAMES</button>
+					<br>
+					<button class="debug_navButtons" panel="panel_config_main"     title='config_main'     onclick='JSGAME.GUI.showPanel("panel_config_main"    ,this);'>config_main</button>
+					<button class="debug_navButtons" panel="panel_config_gamepads" title='config_gamepads' onclick='JSGAME.GUI.showPanel("panel_config_gamepads",this);'>config_gamepads</button>
+					<button class="debug_navButtons" panel="panel_config_settings" title='config_settings' onclick='JSGAME.GUI.showPanel("panel_config_settings",this);'>config_settings</button>
+					<br>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -521,6 +575,7 @@
 			<?php
 				// Only do this if the game can load.
 				if($PHP_VARS['CANLOADGAME']){
+
 					if($PHP_VARS['typeGamepads']=="nes" && $PHP_VARS['numGamepads'] > 0){
 						// Output the SVG.
 						for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
@@ -538,8 +593,10 @@
 						}
 
 						// Output the keyboard keys.
-						if(!$debug){ require "gamepadconfigs/keyboard_nes.html"; }
+						// if(!$debug){ require "gamepadconfigs/keyboard_nes.html"; }
+						require "gamepadconfigs/keyboard_nes.html";
 					}
+
 					else if($PHP_VARS['typeGamepads']=="snes" && $PHP_VARS['numGamepads'] > 0){
 						// Output the SVG.
 						for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
@@ -557,7 +614,8 @@
 						}
 
 						// Output the keyboard keys.
-						if(!$debug){ require "gamepadconfigs/keyboard_snes.html"; }
+						// if(!$debug){ require "gamepadconfigs/keyboard_snes.html"; }
+						require "gamepadconfigs/keyboard_snes.html";
 					}
 					else{
 						// No gamepads?

@@ -152,6 +152,9 @@ div#titleBar_logo_div {}
     background-color: orange;
     font-weight: bold;
 }
+#debug_navButtons.hidden {
+    display:none;
+}
 
 #titleBar .titleBar_table {
     display: inline-block;
@@ -162,7 +165,7 @@ div#titleBar_logo_div {}
 }
 
 #titleBar .titleBar_table button {
-    width: 80px;
+    width: 100px;
 }
 
 #gameSelector {
@@ -214,11 +217,11 @@ div#siteContainerDiv {
 	font-size: 36px;
 }
 
-#btn_reloadGame.hide{
+/* #btn_config.hide{
 	pointer-events: none;
 	opacity: 0.50;
 	background-color: rgba(0, 0, 0, 0.2);
-}
+} */
 
 #masterVolumeSlider_td1.hide{ visibility: hidden;}
 #masterVolumeSlider_td2.hide{ visibility: hidden;}
@@ -252,3 +255,46 @@ div#sideDiv.hide {
 #gamepad_keyboardKeys_div table caption{ text-decoration:underline; }
 #gamepad_keyboardKeys_div table td{ text-align:left; border: 1px solid black; }
 #gamepad_keyboardKeys_div table th{ text-align:left; border: 1px solid black; background-color: gray; }
+
+
+
+
+.panels_config{
+	/* background-color:blue; */
+	/* height: 445px; */
+}
+#panel_config_main{}
+#panel_config_gamepads{
+}
+#panel_config_gamepads #div1{
+	position: absolute;
+	width:200px;
+	height:100px;
+	left:0px; top:0px;
+	background-color:blue;
+}
+#panel_config_gamepads #div2{
+	position: absolute;
+	width:200px;
+	height:100px;
+	left: 0px;
+	top: 340px;
+	background-color:blue;
+}
+#panel_config_gamepads #div3{
+	position: absolute;
+	width:200px;
+	height:100px;
+	left: 490px;
+	top:0px;
+	background-color:blue;
+}
+#panel_config_gamepads #div4{
+	position: absolute;
+	width:200px;
+	height:100px;
+	left: 490px;
+	top: 340px;
+	background-color:blue;
+}
+#panel_config_settings{}

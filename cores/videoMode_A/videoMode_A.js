@@ -98,7 +98,9 @@ core.CONSTS["SPRITE_RAM"]       = 8    ; //             (B 00001000)
 core.CONSTS["SPRITE_BANK0"]     = 0<<6 ; // 0<<6 is 0   (B 00000000)
 core.CONSTS["SPRITE_BANK1"]     = 1<<6 ; // 1<<6 is 64  (B 01000000)
 core.CONSTS["SPRITE_BANK2"]     = 2<<6 ; // 2<<6 is 128 (B 10000000)
-core.CONSTS["SPRITE_BANK3"]     = 3<<6 ; // 3<<6 is 192 (B 11000000)
+
+// Other constants: (
+core.CONSTS["OffscreenCanvas_supported"] ;
 
 // *** FADER *** tim1724
 // Modified for JavaScript by nicksen782.
@@ -136,11 +138,8 @@ core.GRAPHICS.FADER.stayDark       = false ; // Stay dark after fade completes.
 core.FUNCS.graphics.logo = function(){
 	return new Promise(function(res,rej){
 		// Display the JSGAME logo.
-		console.log("JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO:", JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO);
 		if(JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO){
-			let logo = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACAAgMAAAC+UIlYAAAACVBMVEWV5BhWVlZfoL9BEe0FAAAA40lEQVRYw+3XQQrDIBAF0M+sxFO4LLlP7/OPkqX8UxapNI0NTktpGxpHEJWHLsYRxNmJ4wB0YoBjAkl0diAGeBooO4AmB8A8gD0DPgeyB0y5Cwr5IJgckBL6IM5dsET0QO6BAICfBVES9/yIDfBXYKrXrfSRZTCvwa2yCKQyIVbAeAcYNgAWkB1gYQvECgSejEaoAaECgsmI0t4DyQcTHQB5wF4EsaZLUgGxPaL4BLC0dJ3yAZwqCJsAhLEL5uvSAuYGTGxAaABoFdwS34KAFQAboNwASdxZZQ0wwFfAbv68PwcXhBKaWinsiHsAAAAASUVORK5CYII=";
-			let stretch ;
-			let center  ;
+			let logo = JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO_IMGB64;
 
 			let img = new Image();
 			img.onload = function() {
@@ -148,38 +147,29 @@ core.FUNCS.graphics.logo = function(){
 				let ypos   ;
 				let width  ;
 				let height ;
-				let output = core.GRAPHICS.ctx.OUTPUT;
+				let output  = core.GRAPHICS.ctx.OUTPUT;
+				let stretch = JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO_STRETCH;
+				let center  = JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO_CENTER;
 
 				// Stretch?
 				if(stretch){ width = output.canvas.width; height = output.canvas.height; }
 				else       { width = img.width;           height = img.height;           }
 
-				// Center?
-				if(center) { xpos=0; ypos=0; }
-				else       { xpos=0; ypos=0; }
+				// Center? (Vertical and Horizontal.)
+				if(!stretch) {
+					xpos=(output.canvas.width  / 2) - img.width  / 2;
+					ypos=(output.canvas.height / 2) - img.height / 2;
+				}
+				else         { xpos=0; ypos=0; }
 
 				// Draw the image.
-				output.drawImage( img, xpos, ypos, img.width, img.height, 0, 0, width, height );
+				//     drawImage( image, sx , sy, sWidth   , sHeight   , dx   , dy   , dWidth, dHeight );
+				output.drawImage( img  , 0  , 0 , img.width, img.height, xpos , ypos , width , height  );
 
 				// Hold the image for a moment. It should be cleared by the game.
 				setTimeout( res , 1500);
 			};
-
-			// Draw logo stretched and centered?
-			if(JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO == 1){
-				stretch = true;
-				center  = false;
-				img.src = logo;
-			}
-			// Draw logo just centered?
-			else if(JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO == 2){
-				stretch = false;
-				center  = true;
-				img.src = logo;
-			}
-			else{
-				console.log("Invalid value for the INTRO_LOGO ", JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO);
-			}
+			img.src = logo;
 		}
 		else{ res(); }
 	});
@@ -200,8 +190,8 @@ core.FUNCS.graphics.init = function(){
 
 	// Take performance metrics.
 
-	JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "START");
 	return new Promise(function(res_VIDEO_INIT, rej_VIDEO_INIT){
+		JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "START");
 
 		// Copy some PRELOAD settings into core.SETTINGS.
 		let settingsSetup = function(){
@@ -257,14 +247,14 @@ core.FUNCS.graphics.init = function(){
 				core.GRAPHICS.canvas.BG     = document.createElement('canvas'); // Background tiles - Tile grid-aligned, no alpha.
 				core.GRAPHICS.canvas.SPRITE = document.createElement('canvas'); // Sprite tiles     - Tile pixel-aligned, with alpha.
 				core.GRAPHICS.canvas.TEXT   = document.createElement('canvas'); // Text tiles       - Tile grid-aligned, with alpha.
-				core.GRAPHICS.canvas.FADE   = document.createElement('canvas'); // Fade layer       - Used for Fading. General purpose bitmap canvas.
+				core.GRAPHICS.canvas.FADE   = document.createElement('canvas'); // Fade layer       - Used for Fading. General purpose bitmap canvas. (no alpha.)
 				core.GRAPHICS.canvas.OUTPUT = document.createElement('canvas'); // Output canvas    - Combination of the other 4 layers. (no alpha.)
 
 				// CANVAS CTX
 				core.GRAPHICS.ctx.BG     = core.GRAPHICS.canvas.BG    .getContext('2d', { alpha: false });
 				core.GRAPHICS.ctx.SPRITE = core.GRAPHICS.canvas.SPRITE.getContext('2d', { alpha: true  });
 				core.GRAPHICS.ctx.TEXT   = core.GRAPHICS.canvas.TEXT  .getContext('2d', { alpha: true  });
-				core.GRAPHICS.ctx.FADE   = core.GRAPHICS.canvas.FADE  .getContext('2d', { alpha: true  });
+				core.GRAPHICS.ctx.FADE   = core.GRAPHICS.canvas.FADE  .getContext('2d', { alpha: false });
 				core.GRAPHICS.ctx.OUTPUT = core.GRAPHICS.canvas.OUTPUT.getContext('2d', { alpha: false });
 
 				// CANVAS ARRAY (temp.)
@@ -305,10 +295,14 @@ core.FUNCS.graphics.init = function(){
 				let screen_wh   = (core.SETTINGS.VRAM_TILES_H * core.SETTINGS.VRAM_TILES_V);
 
 				// VRAM1 (BG layer.) (Set all to tile id 0.)
-				core.GRAPHICS.VRAM1 = new Uint8ClampedArray( screen_wh );
+				// core.GRAPHICS.VRAM1 = new Uint8ClampedArray( screen_wh );
+				core.GRAPHICS.VRAM1 = new Uint8Array ( screen_wh );
+				// core.GRAPHICS.VRAM1 = new Uint16Array( screen_wh );
 
 				// VRAM2 (TEXT layer.) (Set all to tile id 0.)
-				core.GRAPHICS.VRAM2 = new Uint8ClampedArray( screen_wh );
+				// core.GRAPHICS.VRAM2 = new Uint8ClampedArray( screen_wh );
+				core.GRAPHICS.VRAM2 = new Uint8Array ( screen_wh );
+				// core.GRAPHICS.VRAM2 = new Uint16Array( screen_wh );
 
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_vramSetup"                        , "END");
 
@@ -446,6 +440,42 @@ core.FUNCS.graphics.init = function(){
 
 			});
 		};
+		// Determines if OffscreenCanvas is available in the browser.
+		let featureDetect_OffscreenCanvas = function(){
+			// Do we have OffscreenCanvas?
+			if( ('OffscreenCanvas' in self ? true : false ) ){
+				// Do we also have transferControlToOffscreen?
+				let canvasObj = document.createElement("canvas");
+				if(typeof canvasObj.transferControlToOffscreen === "function" ? true : false){
+					// Last test.
+					try{
+						var canvasObj_ctx = canvasObj.getContext("bitmaprenderer");
+						var offscreen = new OffscreenCanvas(8, 8);
+						var twod = offscreen.getContext("2d");
+						// var gl = offscreen.getContext("webgl");
+						var bitmap = offscreen.transferToImageBitmap();
+						canvasObj_ctx.transferFromImageBitmap(bitmap);
+
+						// Return a true.
+						return true;
+					}
+					catch(e){
+						// Return a false.
+						return false;
+					}
+
+				}
+			}
+
+			// Getting here means that we do not have support for OffscreenCanvas.
+			return false;
+		};
+
+		// Determine if OffscreenCanvas is supported.
+		core.CONSTS["OffscreenCanvas_supported"] = featureDetect_OffscreenCanvas();
+
+		// DEBUG:
+		if(JSGAME.SHARED.debug) { console.log("MAIN: OffscreenCanvas support: ", core.CONSTS["OffscreenCanvas_supported"]); }
 
 		// (1/2) GRAPHICS SETUP.
 		let proms1 = [
@@ -459,88 +489,6 @@ core.FUNCS.graphics.init = function(){
 		// (2/2) GRAPHICS SETUP.
 		Promise.all(proms1).then(
 			function(res){
-				// Converts Uzebox tiles to Canvas. Respects transparency if indicated.
-				convertUzeboxTilesToCanvasTiles = function(inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType){
-					// console.log( inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType  );
-					// console.log(  inputTilesetName, newTilesetKey, handleTransparency, outputType  );
-					let curTileId;
-					let vramdata_rgb_332;
-					let tile_width = core.SETTINGS['TILE_WIDTH'];
-					let tile_height = core.SETTINGS['TILE_WIDTH'];
-					let tile_size = tile_width * tile_height;
-					let buf8;
-					let buf32;
-					let vramdata_rgb_332_length;
-					let pixel;
-					let pixel_index;
-					let i;
-					let ii;
-					let vramdata_rgb32;
-					let len = 0;
-					try{
-						len = inputTileset.length / tile_size;
-					}
-					catch(e){
-						console.log( inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType  );
-						console.log("ERROR: ", inputTileset, tile_size);
-						throw "ERROR";
-					}
-					let arr=[];
-
-					// Create the tempCanvas.
-					let tempCanvas     = document.createElement('canvas') ;
-					let tempCanvas_ctx = tempCanvas.getContext('2d');
-					tempCanvas.width   = tile_width ;
-					tempCanvas.height  = tile_height ;
-
-					for(i=0; i<len; i+=1){
-						curTileId = i;
-
-						// BY VALUE: Returns the portion of the vram array buffer for the specified tileset and tile.
-						// Get the tile source data. Should come as: Uint8ClampedArray(64) (Still Uzebox format.)
-						vramdata_rgb_332 = core.ASSETS.graphics.tiles[ inputTilesetName ].slice(
-							curTileId  * tile_size ,
-							(curTileId * tile_size)+tile_size
-						);
-
-						// Set blank container (canvas imageData) for the soon to be converted tile.
-						vramdata_rgb32 = tempCanvas_ctx.createImageData( tile_width, tile_height );
-
-						// Convert the rgb332 to rbg32.
-						buf8  = new Uint8ClampedArray(vramdata_rgb32.data.buffer);
-						buf32 = new Uint32Array(vramdata_rgb32.data.buffer);
-
-						vramdata_rgb_332_length = vramdata_rgb_332.length;
-						for(ii=0; ii<vramdata_rgb_332_length; ii+=1){
-							pixel = vramdata_rgb_332[ii];
-							pixel_index = ii;
-							buf32[pixel_index] = rgb_decode332( pixel, "arraybuffer_32", handleTransparency ) ;
-						}
-
-						// Write the arraybuffer to the imageData.
-						vramdata_rgb32.data.set(buf8);
-
-						if     (outputType=="canvas"){
-							// Write the imageData to a canvas element.
-							let canvas = document.createElement('canvas');
-							canvas.width  = tile_width;
-							canvas.height = tile_height;
-							canvas.getContext('2d').putImageData( vramdata_rgb32, 0, 0 );
-
-							// Store the canvas element.
-							arr[curTileId]=canvas;
-						}
-						else if(outputType=="imageData"){
-							// Store the imageData.
-							arr[curTileId]=vramdata_rgb32;
-						}
-
-						// vramdata_rgb32=null;
-					}
-
-					core.GRAPHICS.tiles[newTilesetKey] = arr ;
-					// arr=null;
-				};
 				// Get 32-bit rgba version of 1-byte rgb332.
 				rgb_decode332                   = function(RGB332, method, handleTransparency) {
 					// Converts one RGB332 pixel to another data type.
@@ -629,6 +577,88 @@ core.FUNCS.graphics.init = function(){
 						throw new Error("ERROR: rgb_decode332: UNKNOWN METHOD. " + method);
 					}
 				};
+				// Converts Uzebox tiles to Canvas. Respects transparency if indicated.
+				convertUzeboxTilesToCanvasTiles = function(inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType){
+					// console.log( inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType  );
+					// console.log(  inputTilesetName, newTilesetKey, handleTransparency, outputType  );
+					let curTileId;
+					let vramdata_rgb_332;
+					let tile_width = core.SETTINGS['TILE_WIDTH'];
+					let tile_height = core.SETTINGS['TILE_WIDTH'];
+					let tile_size = tile_width * tile_height;
+					let buf8;
+					let buf32;
+					let vramdata_rgb_332_length;
+					let pixel;
+					let pixel_index;
+					let i;
+					let ii;
+					let vramdata_rgb32;
+					let len = 0;
+					try{
+						len = inputTileset.length / tile_size;
+					}
+					catch(e){
+						console.log( inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType  );
+						console.log("ERROR: ", inputTileset, tile_size);
+						throw "ERROR";
+					}
+					let arr=[];
+
+					// Create the tempCanvas.
+					let tempCanvas     = document.createElement('canvas') ;
+					let tempCanvas_ctx = tempCanvas.getContext('2d');
+					tempCanvas.width   = tile_width ;
+					tempCanvas.height  = tile_height ;
+
+					for(i=0; i<len; i+=1){
+						curTileId = i;
+
+						// BY VALUE: Returns the portion of the vram array buffer for the specified tileset and tile.
+						// Get the tile source data. Should come as: Uint8ClampedArray(64) (Still Uzebox format.)
+						vramdata_rgb_332 = core.ASSETS.graphics.tiles[ inputTilesetName ].slice(
+							curTileId  * tile_size ,
+							(curTileId * tile_size)+tile_size
+						);
+
+						// Set blank container (canvas imageData) for the soon to be converted tile.
+						vramdata_rgb32 = tempCanvas_ctx.createImageData( tile_width, tile_height );
+
+						// Convert the rgb332 to rbg32.
+						buf8  = new Uint8ClampedArray(vramdata_rgb32.data.buffer);
+						buf32 = new Uint32Array(vramdata_rgb32.data.buffer);
+
+						vramdata_rgb_332_length = vramdata_rgb_332.length;
+						for(ii=0; ii<vramdata_rgb_332_length; ii+=1){
+							pixel = vramdata_rgb_332[ii];
+							pixel_index = ii;
+							buf32[pixel_index] = rgb_decode332( pixel, "arraybuffer_32", handleTransparency ) ;
+						}
+
+						// Write the arraybuffer to the imageData.
+						vramdata_rgb32.data.set(buf8);
+
+						if     (outputType=="canvas"){
+							// Write the imageData to a canvas element.
+							let canvas = document.createElement('canvas');
+							canvas.width  = tile_width;
+							canvas.height = tile_height;
+							canvas.getContext('2d').putImageData( vramdata_rgb32, 0, 0 );
+
+							// Store the canvas element.
+							arr[curTileId]=canvas;
+						}
+						else if(outputType=="imageData"){
+							// Store the imageData.
+							arr[curTileId]=vramdata_rgb32;
+						}
+
+						// vramdata_rgb32=null;
+					}
+
+					core.GRAPHICS.tiles[newTilesetKey] = arr ;
+					// arr=null;
+				};
 				// Graphics conversions.
 				post_graphicsConversion         = function(){
 					// Get the length of canvases in gamesettings.
@@ -694,6 +724,7 @@ core.FUNCS.graphics.init = function(){
 
 				// TOTAL VIDEO INIT PERFORMANCE:
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "END");
+
 				res_VIDEO_INIT();
 			},
 			function(err){
@@ -1254,6 +1285,7 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 		if(core.GRAPHICS.flags.OUTPUT || core.GRAPHICS.flags.OUTPUT_force){
 			// Create the temp output.
 			let tempOutput     = document.createElement("canvas");
+			JSGAME.SHARED.setpixelated(tempOutput);
 			let tempOutput_ctx = tempOutput.getContext('2d', { alpha: true });
 			tempOutput.width   = core.GRAPHICS["canvas"].OUTPUT.width;
 			tempOutput.height  = core.GRAPHICS["canvas"].OUTPUT.height;
@@ -1263,11 +1295,19 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].SPRITE, 0, 0) ; // SPRITE
 			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].TEXT  , 0, 0) ; // TEXT
 
+			// Change the composite settings for the temp canvas from this point on. (default is "source-over": Draws new shapes on top of the existing canvas content.)
+			// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+			let prev_globalCompositeOperation = tempOutput_ctx.globalCompositeOperation ;
+			// tempOutput_ctx.globalCompositeOperation = "copy";                        // Only the new shape is shown.
+
 			// Process the tempOutput further before writing it?
 			core.GRAPHICS.FADER.FUNCS.ProcessFading(tempOutput_ctx)
 
 			// Additional full-screen modifications from the game code?
-			.then ( (tempOutput_ctx) => core.EXTERNAL.GRAPHICS(tempOutput_ctx) )
+			.then ( function() {
+				tempOutput_ctx.globalCompositeOperation = prev_globalCompositeOperation;
+				return core.EXTERNAL.GRAPHICS(tempOutput_ctx) ;
+			} )
 
 			// Draw to the output canvas.
 			.then(
@@ -1290,7 +1330,6 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 	});
 
 } ;
-
 //
 core.FUNCS.graphics.update_allLayers    = function(){
 	// let drawStart_update_allLayers;
@@ -1462,7 +1501,6 @@ core.FUNCS.graphics.getTilemap   = function(tilemap_str){
 
 // *** SPRITE update functions. ***
 
-//
 // Clears the core.GRAPHICS.sprites array.
 core.FUNCS.graphics.clearSprites       = function(){
 	// core.GRAPHICS.sprites.length=0;
@@ -1813,20 +1851,22 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 			let doNewFade          = function(fadeStep){
 				let width  = ctx.canvas.width;
 				let height = ctx.canvas.height;
+				let img;
 
-				let img      = ctx.getImageData(0, 0, width, height);
+				img = ctx.getImageData(0, 0, width, height);
 
 				core.WORKERS.VIDEO.onmessage=function(e){
 					core.WORKERS.VIDEO.onmessage=null;
 
-					let arr = new Uint8ClampedArray( e.data.modbuf );
-					let processedImageData = new ImageData(arr, width, height);
+					// let imgData = new ImageData( new Uint8ClampedArray( e.data.modbuf ), width, height);
+					let arr     = new Uint8ClampedArray( e.data.modbuf );
+					let imgData = new ImageData(arr, width, height);
 
 					// Copy the image to the FADE canvas (can be used later if the other layers do not change.)
-					core.GRAPHICS["ctx"].FADE.putImageData(processedImageData, 0,0);
+					core.GRAPHICS["ctx"].FADE.putImageData(imgData, 0,0);
 
 					// Copy the image to the passed ctx.
-					ctx.putImageData(processedImageData, 0,0);
+					ctx.putImageData(imgData, 0,0);
 
 					// Reset the counter.
 					core.GRAPHICS.FADER.currFadeFrame=core.GRAPHICS.FADER.fadeSpeed;
@@ -1866,6 +1906,90 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 				);
 
 			};
+			let doNewFade_withOffscreenCanvas           = function(fadeStep){
+				// ... haven't figured out a way to do this correctly yet...
+				doNewFade(fadeStep); return;
+
+				// function createOffscreenCanvas(width,height) {
+				// 	var offScreenCanvas= document.createElement('canvas');
+				// 	offScreenCanvas.width = width  + 'px';
+				// 	offScreenCanvas.height= height + 'px';
+				// 	var context= offScreenCanvas.getContext("2d");
+				// 	context.fillRect(10,10,200,200);
+				// 	return offScreenCanvas;
+				// }
+
+				// let width  = ctx.canvas.width;
+				// let height = ctx.canvas.height;
+
+				// let canvas = createOffscreenCanvas(width,height);
+
+				// // let tmp_canvas     = document.createElement("canvas");
+				// // let tmp_canvas_ctx = tmp_canvas.getContext("bitmaprenderer");
+
+				// // img = ctx.canvas.transferToImageBitmap();
+				// // ctx.globalCompositeOperation = "copy";
+
+				// // off_canvas = document.createElement("canvas");
+				// // off_canvas.width  = width ;
+				// // off_canvas.height = height;
+
+				// // transferControlToOffscreen
+				// // off_canvas = new OffscreenCanvas(width, height);// .getContext("2d");
+				// // off_canvas_ctx = off_canvas.getContext("2d");
+				// // delete off_canvas_ctx;
+
+				// core.WORKERS.VIDEO.onmessage=function(e){
+				// 	core.WORKERS.VIDEO.onmessage=null;
+
+				// 	// let imgData = new ImageData( new Uint8ClampedArray( e.data.modbuf ), width, height);
+				// 	let arr     = new Uint8ClampedArray( e.data.modbuf );
+				// 	let imgData = new ImageData(arr, width, height);
+
+				// 	// Copy the image to the FADE canvas (can be used later if the other layers do not change.)
+				// 	core.GRAPHICS["ctx"].FADE.putImageData(imgData, 0,0);
+
+				// 	// Copy the image to the passed ctx.
+				// 	ctx.putImageData(imgData, 0,0);
+
+				// 	// Reset the counter.
+				// 	core.GRAPHICS.FADER.currFadeFrame=core.GRAPHICS.FADER.fadeSpeed;
+
+				// 	// Record previous fade step.
+				// 	core.GRAPHICS.FADER.prevFadeStep = fadeStep ;
+
+				// 	// Is this the end of a fadeOut?
+				// 	if      ( core.GRAPHICS.FADER.fadeDir == -1 && core.GRAPHICS.FADER.fadeStep==0         ){ fadeOutHasCompleted(); }
+
+				// 	// Is this the end of a fadeIn?
+				// 	else if ( core.GRAPHICS.FADER.fadeDir ==  1 && core.GRAPHICS.FADER.fadeStep==lastIndex ){ fadeInHasCompleted(); }
+
+				// 	// Fade steps still remain!
+				// 	else{
+				// 		// Adjust to the new fade index.
+				// 		core.GRAPHICS.FADER.fadeStep += core.GRAPHICS.FADER.fadeDir ;
+
+				// 		COMPLETED();
+
+				// 		return;
+				// 	}
+
+				// };
+
+				// core.WORKERS.VIDEO   .postMessage(
+				// 	{
+				// 		"func"     : "fade_withOffscreenCanvas",
+				// 		"maxRed"   : core.GRAPHICS.FADER.CONSTS["fader"][fadeStep].r ,
+				// 		"maxGreen" : core.GRAPHICS.FADER.CONSTS["fader"][fadeStep].g ,
+				// 		"maxBlue"  : core.GRAPHICS.FADER.CONSTS["fader"][fadeStep].b ,
+				// 		// "canvas"   : ctx.canvas,
+				// 		"canvas"   : canvas,
+				// 	} ,
+				// 	[
+				// 	]
+				// );
+
+			};
 			//
 			let addExistingFade    = function(){
 				let BG     = core.GRAPHICS.flags.BG     ;
@@ -1884,7 +2008,11 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 
 				// Otherwise, a new fade must be calculated.
 				else{
-					doNewFade( core.GRAPHICS.FADER.fadeStep );
+					// doNewFade( core.GRAPHICS.FADER.fadeStep );
+
+					if( core.CONSTS["OffscreenCanvas_supported"] ){ doNewFade_withOffscreenCanvas( core.GRAPHICS.FADER.fadeStep ); }
+					else                                          { doNewFade( core.GRAPHICS.FADER.fadeStep ); }
+
 					return;
 				}
 
@@ -1903,7 +2031,10 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 					// Are we ready for the next fade frame?
 					if(core.GRAPHICS.FADER.currFadeFrame == 0){
 						// Do the fade.
-						doNewFade(fadeStep);
+						// doNewFade(fadeStep);
+						if( core.CONSTS["OffscreenCanvas_supported"] ){ doNewFade_withOffscreenCanvas( fadeStep ); }
+						else                                          { doNewFade( fadeStep ); }
+
 						return;
 					}
 
@@ -1955,8 +2086,8 @@ core.GRAPHICS.FADER.FUNCS.FadeOut       = function(speed, blocking, blockAfterFa
 	core.GRAPHICS.FADER.fadeDir      = -1;
 	core.GRAPHICS.FADER.FUNCS.doFade(speed, blocking, blockAfterFade);
 };
-
-core.GRAPHICS.FADER.FUNCS.blockLogic        = function(newValue){
+// Logic blockers for fades.
+core.GRAPHICS.FADER.FUNCS.blockLogic    = function(newValue){
 	core.GRAPHICS.FADER.blocking       = newValue;
 	core.GRAPHICS.FADER.blockAfterFade = newValue;
 };
