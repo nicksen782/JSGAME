@@ -46,6 +46,14 @@ canvas {
     -ms-interpolation-mode: nearest-neighbor;
 }
 
+html{
+	margin: 0 auto;
+	/*scroll-behavior: smooth;*/
+	font-family: "Times New Roman, Helvetica, serif";
+	/* font-family: Arial, Helvetica, Sans-Serif; */
+	font-size: 12px;
+}
+
 body {
     background-color: #101115;
     min-height: 1em;
@@ -130,7 +138,7 @@ div#titleBar_logo_div {
 div#titleBar_logo_div {}
 
 .titleBar_logo_div_title {
-    font-size: 40px;
+    font-size: 52px;
     text-align: center;
     font-weight: bold;
     text-decoration: underline;
@@ -160,8 +168,8 @@ div#titleBar_logo_div {}
     display: inline-block;
     vertical-align: top;
     text-align: left;
-    position: absolute;
-    right: 10px;
+    position: relative;
+    /* right: 10px; */
 }
 
 #titleBar .titleBar_table button {
@@ -171,6 +179,7 @@ div#titleBar_logo_div {}
 #gameSelector {
     font-size: 14px;
     width: 100%;
+    margin-top: 1em;
 }
 
 #titleBar_logo_div table {
@@ -259,42 +268,221 @@ div#sideDiv.hide {
 
 
 
+
+
+
+
 .panels_config{
 	/* background-color:blue; */
 	/* height: 445px; */
 }
+.panels_config .hide{
+	display:none;
+}
 #panel_config_main{}
 #panel_config_gamepads{
 }
-#panel_config_gamepads #div1{
+#panel_config_gamepads #gamepad_askForConnection{
 	position: absolute;
-	width:200px;
-	height:100px;
-	left:0px; top:0px;
-	background-color:blue;
+	width: 600px;
+	height: 120px;
+	/* left:0px; */
+	/* top:0px; */
+	/* background-color:blue; */
 }
-#panel_config_gamepads #div2{
+
+#gamepads_gp1_all{background-color: rgb(107, 169, 193);width: 330px;height: 425px;position: absolute;top: 10px;left: 10px;}
+#panel_config_gamepads #gamepad_buttonStatus1{
 	position: absolute;
-	width:200px;
-	height:100px;
+	width: 80px;
+	min-height: 290px;
+	right: 5px;
+	top: 35px;
+	/* background-color:blue; */
+	text-align: left;
+	z-index:1;
+	border: 1px dotted black;
+}
+.gamepad_buttonStatus{ width:35px;display:inline-block;margin:1px; }
+.gamepad_buttonStatus.inactive{ background-color:gray; }
+.gamepad_buttonStatus.active{ background-color:green; }
+.gamepad_buttonStatus.ignored{ background-color:yellow; text-decoration: line-through; opacity:0.15;}
+
+#panel_config_gamepads #gamepads_connectedStatus1{
+	position: absolute;
+	width: 250px;
+	padding-left: 5px;
+	background-color: #6ba9c1;
 	left: 0px;
-	top: 340px;
-	background-color:blue;
+	top: 0px;
+	z-index:1;
 }
-#panel_config_gamepads #div3{
+#panel_config_gamepads #gamepads_buttonConfig1 {
 	position: absolute;
-	width:200px;
-	height:100px;
-	left: 490px;
-	top:0px;
-	background-color:blue;
+	width: 240px;
+	height: 365px;
+	left: 0px;
+	top: 30px;
+	/* background-color: yellow; */
+	z-index:1;
 }
-#panel_config_gamepads #div4{
+
+#gamepads_gp2_all{background-color: rgb(107, 169, 193);width: 330px;height: 425px;position: absolute;top: 10px;left: 350px;}
+#panel_config_gamepads #gamepad_buttonStatus2{
 	position: absolute;
-	width:200px;
-	height:100px;
-	left: 490px;
-	top: 340px;
-	background-color:blue;
+	width: 80px;
+	min-height: 290px;
+	right: 5px;
+	top: 35px;
+	/* background-color:blue; */
+	text-align: left;
+	z-index:1;
+	border: 1px dotted black;
 }
+#panel_config_gamepads #gamepads_connectedStatus2{
+	position: absolute;
+	width: 250px;
+	padding-left: 5px;
+	/* 	background-color:blue; */
+	left: 0px;
+	top: 0px;
+	z-index:1;
+}
+#panel_config_gamepads #gamepads_buttonConfig2 {
+	position: absolute;
+	width: 240px;
+	height: 365px;
+	left: 0px;
+	top: 30px;
+	/* background-color: yellow; */
+	z-index:1;
+}
+.gamepads_buttonControls{
+	background-color: #acd0de;
+	width: 96%;
+	position: absolute;
+	bottom: 5px;
+	/* margin: auto; */
+	margin: 2%;
+	/* text-align: center; */
+}
+.gamepads_buttonControls button{
+	width: 80px;
+	margin: 5px;
+	/* margin: auto; */
+}
+
+#panel_config_gamepads table{ width: 100%; }
+#panel_config_gamepads th { text-decoration:underline; font-weight:bold;  }
+#panel_config_gamepads td { text-align:left;  }
+#panel_config_gamepads button{min-width: 60px;text-align:center;}
+#panel_config_gamepads select{width: 100%;font-family: monospace;}
 #panel_config_settings{}
+
+/*
+#gamepadIcon_container_p1
+#p1_gamepad_status
+#p1_gamepad_status2
+
+.gamepadIcon_container2
+.gamepadsStatus
+.neverConnected
+.p_gamepad_status
+.p_gamepad_status2
+.gamepadIcon
+.smaller
+*/
+
+#gamepadIcon_container_p1{
+	width: 230px;
+	text-align: center;
+}
+#gamepadIcon_container_p2{
+	width: 230px;
+	text-align: center;
+}
+
+/* GAMEPAD STATUS  */
+
+.p_gamepad_status {
+	/* font-size: 8px; */
+	font-weight: bold;
+	font-size: 14px;
+	text-decoration: underline;
+	display: inline-block;
+}
+.p_gamepad_status2 {
+	left: 3px;
+	/* font-size: 10px; */
+	text-align: center;
+	width: 140px;
+	font-size: 12px;
+	display: inline-block;
+}
+.gamepadsStatus{
+	opacity: 0.90;
+	border:1px solid darkgray;
+	margin-left:5px;
+}
+.gamepadsStatus:hover{
+	opacity:1 !important;
+	border:1px solid gray;
+}
+/* neverConnected "NOT CONNECTED" */
+/* known          "ON STANDBY" */
+/* unconfigured   "MISSING CONFIG" */
+/* connected      "CONNECTED" */
+
+.gamepadsStatus.neverConnected .p_gamepad_status2::before{ content:"NOT CONNECTED"; }
+.gamepadsStatus.neverConnected .p_gamepad_status2{
+	background-color: rgba(255, 0, 0, 0.50) !important;
+	border-radius: 5px;
+}
+.gamepadsStatus.known .p_gamepad_status2::before{ content:"ON STANDBY"; }
+.gamepadsStatus.known .p_gamepad_status2       {
+	background-color: rgba(255, 255, 0, 0.50) !important;
+	border-radius: 5px;
+}
+.gamepadsStatus.unconfigured .p_gamepad_status2::before{ content:"MISSING CONFIG"; }
+.gamepadsStatus.unconfigured .p_gamepad_status2   {
+	background-color: rgba(255, 255, 0, 0.50) !important;
+	border-radius: 5px;
+}
+.gamepadsStatus.connected .p_gamepad_status2::before{ content:"CONNECTED"; }
+.gamepadsStatus.connected .p_gamepad_status2   {
+	background-color: rgba(0, 128, 0, 0.50) !important;
+	border-radius: 5px;
+}
+
+/* GAMEPAD ICON IMAGE */
+
+.gamepadIcon_container2{
+	width: 90px;
+	height: 20px;
+	background-color: rgb(105, 148, 233);
+	border-radius: 10px 10px 5px 5px;
+	padding: 1px;
+	padding-left: 5px;
+	padding-right: 5px;
+	margin-top: 5px;
+	border: 1px solid black;
+}
+.gamepadIcon{
+	width: 100%;
+	height: 20px;
+	background-image: url(img/CUzeBox_controls_modified.png);
+	background-repeat: no-repeat;
+	background-size: 100% 100%;
+	cursor:pointer;
+}
+.gamepadIcon_container:hover {
+	background-color: rgba(0, 1, 255, 0.25) !important;
+}
+.gamepadIcon.smaller{
+	width: 45px;
+	height: 10px;
+	position: relative;
+	left: 1px;
+	top: 1px;
+	display: inline-block;
+}

@@ -247,8 +247,10 @@
 					$outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = null; // \n"  ;
 				}
 				else{
-					if     ($PHP_VARS[$k]===true) { $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = true  ; "; } // This makes sure that true/false do not come out as 0 or 1.
-					else if($PHP_VARS[$k]===false){ $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = false ; "; } // This makes sure that true/false do not come out as 0 or 1.
+					// Make sure that specifically true or false values are not written as 1 or zero.
+					if     ($PHP_VARS[$k]===true) { $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = true  ; "; }
+					else if($PHP_VARS[$k]===false){ $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = false ; "; }
+					// Other values.
 					else                          { $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = " . $PHP_VARS[$k] . ";"; }
 					$outputText .= "\n";
 				}
@@ -270,23 +272,6 @@
 		?>
 
 	</script>
-
-	<!-- LOAD DEBUG (IF ACTIVE) -->
-	<?php
-		if($PHP_VARS['CANLOADGAME'] && $debug){
-			// echo "\n";
-			// if( file_exists ($path . '/DEBUG/debug.css') && $debug) {
-			// 	echo '<link rel="stylesheet" type="text/css" href="'.$path . '/DEBUG/debug.css'.'">'."\n";
-			// 	echo "\n";
-			// }
-
-			// echo "\n";
-			// if( file_exists ($path . '/DEBUG/debug.js')  && $debug) {
-			// 	echo '<script src="'.$path . '/DEBUG/debug.js'.'">'."</script>\n";
-			// 	echo "\n";
-			// }
-		}
-	?>
 
 	<!--Initializes data and readies the game for play.-->
 	<script src="index.js"></script>
@@ -483,11 +468,6 @@
 					<div id="indicator"></div>
 				</div>
 
-				<!-- GAME CONTROLS -->
-				<!-- <div id="gameControls_br">
-					<br>
-				</div> -->
-
 			</div>
 
 			<div id="panel_gestureNeeded" class="panels">
@@ -514,19 +494,61 @@
 			<div id="panel_config_main" class="panels panels_config">
 				<!-- <div class="oneLineVH_center"> -->
 					panel_config_main
+					<button class="debug_navButtons" panel="panel_config_main"     title='config_main'     onclick='JSGAME.GUI.showPanel("panel_config_main"    ,this);'>config_main</button>
+					<button class="debug_navButtons" panel="panel_config_gamepads" title='config_gamepads' onclick='JSGAME.GUI.showPanel("panel_config_gamepads",this);'>config_gamepads</button>
+					<button class="debug_navButtons" panel="panel_config_settings" title='config_settings' onclick='JSGAME.GUI.showPanel("panel_config_settings",this);'>config_settings</button>
+					<button class="debug_navButtons" panel="panel_game"            title='game'            onclick='JSGAME.GUI.showPanel("panel_game"         ,this);'>GAME</button>
 				<!-- </div> -->
 			</div>
 
 			<!-- CONFIGURATION GAMEPADS -->
 			<div id="panel_config_gamepads" class="panels panels_config">
-				<!-- <div class="oneLineVH_center"> -->
-					<div id="gamepad_askForConnection">To use your gamepad, connected it and then press a button.</div>
-					<div id="gamepad_buttonStatus">
+				<!-- Appears if no gamepad has been found yet.  -->
+				<div id="gamepad_askForConnection" class="oneLineVH_center hide">
+					<div>To use your gamepad, connect it and then press a button.</div>
+				</div>
 
+				<div id="gamepad_ConnectionFound" class="hide">
+
+				<!--GAMEPAD 1 CONFIG  -->
+				<div id="gamepads_gp1_all">
+					<!-- Connection status indicator -->
+					<div id="gamepads_connectedStatus1">
+						<div id="gamepadIcon_container_p1" class="gamepadIcon_container2 gamepadsStatus neverConnected">
+							<!-- <div class="gamepadIcon smaller"></div> -->
+							<div id="p1_gamepad_status"  class="p_gamepad_status">Player 1</div>
+							<div id="p1_gamepad_status2" class="p_gamepad_status2"></div>
+						</div>
 					</div>
-					<div id="div3">div3</div>
-					<div id="div4">div4</div>
-				<!-- </div> -->
+
+					<!-- Live feed of button/axes states -->
+					<div id="gamepad_buttonStatus1">
+					</div>
+
+					<!-- Configuration of buttons -->
+					<div id="gamepads_buttonConfig1"></div>
+				</div>
+
+				<!--GAMEPAD 2 CONFIG  -->
+				<div id="gamepads_gp2_all">
+					<!-- Connection status indicator -->
+					<div id="gamepads_connectedStatus2">
+						<div id="gamepadIcon_container_p2" class="gamepadIcon_container2 gamepadsStatus neverConnected">
+							<!-- <div class="gamepadIcon smaller"></div> -->
+							<div id="p2_gamepad_status"  class="p_gamepad_status">Player 2</div>
+							<div id="p2_gamepad_status2" class="p_gamepad_status2"></div>
+						</div>
+					</div>
+
+					<!-- Live feed of button/axes states -->
+					<div id="gamepad_buttonStatus2">
+					</div>
+
+					<!-- Configuration of buttons -->
+					<div id="gamepads_buttonConfig2"></div>
+				</div>
+
+				</div>
 			</div>
 
 			<!-- CONFIGURATION SETTINGS -->
@@ -550,7 +572,6 @@
 				?>
 				<!-- -->
 				DEBUG ON: <input type="checkbox" id="debug_mode" <?php echo ($debug ? "checked" : "") ?>>
-				<!-- <button onclick="JSGAME.GUI.reloadGame();">RELOAD</button> -->
 
 				<!-- QUICK DEBUG BUTTONS -->
 				<div id="debug_navButtons" class="hidden">
@@ -589,11 +610,9 @@
 							echo "<div class='".$class." gamepad gamepad_nes noSelect2' pad='".($i+1)."'>";
 							require "gamepadconfigs/gamepad_nes.svg";
 							echo "</div>";
-							// echo "<br>";
 						}
 
 						// Output the keyboard keys.
-						// if(!$debug){ require "gamepadconfigs/keyboard_nes.html"; }
 						require "gamepadconfigs/keyboard_nes.html";
 					}
 
@@ -610,11 +629,9 @@
 							echo "<div class='".$class." gamepad gamepad_snes noSelect2' pad='".($i+1)."'>";
 							require "gamepadconfigs/gamepad_snes.svg";
 							echo "</div>";
-							// echo "<br>";
 						}
 
 						// Output the keyboard keys.
-						// if(!$debug){ require "gamepadconfigs/keyboard_snes.html"; }
 						require "gamepadconfigs/keyboard_snes.html";
 					}
 					else{
@@ -696,7 +713,6 @@
 				elem.classList.add("active");
 			}
 			opacityAdjust(0.000, document.getElementById("O_0_000"));
-			// opacityAdjust(0.025, document.getElementById("O_0_025"));
 		</script>
 
 		<?php
