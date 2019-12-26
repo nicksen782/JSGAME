@@ -11,6 +11,9 @@
 
 	<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABlBMVEVfoL9WVlZrUZ6mAAAADElEQVQI12NwYGgAAAFEAMHrWQMJAAAAAElFTkSuQmCC">
 
+	<!-- <script src="libs/FileSaver.min.js"></script> -->
+	<!-- <script src="FileSaver.min.js.map"></script> -->
+
 	<title>JS GAME</title>
 
 	<!-- JS GAME styling -->
@@ -274,7 +277,17 @@
 	</script>
 
 	<!--Initializes data and readies the game for play.-->
-	<script src="index.js"></script>
+
+	<!-- COMBINED (One network request.) -->
+	<script src="index_p.php/?o=combineFiles&arg=JSGAMECORE"></script>
+
+	<!-- SEPARATE (Multiple network requests.) -->
+	<!-- <script src="cores/JSGAME_core/flags.js"></script> -->
+	<!-- <script src="cores/JSGAME_core/shared.js"></script> -->
+	<!-- <script src="cores/JSGAME_core/dom.js"></script> -->
+	<!-- <script src="cores/JSGAME_core/init.js"></script> -->
+	<!-- <script src="cores/JSGAME_core/gui.js"></script> -->
+	<!-- <script src="cores/JSGAME_core/gamepads.js"></script> -->
 
 	<!-- DEBUG AND GAMEPAD FLAGS -->
 	<?php
@@ -495,7 +508,7 @@
 				<!-- <div class="oneLineVH_center"> -->
 					panel_config_main
 					<button class="debug_navButtons" panel="panel_config_main"     title='config_main'     onclick='JSGAME.GUI.showPanel("panel_config_main"    ,this);'>config_main</button>
-					<button class="debug_navButtons" panel="panel_config_gamepads" title='config_gamepads' onclick='JSGAME.GUI.showPanel("panel_config_gamepads",this);'>config_gamepads</button>
+					<button class="debug_navButtons" panel="panel_config_gamepads" title='config_gamepads' onclick='JSGAME.GUI.showPanel("panel_config_gamepads",this);JSGAME.GAMEPADS.CONFIG.scan();'>config_gamepads</button>
 					<button class="debug_navButtons" panel="panel_config_settings" title='config_settings' onclick='JSGAME.GUI.showPanel("panel_config_settings",this);'>config_settings</button>
 					<button class="debug_navButtons" panel="panel_game"            title='game'            onclick='JSGAME.GUI.showPanel("panel_game"         ,this);'>GAME</button>
 				<!-- </div> -->
@@ -571,7 +584,9 @@
 					}
 				?>
 				<!-- -->
-				DEBUG ON: <input type="checkbox" id="debug_mode" <?php echo ($debug ? "checked" : "") ?>>
+				DEBUG ON: <input type="checkbox" id="debug_mode" <?php echo ($debug ? "checked" : "") ?> >
+				<span id="gp_blinker1_status" style="width:1em; height:1em; background-color:yellow; display:inline-block;visibility:hidden; ">&nbsp;</span>
+				<span id="gp_blinker2_status" style="width:1em; height:1em; display:inline-block;visibility:hidden; background-image: url('data:image/gif;base64,R0lGODlhEAAQAPAAAJYcHAAAACH5BAwUAAAAIf8LTkVUU0NBUEUyLjADAQAAACwAAAAAEAAQAAACDoSPqcvtD6OctNqLsz4FACH5BA0UAAAAIf8LSW1hZ2VNYWdpY2sOZ2FtbWE9MC40NTQ1NDUALAAAAAAQABAAgAAAAAAAAAIOhI+py+0Po5y02ouzPgUAOw==')   ">&nbsp;</span>
 
 				<!-- QUICK DEBUG BUTTONS -->
 				<div id="debug_navButtons" class="hidden">
