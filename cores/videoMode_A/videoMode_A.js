@@ -61,7 +61,7 @@ core.GRAPHICS.flags.OUTPUT = false ; // Draw output.
 core.GRAPHICS.flags.INLAYERUPDATE=false; //
 
 core.GRAPHICS.flags.BG_force     = false ; // Forcing the drawing even if it normally would not draw.
-// core.GRAPHICS.flags.SPRITE_force = false ; // Forcing the drawing even if it normally would not draw.
+core.GRAPHICS.flags.SPRITE_force = false ; // Forcing the drawing even if it normally would not draw.
 core.GRAPHICS.flags.TEXT_force   = false ; // Forcing the drawing even if it normally would not draw.
 // core.GRAPHICS.flags.FADE_force   = false ; // Forcing the drawing even if it normally would not draw.
 core.GRAPHICS.flags.OUTPUT_force = false ; // Forcing the drawing even if it normally would not draw.
@@ -167,7 +167,7 @@ core.FUNCS.graphics.logo = function(){
 				output.drawImage( img  , 0  , 0 , img.width, img.height, xpos , ypos , width , height  );
 
 				// Hold the image for a moment. It should be cleared by the game.
-				setTimeout( res , 1250);
+				setTimeout( res , 1000);
 			};
 			img.src = logo;
 		}
@@ -1503,10 +1503,22 @@ core.FUNCS.graphics.getTilemap   = function(tilemap_str){
 
 // Clears the core.GRAPHICS.sprites array.
 core.FUNCS.graphics.clearSprites       = function(){
+	// Blank out sprites and sprites_prev.
 	// core.GRAPHICS.sprites.length=0;
+	// core.GRAPHICS.sprites_prev.length=0;
+
+	// Blank out sprites and sprites_prev.
 	core.GRAPHICS.sprites=[];
-	// core.GRAPHICS.sprites_prev=[];
+	core.GRAPHICS.sprites_prev=[];
+
+	// Set the force draw flag on the sprites.
 	core.GRAPHICS.flags.SPRITE = true ;
+	core.GRAPHICS.flags.SPRITE_force = true ;
+
+	// Clear the canvas.
+	if(core.GRAPHICS["ctx"].SPRITE){
+		core.GRAPHICS["ctx"].SPRITE.clearRect(0, 0, core.GRAPHICS["ctx"].SPRITE.canvas.width, core.GRAPHICS["ctx"].SPRITE.canvas.height);
+	}
 
 };
 // Sets the tileset for the specified sprite bank.
