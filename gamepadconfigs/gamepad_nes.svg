@@ -11,23 +11,23 @@
 	<!-- width    = "420"
 	height   = "160" -->
     <style>
-		/* HOVER GROUPS */
-		.hover_group        { opacity: 0.95; fill: rgba(66, 44, 255, 0.45); stroke: goldenrod; stroke-width: 2px; cursor: pointer; }
-		.hover_group:hover  { fill: rgba(255, 171, 44, 0.65); }
-		.hover_group.active { fill: rgba(255, 153, 0, 0.9); }
+	/* HOVER GROUPS */
+	.hover_group        { opacity: 0.95; fill: rgba(66, 44, 255, 0.45); stroke: rgb(27, 0, 255); stroke-width: 2px; cursor: pointer; }
+	.hover_group:hover  { fill: rgba(255, 171, 44, 0.65); }
+	.hover_group.active { fill: rgba(255, 153, 0, 0.9); }
 
-		/* .hover_group:active { fill: rgba(255, 153, 0, 0.9); } */
-		/* .hover_group:hover  { fill: rgba(66, 44, 255, 0.65); } */
-		/* .hover_group:active { fill: rgba(80, 44, 128, 0.80); } */
+	/* .hover_group:active { fill: rgba(255, 153, 0, 0.9); } */
+	/* .hover_group:hover  { fill: rgba(66, 44, 255, 0.65); } */
+	/* .hover_group:active { fill: rgba(80, 44, 128, 0.80); } */
 
-		/* DPAD */
-		.button_type1 { font-size: 10px; fill: white; font-weight: bold; }
+	/* DPAD */
+	.button_type1 { font-size: 10px; fill: white; font-weight: bold; }
 
-		/* START, SELECT */
-		.button_type2 { font-size: 10px; fill: white; font-weight: bold; }
+	/* START, SELECT */
+	.button_type2 { font-size: 10px; fill: white; font-weight: bold; }
 
-		/* A, B */
-		.button_type3 { font-size: 10px; fill: white; font-weight: bold; }
+	/* A, B */
+	.button_type3 { font-size: 10px; fill: white; font-weight: bold; }
 	</style>
 
 	<!-- BACKGROUND IMAGE -->

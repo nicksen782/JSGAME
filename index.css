@@ -372,6 +372,11 @@ div#sideDiv.hide {
 	/* margin: auto; */
 }
 
+button.yellowHighlight {
+	background-color:yellow;
+	font-weight: bold;
+}
+
 #panel_config_gamepads table{ width: 100%; }
 #panel_config_gamepads th { text-decoration:underline; font-weight:bold;  }
 #panel_config_gamepads td { text-align:left;  }

@@ -13,6 +13,9 @@ JSGAME.GAMEPADS = {
 		// DOM CACHE. POPULATED BY INIT.
 		DOM_elems     : {},
 
+		// When using the "setAllButtonMappings" this will keep track of the already used buttons on the gamepad.
+		set_all_alreadyUsedButtons : [],
+
 		// These buttons will be ignored during config.
 		ignoredGamepadInputs : {
 			"p1": [] ,
@@ -50,8 +53,6 @@ JSGAME.GAMEPADS = {
 					let key = "p"+(i1+1);
 
 					if     ( JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs[key].indexOf(name) != -1 ){
-						// JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs()
-						// JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs
 						cssclass += "ignored";
 					}
 					else if(value == 0){ cssclass += "inactive"; }
@@ -78,8 +79,6 @@ JSGAME.GAMEPADS = {
 					let key = "p"+(i1+1);
 
 					if     ( JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs[key].indexOf(name) != -1 ){
-						// JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs()
-						// JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs
 						cssclass += "ignored";
 					}
 					else if(value == 0){ cssclass += "inactive"; }
@@ -96,40 +95,132 @@ JSGAME.GAMEPADS = {
 		},
 		closeview     : function(){
 		},
+		set_ButtonAction:function(elem){
+			return new Promise(function(res,rej){
 
+				// Get some values (using the button.)
+				let padnum = elem.getAttribute("padnum");
+				let label  = elem.getAttribute("button");
+				let button = elem.getAttribute("button");
+				let tr     = elem.closest("tr");
+				// let select = tr.querySelector("select");
+
+				// Did the user click 'OK'?
+				if(1){
+					// Stop the next scan if one is scheduled.
+					cancelAnimationFrame( JSGAME.GAMEPADS.CONFIG.raf_id_noGame );
+
+					// Do a scan (will continue afterwards.)
+					JSGAME.GAMEPADS.CONFIG.scan().then(function(data){
+						// console.log(data);
+						// Were no buttons pressed?
+						if(data.length==0){
+							res( { "msg":"NO_BUTTON", "btn":null } );
+							return;
+						}
+
+						// Was more than one button pressed?
+						else if(data.length>1){
+							res( { "msg":"MULTIPLE_BUTTONS", "btn":null } );
+							return;
+						}
+
+						// Only 1 button was pressed. (GOOD)
+						else if(data.length==1){
+							// select.value=data[0].text;
+							res( { "msg":"ONE_BUTTON", "btn":data[0].text } );
+						}
+					});
+				}
+				else{ res( { "msg":"USER_CANCEL", "btn":null } ) ; }
+
+			});
+
+		},
+
+		// Start the process of mapping ALL buttons to gamepad inputs.
 		setAllButtonMappings : function(padNum){
+			let conf = confirm("About to set ALL buttons for gamepad "+padNum+"\n\nClick 'OK' to continue.");
+			if(!conf){ return; }
+
 			//
 			let section;
 			if     (padNum==1){ section=JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_buttonConfig1; }
 			else if(padNum==2){ section=JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_buttonConfig2; }
 			else{ return; }
 
-			let btns = section.querySelectorAll("button[padnum='"+padNum+"']");
+			// Get list of clickable buttons for this gamepad.
+			let btns = section.querySelectorAll( "button[padnum='"+padNum+"']" );
 
-			// console.log(btns);
+			// JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs(padNum);
 
-			JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs(padNum);
+			JSGAME.GAMEPADS.CONFIG.set_all_alreadyUsedButtons=[];
 
 			let keys = Object.keys(btns);
 			let i = 0;
 			let len = keys.length;
 
 			function iterate(){
-				// Done?
+				// Done? - It is done after i reaches the last button in the list.
 				if( i >= len ){
 					// console.log("We are done!");
+					JSGAME.GAMEPADS.CONFIG.set_all_alreadyUsedButtons=[];
 					return;
 				}
 				else{
 					let btn = btns[i];
-					btn.onclick();
-					i+=1;
-					requestAnimationFrame(iterate);
+
+					// Add the CSS class of "yellowHighlight" to this button to indicate that it is the current button being set.
+					btn.classList.add("yellowHighlight");
+
+					// btn.onclick();
+					let prom = JSGAME.GAMEPADS.CONFIG.set_ButtonAction( btn );
+					prom.then(
+						// If resolved.
+						function(data){
+							switch(data.msg){
+								case "ONE_BUTTON"       : {
+									// Only advance if this button has not already been used.
+									if( JSGAME.GAMEPADS.CONFIG.set_all_alreadyUsedButtons.indexOf(data.btn) == -1 ){
+										// Add to the list of used buttons.
+										JSGAME.GAMEPADS.CONFIG.set_all_alreadyUsedButtons.push( data.btn );
+
+										// Get a DOM handle onto this buttons's row's select.
+										// Put the value into the select.
+										let select = btn.closest("tr").querySelector("select");
+										select.value=data.btn;
+
+										// Remove the yellow highlight.
+										btn.classList.remove("yellowHighlight");
+
+										// Increment up to the next button.
+										i+=1;
+
+										// Request the next iteration.
+										setTimeout(function(){
+											requestAnimationFrame(iterate);
+										}, 25);
+									}
+									else{
+										requestAnimationFrame(iterate);
+									}
+
+									break;
+								}
+								case "NO_BUTTON"        : {                                                 requestAnimationFrame(iterate); break; }
+								case "MULTIPLE_BUTTONS" : {                                                 requestAnimationFrame(iterate); break; }
+								case "USER_CANCEL"      : { btn.classList.remove("yellowHighlight"); i=len; requestAnimationFrame(iterate); break; }
+							};
+						},
+
+						// If rejected.
+						function(data){ console.log("ERR:", data); }
+					);
 				}
 			};
 			iterate();
 		},
-		// Add button mappings for a gamepad. (SAVE)
+		// (SAVE) Add button mappings for a gamepad.
 		saveButtonMappings : function(padNum){
 			let section;
 			if     (padNum==1){ section=JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_buttonConfig1; }
@@ -232,8 +323,6 @@ JSGAME.GAMEPADS = {
 			//
 		},
 		determineIgnoredInputs : function(padNum){
-			// JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs();
-
 			// Get the key.
 			let key = "p"+padNum;
 
@@ -248,10 +337,6 @@ JSGAME.GAMEPADS = {
 				JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs[key].push( d.getAttribute('name') );
 			});
 
-			// JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs(1);
-			// JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs(2);
-			// console.log(JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs["p1"]);
-			// console.log(JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs["p2"]);
 		},
 		// USED???
 		determineActiveButton : function(padNum){
@@ -270,10 +355,6 @@ JSGAME.GAMEPADS = {
 			// padButtons.forEach(function(d){
 			// 	JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs[key].push( d.getAttribute('name') );
 			// });
-			// JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs(1);
-			// JSGAME.GAMEPADS.CONFIG.determineIgnoredInputs(2);
-			// console.log(JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs["p1"]);
-			// console.log(JSGAME.GAMEPADS.CONFIG.ignoredGamepadInputs["p2"]);
 
 			return padButtons;
 		},
@@ -429,39 +510,68 @@ JSGAME.GAMEPADS = {
 					button.setAttribute("padNum", padNum);
 					button.setAttribute("button", label);
 					button.onclick=function(){
-						// return new Promise(function(res,rej){
+						// Add the yellow highlight.
+						button.classList.add("yellowHighlight");
+
+						// The timeout is needed to have the screen actually reflect the yellow highlighting.
+						setTimeout(function(){
+							// Ask the user.
 							let cnfrm = confirm(
 								"SETTING: '" + label + "'" + " ON PAD: " + padNum +
 								"\n\nHold the '" + label + "' button on the gamepad " + padNum + " while clicking 'OK'."
-							);
+								);
 
 							if(cnfrm){
-								// Stop the next scan if one is scheduled.
-								cancelAnimationFrame( JSGAME.GAMEPADS.CONFIG.raf_id_noGame );
-								// JSGAME.GAMEPADS.CONFIG.raf_id_noGame = requestAnimationFrame( JSGAME.GAMEPADS.CONFIG.scan );
-
-								// Do a scan (will continue afterwards.)
-								JSGAME.GAMEPADS.CONFIG.scan().then(function(res){
-									// console.log(res.length, "YAY!", res, label, tr, tr.querySelector("select") );
-
-									// Were no buttons pressed?
-									if(res.length==0){ return;  }
-
-									// Was more than one button pressed?
-									else if(res.length>1){ return; }
-
-									// GOOD.
-									else{ tr.querySelector("select").value=res[0].text; }
-
-								});
-
+								JSGAME.GAMEPADS.CONFIG.set_ButtonAction(button).then(
+									function(data){
+										let select=button.closest("tr").querySelector("select");
+										select.value=data.btn;
+										button.classList.remove("yellowHighlight");
+									},
+									function(data){ console.log("data", data); }
+								);
 							}
-							else{}
+							else{ button.classList.remove("yellowHighlight"); }
+						}, 100);
 
-						// });
 					};
-
+					// button.onclick=function(){ JSGAME.GAMEPADS.CONFIG.set_ButtonAction(button); };
 					return button;
+
+					// button.onclick=function(){
+					// 	// return new Promise(function(res,rej){
+					// 		let cnfrm = confirm(
+					// 			"SETTING: '" + label + "'" + " ON PAD: " + padNum +
+					// 			"\n\nHold the '" + label + "' button on the gamepad " + padNum + " while clicking 'OK'."
+					// 		);
+
+					// 		if(cnfrm){
+					// 			// Stop the next scan if one is scheduled.
+					// 			cancelAnimationFrame( JSGAME.GAMEPADS.CONFIG.raf_id_noGame );
+					// 			// JSGAME.GAMEPADS.CONFIG.raf_id_noGame = requestAnimationFrame( JSGAME.GAMEPADS.CONFIG.scan );
+
+					// 			// Do a scan (will continue afterwards.)
+					// 			JSGAME.GAMEPADS.CONFIG.scan().then(function(res){
+					// 				// console.log(res.length, "YAY!", res, label, tr, tr.querySelector("select") );
+
+					// 				// Were no buttons pressed?
+					// 				if(res.length==0){ return;  }
+
+					// 				// Was more than one button pressed?
+					// 				else if(res.length>1){ return; }
+
+					// 				// GOOD.
+					// 				else{ tr.querySelector("select").value=res[0].text; }
+
+					// 			});
+
+					// 		}
+					// 		else{}
+
+					// 	// });
+					// };
+
+					// return button;
 				};
 
 				let table = document.createElement("table");
@@ -636,6 +746,23 @@ JSGAME.GAMEPADS = {
 				"BTN_SR"     : { "type" : "buttons" , "index" : 7  , "true" : 1  , "sign" : "+" }
 			}
 		},
+		"::8Bitdo SNES30 GamePad" : {
+			"name" : "8Bitdo SNES30 GamePad",
+			"btnMap" : {
+				"BTN_B"      : { "type" : "buttons" , "index" : 1  , "true" : 1  , "sign" : "+" } ,
+				"BTN_Y"      : { "type" : "buttons" , "index" : 3  , "true" : 1  , "sign" : "+" } ,
+				"BTN_START"  : { "type" : "buttons" , "index" : 9  , "true" : 1  , "sign" : "+" } ,
+				"BTN_SELECT" : { "type" : "buttons" , "index" : 8  , "true" : 1  , "sign" : "+" } ,
+				"BTN_UP"     : { "type" : "axes"    , "index" : 1  , "true" : -1 , "sign" : "-" } ,
+				"BTN_DOWN"   : { "type" : "axes"    , "index" : 1  , "true" : 1  , "sign" : "+" } ,
+				"BTN_LEFT"   : { "type" : "axes"    , "index" : 0  , "true" : -1 , "sign" : "-" } ,
+				"BTN_RIGHT"  : { "type" : "axes"    , "index" : 0  , "true" : 1  , "sign" : "+" } ,
+				"BTN_A"      : { "type" : "buttons" , "index" : 0  , "true" : 1  , "sign" : "+" } ,
+				"BTN_X"      : { "type" : "buttons" , "index" : 2  , "true" : 1  , "sign" : "+" } ,
+				"BTN_SL"     : { "type" : "buttons" , "index" : 4  , "true" : 1  , "sign" : "+" } ,
+				"BTN_SR"     : { "type" : "buttons" , "index" : 5  , "true" : 1  , "sign" : "+" }
+			}
+		} ,
 		"05ac:111d:Gamepad" : {
 			"name" : "Gamepad",
 			"btnMap" : {

@@ -2,9 +2,9 @@
 <svg
 	xmlns               = "http://www.w3.org/2000/svg"
 	xmlns:xlink         = "http://www.w3.org/1999/xlink"
-	width               = "420"
-	height              = "160"
-	viewBox             = "0 0 420 160"
+	width               = "356"
+	height              = "156"
+	viewBox             = "0 0 356 156"
 	preserveAspectRatio = "xMinYMin meet"
 	version             = "1.1"
 	class               = "gamepad_snes"
@@ -30,41 +30,23 @@
 	.button_type3 { font-size: 10px; fill: white; font-weight: bold; }
 </style>
 
-	<image width="420" height="160" xlink:href="img/CUzeBox_controls_modified.png"></image>
+	<image width="356" height="156" xlink:href="img/snesgp.png"></image>
 
-	<!-- <text x="25" y="16" style="font-size:18px;font-weight:bold;" fill="black">P1</text> -->
-	<text x="170" y="155" style="font-size:18px;font-weight:bold;" fill="black">Player 1</text>
+	<text x="145" y="152" style="font-size:18px;font-weight:bold;" fill="black">Player 1</text>
 
 	<!-- TEXT LABELS -->
 
 	<!-- BUTTON HIGHLIGHTS -->
-	<rect pad="1" button="BTN_UP"     kb="ArrowUp"    class="hover_group" x="92"  y="42" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_DOWN"   kb="ArrowDown"  class="hover_group" x="92"  y="94" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_LEFT"   kb="ArrowLeft"  class="hover_group" x="64"  y="68" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_RIGHT"  kb="ArrowRight" class="hover_group" x="120" y="68" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_SELECT" kb="Space"      class="hover_group" x="160" y="77" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_START"  kb="Enter"      class="hover_group" x="200" y="77" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_B"      kb="KeyA"       class="hover_group" x="300" y="96" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_A"      kb="KeyS"       class="hover_group" x="335" y="67" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_SL"     kb="ShiftLeft"  class="hover_group" x="65"  y="2"  width="90" height="14"></rect>
-	<rect pad="1" button="BTN_SR"     kb="ShiftRight" class="hover_group" x="265" y="2"  width="90" height="14"></rect>
-	<rect pad="1" button="BTN_Y"      kb="KeyQ"       class="hover_group" x="264" y="67" width="28" height="28"></rect>
-	<rect pad="1" button="BTN_X"      kb="KeyW"       class="hover_group" x="300" y="39" width="28" height="28"></rect>
-
-	<!--
-	<g uzebtn="BTN_UP"     name="key_UP"     class="hover_group"> <rect    x="92"   y="48"  width="26" height="21"></rect>  </g>
-	<g uzebtn="BTN_DOWN"   name="key_DOWN"   class="hover_group"> <rect    x="92"   y="92"  width="26" height="21"></rect>  </g>
-	<g uzebtn="BTN_LEFT"   name="key_LEFT"   class="hover_group"> <rect    x="66"   y="70"  width="26" height="21"></rect>  </g>
-	<g uzebtn="BTN_RIGHT"  name="key_RIGHT"  class="hover_group"> <rect    x="118"  y="70"  width="26" height="21"></rect>  </g>
-	<g uzebtn="BTN_SELECT" name="key_SPACE"  class="hover_group"> <rect    x="160"  y="77"  width="30" height="30"></rect>  </g>
-	<g uzebtn="BTN_START"  name="key_ENTER"  class="hover_group"> <rect    x="200"  y="77"  width="30" height="30"></rect>  </g>
-	<g uzebtn="BTN_B"      name="key_A"      class="hover_group"> <circle cx="314" cy="110" r="15"></circle></g>
-	<g uzebtn="BTN_A"      name="key_S"      class="hover_group"> <circle cx="350" cy="81"  r="15"></circle></g>
-
-	<g uzebtn="BTN_SL"     name="key_LSHIFT" class="hover_group"> <rect    x="65"   y="2"   width="75" height="15"></rect>  </g>
-	<g uzebtn="BTN_SR"     name="key_RSHIFT" class="hover_group"> <rect    x="280"  y="2"   width="75" height="15"></rect>  </g>
-	<g uzebtn="BTN_Y"      name="key_Q"      class="hover_group"> <circle cx="279" cy="81"  r="15"></circle></g>
-	<g uzebtn="BTN_X"      name="key_W"      class="hover_group"> <circle cx="314" cy="53"  r="15"></circle></g>
-	-->
-
+	<rect pad="1" button="BTN_UP"     kb="ArrowUp"    class="hover_group" x="63"  y="39" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_DOWN"   kb="ArrowDown"  class="hover_group" x="63"  y="95" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_LEFT"   kb="ArrowLeft"  class="hover_group" x="35"  y="67" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_RIGHT"  kb="ArrowRight" class="hover_group" x="91"  y="67" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_SELECT" kb="Space"      class="hover_group" x="134" y="77" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_START"  kb="Enter"      class="hover_group" x="173" y="77" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_B"      kb="KeyA"       class="hover_group" x="269" y="95" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_A"      kb="KeyS"       class="hover_group" x="303" y="66" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_SL"     kb="ShiftLeft"  class="hover_group" x="35"  y="2"  width="90" height="14"></rect>
+	<rect pad="1" button="BTN_SR"     kb="ShiftRight" class="hover_group" x="235" y="2"  width="90" height="14"></rect>
+	<rect pad="1" button="BTN_Y"      kb="KeyQ"       class="hover_group" x="236" y="66" width="26" height="26"></rect>
+	<rect pad="1" button="BTN_X"      kb="KeyW"       class="hover_group" x="270" y="41" width="26" height="26"></rect>
 </svg>

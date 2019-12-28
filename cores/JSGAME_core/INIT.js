@@ -175,6 +175,9 @@ JSGAME.INIT={
 		JSGAME.consts.allowedKeys    = [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"     , "Enter"    , "KeyA" , "KeyS" , "ShiftLeft", "ShiftRight", "KeyQ" , "KeyW" , ];
 		JSGAME.consts.allowedButtons = [ "BTN_UP" , "BTN_DOWN" , "BTN_LEFT" , "BTN_RIGHT" , "BTN_SELECT", "BTN_START", "BTN_B", "BTN_A", "BTN_SL"   , "BTN_SR"    , "BTN_Y", "BTN_X", ];
 
+		// Add the listeners for real gamepads.
+		JSGAME.GAMEPADS.CONFIG.init();
+
 		// Can we load the game?
 		if(JSGAME.PRELOAD.PHP_VARS.CANLOADGAME){
 			// Does a gesture need to occur still?
@@ -208,12 +211,8 @@ JSGAME.INIT={
 				console.log("NO GAME SELECTED");
 			}
 
-			// Run the special gamepads init.
-			if(!JSGAME.GAMEPADS.CONFIG.initDone){
-				// Run the special gamepads init.
-				JSGAME.GAMEPADS.CONFIG.init();
-			};
-
+			// Add the listeners for real gamepads.
+			// JSGAME.GAMEPADS.CONFIG.init();
 		}
 	},
 	// Configures JSGAME GUI for use and then starts the game code.
@@ -333,7 +332,7 @@ JSGAME.INIT={
 			}
 		);
 
-		// Add the listeners for gamepad and keyboard input.
+		// Add the listeners for the on-screen gamepad and keyboard input.
 		JSGAME.GUI.gameInputListeners();
 
 		// Hidden gamepads?
@@ -360,7 +359,7 @@ JSGAME.INIT={
 		// }
 		// else{
 			// JSGAME.GAMEPADS.CONFIG.DOM_init();
-			JSGAME.GAMEPADS.CONFIG.init();
+			// JSGAME.GAMEPADS.CONFIG.init();
 		// }
 
 		// Run the game's runOnce function.
