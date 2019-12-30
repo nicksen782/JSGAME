@@ -18,6 +18,9 @@ date_default_timezone_set(TIMEZONE);
 chdir(__DIR__);
 $_appdir        = getcwd().''              ;
 
+$devServer=false;
+if      ( strpos($_SERVER['SERVER_NAME'], "dev2.nicksen782.net" ) !== false ) { $devServer=true; }
+
 // Was a request received? Process it.
 if     ( $_POST['o'] ){ API_REQUEST( $_POST['o'], 'post' ); }
 else if( $_GET ['o'] ){ API_REQUEST( $_GET ['o'], 'get'  ); }
@@ -35,7 +38,8 @@ function API_REQUEST( $api, $type ){
 	$o_values=array();
 
 	// APIs
-	$o_values["combineFiles"] = [ "p"=>( ( $public ) ? 1 : 0 ), 'get'=>1, 'post'=>0, 'cmd'=>0,] ;
+	$o_values["combineFiles"]      = [ "p"=>( ( $public ) ? 1 : 0 ), 'get'=>1, 'post'=>0, 'cmd'=>0,] ;
+	$o_values["combineFiles_game"] = [ "p"=>( ( $public ) ? 1 : 0 ), 'get'=>1, 'post'=>0, 'cmd'=>0,] ;
 
 	// DETERMINE IF THE API IS AVAILABLE TO THE USER.
 
@@ -71,20 +75,63 @@ function API_REQUEST( $api, $type ){
 
 }
 
+// Can be used by a game.
+function combineFiles_game(){
+	// index_p.php/?o=combineFiles_game&game=Tetris_(JS)
+	global $_appdir;
+
+	$output="";
+
+	//
+	$games   = json_decode(file_get_contents("gamelist.json"), true)['games'];
+	$key     = array_search($_GET["game"], array_column($games, 'header_gameChoice'));
+	$gamedir = $games[$key]['gamedir'];
+
+	// Change the the "js" folder for the game.
+	chdir($gamedir);
+
+	// Get the gamesettings for the specified game.
+	$gamesettings = json_decode(file_get_contents("gamesettings.json"), true);
+	$filelist = $gamesettings["js_files"];
+
+	// Make sure there ar files.
+	if(!sizeof($filelist)){ exit(); }
+
+	// Combine the files.
+	for($i=0; $i<sizeof($filelist); $i+=1){
+		$file = $filelist[$i];
+
+		if (strpos($file, '..') !== false) { exit( "NOT ALLOWED!" ); }
+		$output .= file_get_contents($file) . "\n\n" ;
+	}
+
+	// Output the files.
+	echo $output;
+
+	// Change back to the app dir.
+	chdir($_appdir);
+}
+// Used for JSGAME initial loading.
 function combineFiles(){
 	global $_appdir;
 	$filelist=[];
 	$output="";
 
 	switch( $_GET["arg"] ){
-		case "JSGAMECORE" : {
+		case "JSGAME" : {
 			array_push($filelist, "cores/JSGAME_core/FLAGS.js"   );
 			array_push($filelist, "cores/JSGAME_core/SHARED.js"  );
 			array_push($filelist, "cores/JSGAME_core/DOM.js"     );
 			array_push($filelist, "cores/JSGAME_core/INIT.js"    );
 			array_push($filelist, "cores/JSGAME_core/GUI.js"     );
 			array_push($filelist, "cores/JSGAME_core/GAMEPADS.js");
-			break;
+		break;
+		}
+		case "CORES" : {
+			$data = json_decode($_GET['cores'], true);
+			for($i=0; $i<sizeof($data); $i+=1){
+				array_push($filelist, $data[$i]);
+			}
 		}
 		default : { break; }
 	};
@@ -99,6 +146,5 @@ function combineFiles(){
 	}
 
 	echo $output;
-
 }
 ?>

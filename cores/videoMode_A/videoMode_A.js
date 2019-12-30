@@ -906,12 +906,17 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 		// To DRAW
 		let len2 = core.GRAPHICS.sprites.length;
 		for(let i=0; i<len2; i+=1){
-			retval.draw.push( {
-				"flags"     : core.GRAPHICS.sprites[i].flags     ,
-				"tileIndex" : core.GRAPHICS.sprites[i].tileIndex ,
-				"x"         : core.GRAPHICS.sprites[i].x << 0    ,
-				"y"         : core.GRAPHICS.sprites[i].y << 0    ,
-			} );
+			try{
+				retval.draw.push( {
+					"flags"     : core.GRAPHICS.sprites[i].flags     ,
+					"tileIndex" : core.GRAPHICS.sprites[i].tileIndex ,
+					"x"         : core.GRAPHICS.sprites[i].x << 0    ,
+					"y"         : core.GRAPHICS.sprites[i].y << 0    ,
+				} );
+			}
+			catch(e){
+				console.log("ERROR: getSpriteChanges: Cannot read value from sprite.", e, "i:", i, "sprite:", core.GRAPHICS.sprites[i], "all:", core.GRAPHICS.sprites);
+			}
 		}
 
 		retval.changeDetected = true;
@@ -1093,10 +1098,18 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 					thisSprite = core.FUNCS.graphics.getSpriteData( changes.draw[i] );
 
 					// If this sprite is off then skip this sprite.
-					if(thisSprite.SPRITE_OFF){ console.log("sprite was off!"); return; }
+					// if(thisSprite.SPRITE_OFF){ console.log("sprite was off!"); return; }
+					if(thisSprite.SPRITE_OFF){
+						// console.log("sprite was off!");
+						continue;
+					}
 
 					// If the tileset name was not available, skip this sprite.
-					if(!thisSprite.tilesetname){ console.log("tileset name not found!"); return; }
+					// if(!thisSprite.tilesetname){ console.log("tileset name not found!"); return; }
+					if(!thisSprite.tilesetname){
+						// console.log("tileset name not found!");
+						continue;
+					}
 
 					// Get the canvas for this tile.
 					spriteTileData = core.GRAPHICS.tiles[ thisSprite.tilesetname ][ thisSprite.tileIndex ];

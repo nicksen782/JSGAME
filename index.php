@@ -55,7 +55,6 @@
 			FUNCS      : {} , // Populated by video/audio kernels.
 			EXTERNAL   : {} , // The game can add to this. The cores determine the default contents.
 		};
-
 		var game={};
 
 		JSGAME.PRELOAD.PHP_VARS = {
@@ -75,6 +74,9 @@
 		JSGAME.PRELOAD.gamesettings_json = null ;
 
 		<?php
+			$devServer=false;
+			if      ( strpos($_SERVER['SERVER_NAME'], "dev2.nicksen782.net" ) !== false ) { $devServer=true; }
+
 			if($_GET['debug']=="true"){ $debug=true;  }
 			else                      { $debug=false; }
 
@@ -168,14 +170,12 @@
 
 					// Video kernel:
 					$PHP_VARS['videokernel']  = $gamesettings["videokernel"]  ; // : "",
-					$videokernel = file_get_contents( $PHP_VARS['videokernel'] );
 
 					// Fonts:
 					$PHP_VARS['fonts']        = $gamesettings["fonts"]  ; // : "",
 
 					// Sounds/Music?
 					$PHP_VARS['soundkernel']      = $gamesettings["soundkernel"]  ; // : "",
-					$soundkernel                  = file_get_contents( $PHP_VARS['soundkernel'] );
 
 					// MP3
 					$PHP_VARS['mp3_files'] = [] ;
@@ -279,7 +279,7 @@
 	<!--Initializes data and readies the game for play.-->
 
 	<!-- COMBINED (One network request.) -->
-	<script src="index_p.php/?o=combineFiles&arg=JSGAMECORE"></script>
+	<script src="index_p.php/?o=combineFiles&arg=JSGAME"></script>
 
 	<!-- SEPARATE (Multiple network requests.) -->
 	<!-- <script src="cores/JSGAME_core/flags.js"></script> -->
@@ -302,54 +302,47 @@
 		echo "</script>";
 	?>
 
-	<!-- VIDEO -->
-	<script purpose="video">
-		<?php
-			if($PHP_VARS['CANLOADGAME']){
-				echo "\n";
-				// echo trim($videokernel) ;
-				echo "\n";
-				echo "\n";
-			}
-		?>
-	</script>
-
-	<?php
-	if($PHP_VARS['CANLOADGAME']){
-		echo "\n";
-		echo "<script purpose='video' src='".$PHP_VARS['videokernel']."'></script>";
-		echo "\n";
-		echo "\n";
-	}
-	?>
-
-	<!-- SOUND -->
-	<script purpose="sound">
-		<?php
-			if($PHP_VARS['CANLOADGAME']){
-				echo "\n";
-				// echo trim($soundkernel) ;
-				echo "\n";
-				echo "\n";
-			}
-		?>
-	</script>
-
+	<!-- VIDEO / SOUND -->
 	<?php
 		if($PHP_VARS['CANLOADGAME']){
-			echo "\n";
-			echo "<script purpose='sound' src='".$PHP_VARS['soundkernel']."'></script>";
-			echo "\n";
-			echo "\n";
+			// Get each file combined.
+			if($debug){
+				// Get each file individually.
+				echo "\n";
+				echo "<script purpose='video' src='".$PHP_VARS['videokernel']."'></script>";
+				echo "\n";
+				echo "<script purpose='sound' src='".$PHP_VARS['soundkernel']."'></script>";
+				echo "\n";
+				echo "\n";
+			}
+			else{
+				// Get one combined file.
+				$tmp = (json_encode([ $PHP_VARS['videokernel'], $PHP_VARS['soundkernel'] ]));
+				echo "<script src='index_p.php/?o=combineFiles&arg=CORES&cores=".$tmp."'></script>\n";
+				echo "\n <!-- -->\n";
+			}
+
 		}
 	?>
+
 
 	<!-- LOADED GAME JS FILES -->
 	<?php
 		if($PHP_VARS['CANLOADGAME']){
-			foreach($PHP_VARS['js_files'] as $k => $v){
-				// if $debug, add random string to .js file??
-				echo '<script file="'.$k.'" src="'.$path.'/'.$v.'" purpose="GAME"></script>' . "\n";
+
+			// Get each file combined.
+			if($debug){
+				// Get each file individually.
+				foreach($PHP_VARS['js_files'] as $k => $v){
+					// if $debug, add random string to .js file??
+					echo '<script file="'.$k.'" src="'.$path.'/'.$v.'" purpose="GAME"></script>' . "\n";
+				}
+			}
+			else{
+				// Get one combined file.
+				echo "\n <!-- -->\n";
+				echo '<script src="index_p.php/?o=combineFiles_game&game='.$_GET['game'].'"></script>' . "\n";
+				echo "\n <!-- -->\n";
 			}
 		}
 	?>

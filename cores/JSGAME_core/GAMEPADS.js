@@ -22,6 +22,12 @@ JSGAME.GAMEPADS = {
 			"p2": [] ,
 		},
 		updateButtonStatus : function(){
+			// Do not update if the gamepad config screen is not active.
+			if( ! (JSGAME.GAMEPADS.CONFIG.DOM_elems.panel_config_gamepads.classList.contains("show")) ){
+				// console.log("config window is not active.");
+				return;
+			}
+
 			// let gamepads = JSGAME.GAMEPADS.gamepads;
 			let gamepads = JSGAME.GAMEPADS.getSrcGamepads();
 			let html ;
@@ -137,7 +143,6 @@ JSGAME.GAMEPADS = {
 			});
 
 		},
-
 		// Start the process of mapping ALL buttons to gamepad inputs.
 		setAllButtonMappings : function(padNum){
 			let conf = confirm("About to set ALL buttons for gamepad "+padNum+"\n\nClick 'OK' to continue.");
@@ -377,19 +382,17 @@ JSGAME.GAMEPADS = {
 				// Look for new gamepads and adjust input.
 				// JSGAME.GAMEPADS.handleInputs();
 
-				JSGAME.GAMEPADS.CONFIG.updateButtonStatus();
-
-				// Request another animation frame only if the game has not loaded.
-				// if(!JSGAME.FLAGS.gameReady){
+				// Request another animation frame only if the gamepad config screen is open.
 				if(JSGAME.GAMEPADS.CONFIG.DOM_elems.panel_config_gamepads.classList.contains("show")){
+					// if(JSGAME.SHARED.debug)       {
+					// 	if(JSGAME.GAMEPADS.CONFIG.gp_blinker1_status){
+					// 		JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status.style.visibility="visible";
+					// 	}
+					// 	else                                        { JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status.style.visibility="hidden"; }
+					// 	JSGAME.GAMEPADS.CONFIG.gp_blinker1_status = !JSGAME.GAMEPADS.CONFIG.gp_blinker1_status;
+					// }
 
-					if(JSGAME.SHARED.debug)       {
-						if(JSGAME.GAMEPADS.CONFIG.gp_blinker1_status){
-							JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status.style.visibility="visible";
-						}
-						else                                        { JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status.style.visibility="hidden"; }
-						JSGAME.GAMEPADS.CONFIG.gp_blinker1_status = !JSGAME.GAMEPADS.CONFIG.gp_blinker1_status;
-					}
+					JSGAME.GAMEPADS.CONFIG.updateButtonStatus();
 
 					// let buttons = document.querySelectorAll(".gamepad_buttonStatus[padNum='1'].active");
 					let buttons = document.querySelectorAll(".gamepad_buttonStatus.active");
@@ -660,6 +663,9 @@ JSGAME.GAMEPADS = {
 		// INIT: USE JUST ONCE AND DESTROY.
 		// JSGAME.GAMEPADS.init
 		init          : function(){
+			// Bail if there is not gamepad support.
+			if(!JSGAME.SHARED.support_gamepadAPI){ return; }
+
 			// Only allow the init to run one time.
 			if(!JSGAME.GAMEPADS.CONFIG.initDone){
 				// Load mappings from H5LS.
@@ -1276,15 +1282,15 @@ JSGAME.GAMEPADS = {
 		if(!JSGAME.SHARED.support_gamepadAPI){ return; }
 
 		// Show the indicator.
-		if(JSGAME.SHARED.debug)       {
-			if(JSGAME.GAMEPADS.CONFIG.gp_blinker2_status){
-				JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status.style.visibility="visible";
-			}
-			else                                        {
-				JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status.style.visibility="hidden";
-			}
-			JSGAME.GAMEPADS.CONFIG.gp_blinker2_status = !JSGAME.GAMEPADS.CONFIG.gp_blinker2_status;
-		}
+		// if(JSGAME.SHARED.debug)       {
+		// 	if(JSGAME.GAMEPADS.CONFIG.gp_blinker2_status){
+		// 		JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status.style.visibility="visible";
+		// 	}
+		// 	else                                        {
+		// 		JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status.style.visibility="hidden";
+		// 	}
+		// 	JSGAME.GAMEPADS.CONFIG.gp_blinker2_status = !JSGAME.GAMEPADS.CONFIG.gp_blinker2_status;
+		// }
 
 		// Read the source gamepad data, add to local cache if defined and not null and found button mapping.
 		JSGAME.GAMEPADS.getNewGamepadStates();

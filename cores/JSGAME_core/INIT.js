@@ -120,7 +120,8 @@ JSGAME.INIT={
 
 				// Remove the listener and load js game.
 				else{
-					console.log("(DOUBLE-CHECKED) Removing user interaction restriction...", "(DETECTED: ", e.type, ")");
+					// console.log("(DOUBLE-CHECKED) Removing user interaction restriction...", "(DETECTED: ", e.type, ")");
+					console.log("Removing user interaction restriction...", "\n\t(TYPE DETECTED: ", e.type, ")");
 					JSGAME.SHARED.hasUserInteractionRestriction=false;
 
 					document.removeEventListener('keydown'    , JSGAME.INIT.removeUserInteractionRestriction);
@@ -145,9 +146,9 @@ JSGAME.INIT={
 	},
 	// Check endianness, canloadgame, autoplay availability, provide some basic feedback on errors.
 	__PRE_INIT : function(){
-		console.log("\n");
-		console.log("*************");
-		console.log("JS Game -- __PRE_INIT");
+		console.log("\n=======================================");
+		// console.log("JS Game -- __PRE_INIT");
+		console.log("INIT JS GAME...");
 
 		// Make sure this environment is Little Endian.
 		if(! JSGAME.INIT.endianness.isLittleEndian ){
@@ -210,9 +211,6 @@ JSGAME.INIT={
 				JSGAME.GUI.showPanel_internal("panel_nogame");
 				console.log("NO GAME SELECTED");
 			}
-
-			// Add the listeners for real gamepads.
-			// JSGAME.GAMEPADS.CONFIG.init();
 		}
 	},
 	// Configures JSGAME GUI for use and then starts the game code.
@@ -254,7 +252,7 @@ JSGAME.INIT={
 
 		// *** DOM init (event listeners, etc.) ***
 
-		// If the volume change function is availble then show the volume controls.
+		// If the volume change function is available then show the volume controls.
 		if(core.FUNCS.audio.changeMasterVolume){
 			JSGAME.DOM["masterVolumeSlider_td1"].classList.remove("hide");
 			JSGAME.DOM["masterVolumeSlider_td2"].classList.remove("hide");
@@ -304,7 +302,7 @@ JSGAME.INIT={
 			// JSGAME.FLAGS.manuallyPaused  = false;
 		}
 
-		// Fix the gamepad attributes/text
+		// Fix the onscreen gamepad attributes/text
 		JSGAME.DOM["gamepads"].forEach(
 			function(d){
 				// Get DOM handles.
@@ -335,7 +333,7 @@ JSGAME.INIT={
 		// Add the listeners for the on-screen gamepad and keyboard input.
 		JSGAME.GUI.gameInputListeners();
 
-		// Hidden gamepads?
+		// Show or hide the onscreen gamepads?
 		if(JSGAME.SHARED.gamepads==true){ JSGAME.GUI.toggleGamepads(); }
 		else{}
 
@@ -347,21 +345,6 @@ JSGAME.INIT={
 		console.log("LOADING GAME...");
 		JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
 
-		// Real gamepads? Run the special gamepads init.
-		// if(JSGAME.GAMEPADS.CONFIG.initDone){
-		// 	// Run the special gamepads init.
-		// 	JSGAME.GAMEPADS.CONFIG.init();
-		// 	console.log("gamepad poller is not supposed to be on!");
-		// 	alert("gamepad poller is not supposed to be on!");
-		// 	throw "gamepad poller is not supposed to be on!" ;
-
-		// 	return;
-		// }
-		// else{
-			// JSGAME.GAMEPADS.CONFIG.DOM_init();
-			// JSGAME.GAMEPADS.CONFIG.init();
-		// }
-
 		// Run the game's runOnce function.
 		game.runOnce().then(
 			function(){
@@ -371,7 +354,8 @@ JSGAME.INIT={
 				// Run the first game loop. (Inits the video, sound, and game code.)
 				game.firstLoop().then(
 					function( gamestartFunction){
-						console.log("GAME CORES ARE READY");
+						// console.log("GAME CORES ARE READY");
+						console.log("STARTING GAME...");
 
 						if(JSGAME.SHARED.debug)       {
 							JSGAME.SHARED.PERFORMANCE.output();
@@ -380,7 +364,10 @@ JSGAME.INIT={
 
 						// Display the JS GAME logo then start the game.
 						setTimeout(function(){
-							core.FUNCS.graphics.logo().then( function(){ gamestartFunction(); } );
+							core.FUNCS.graphics.logo().then( function(){
+								console.log("=======================================\n\n");
+								gamestartFunction();
+							} );
 						},125);
 					},
 					function(err){ console.error("ERROR: ", err); }

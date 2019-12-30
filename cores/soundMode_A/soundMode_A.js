@@ -322,6 +322,13 @@ core.FUNCS.audio.init = function(){
 							let synthOptions = rec.synthOptions;
 							// Get the record options.
 							let options = rec.synthOptions;
+							// Get the used value.
+							let used = rec.used;
+
+							// Will this be used or skipped?
+							if(!used){
+								midi_resolve();
+							}
 
 							// Create synth with the specified settings.
 							JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_setup_tinysynth_"+i,"START");
