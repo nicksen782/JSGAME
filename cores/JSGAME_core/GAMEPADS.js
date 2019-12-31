@@ -384,7 +384,7 @@ JSGAME.GAMEPADS = {
 
 				// Request another animation frame only if the gamepad config screen is open.
 				if(JSGAME.GAMEPADS.CONFIG.DOM_elems.panel_config_gamepads.classList.contains("show")){
-					// if(JSGAME.SHARED.debug)       {
+					// if(JSGAME.FLAGS.debug)       {
 					// 	if(JSGAME.GAMEPADS.CONFIG.gp_blinker1_status){
 					// 		JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status.style.visibility="visible";
 					// 	}
@@ -664,7 +664,7 @@ JSGAME.GAMEPADS = {
 		// JSGAME.GAMEPADS.init
 		init          : function(){
 			// Bail if there is not gamepad support.
-			if(!JSGAME.SHARED.support_gamepadAPI){ return; }
+			if(!JSGAME.FLAGS.support_gamepadAPI){ return; }
 
 			// Only allow the init to run one time.
 			if(!JSGAME.GAMEPADS.CONFIG.initDone){
@@ -1279,10 +1279,10 @@ JSGAME.GAMEPADS = {
 	// * Handles updating the local gamepad cache, determining pressed buttons, sending keyboard events.
 	handleInputs        : function(){
 		// Bail if there is not gamepad support.
-		if(!JSGAME.SHARED.support_gamepadAPI){ return; }
+		if(!JSGAME.FLAGS.support_gamepadAPI){ return; }
 
 		// Show the indicator.
-		// if(JSGAME.SHARED.debug)       {
+		// if(JSGAME.FLAGS.debug)       {
 		// 	if(JSGAME.GAMEPADS.CONFIG.gp_blinker2_status){
 		// 		JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status.style.visibility="visible";
 		// 	}

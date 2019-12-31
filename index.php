@@ -11,9 +11,6 @@
 
 	<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABlBMVEVfoL9WVlZrUZ6mAAAADElEQVQI12NwYGgAAAFEAMHrWQMJAAAAAElFTkSuQmCC">
 
-	<!-- <script src="libs/FileSaver.min.js"></script> -->
-	<!-- <script src="FileSaver.min.js.map"></script> -->
-
 	<title>JS GAME</title>
 
 	<!-- JS GAME styling -->
@@ -79,6 +76,27 @@
 
 			if($_GET['debug']=="true"){ $debug=true;  }
 			else                      { $debug=false; }
+
+			if($debug && isset($_GET["cf_overrides"])){
+				// &cf_overrides={"jsg":0,"v":0,"a":0,"gjs":0}
+				// &cf_overrides={"jsg":1,"v":1,"a":1,"gjs":1}
+				$cf_overrides = json_decode($_GET["cf_overrides"], true);
+
+				if($cf_overrides == null){
+					$cf_overrides['jsg'] = 0;
+					$cf_overrides['v']   = 0;
+					$cf_overrides['a']   = 0;
+					$cf_overrides['gjs'] = 0;
+					$debug_cf_override=false;
+				}
+				else{
+					$cf_overrides['jsg'] == 1 ? 1 : 0;
+					$cf_overrides['v']   == 1 ? 1 : 0;
+					$cf_overrides['a']   == 1 ? 1 : 0;
+					$cf_overrides['gjs'] == 1 ? 1 : 0;
+					$debug_cf_override=true;
+				}
+			}
 
 			// Gamepads are off by default.
 			if( $_GET['gamepads'] ){ $gamepads= $_GET['gamepads']=="true" ? true : false;  }
@@ -175,18 +193,18 @@
 					$PHP_VARS['fonts']        = $gamesettings["fonts"]  ; // : "",
 
 					// Sounds/Music?
-					$PHP_VARS['soundkernel']      = $gamesettings["soundkernel"]  ; // : "",
+					$PHP_VARS['soundkernel']  = $gamesettings["soundkernel"]  ; // : "",
 
 					// MP3
-					$PHP_VARS['mp3_files'] = [] ;
+					$PHP_VARS['mp3_files']    = [] ;
 					if( $gamesettings["mp3_files"] ) { $PHP_VARS['mp3_files'] = $gamesettings["mp3_files"]; }
 
 					// MIDI
-					$PHP_VARS['midi_bin'] = [] ;
+					$PHP_VARS['midi_bin']     = [] ;
 					if( $gamesettings["midi_bin"] ) { $PHP_VARS['midi_bin'] = $gamesettings["midi_bin"]; }
 
 					// MIDI
-					$PHP_VARS['midi_synths'] = [] ;
+					$PHP_VARS['midi_synths']  = [] ;
 					if( $gamesettings["midi_synths"] ) { $PHP_VARS['midi_synths'] = $gamesettings["midi_synths"]; }
 
 					// Graphics assets.
@@ -276,75 +294,99 @@
 
 	</script>
 
-	<!--Initializes data and readies the game for play.-->
+	<!-- VIDEO / SOUND / GAME JS -->
+	<?php
+		if($PHP_VARS['CANLOADGAME']){
+			// Download some files individually and/or some combined.
+			if( $debug && $debug_cf_override ){
+				// JSGAME
+				if( $cf_overrides['jsg'] == 0){
+					echo "<script src='cores/JSGAME_core/FLAGS.js'   ></script>" . "\n";
+					echo "<script src='cores/JSGAME_core/SHARED.js'  ></script>" . "\n";
+					echo "<script src='cores/JSGAME_core/DOM.js'     ></script>" . "\n";
+					echo "<script src='cores/JSGAME_core/INIT.js'    ></script>" . "\n";
+					echo "<script src='cores/JSGAME_core/GUI.js'     ></script>" . "\n";
+					echo "<script src='cores/JSGAME_core/GAMEPADS.js'></script>" . "\n";
+				}
+				// VIDEO
+				if( $cf_overrides['v']   == 0){
+					echo "<script purpose='video' src='".$PHP_VARS['videokernel']."'></script>"      . "\n";
+				}
+				// SOUND
+				if( $cf_overrides['a']   == 0){
+					echo "<script purpose='sound' src='".$PHP_VARS['soundkernel']."'></script>"      . "\n";
+				}
+				// GAME JS
+				if( $cf_overrides['gjs']   == 0){
+					foreach($PHP_VARS['js_files'] as $k => $v){
+						echo '<script purpose="game" src="'.$path.'/'.$v.'"></script>' . "\n";
+					}
+				}
+				if( $cf_overrides['jsg'] || $cf_overrides['v'] || $cf_overrides['a'] || $cf_overrides['gjs'] ){
+					echo '<script src="index_p.php/?o=combineFiles&game='.$_GET['game'].'&jsgame='.$cf_overrides['jsg'].'&video='.$cf_overrides['v'].'&audio='.$cf_overrides['a'].'&gamejs='.$cf_overrides['gjs'].'"></script>' . "\n";
+				}
+			}
 
-	<!-- COMBINED (One network request.) -->
-	<script src="index_p.php/?o=combineFiles&arg=JSGAME"></script>
+			// Get each file individually.
+			else if($debug){
+				// if $debug, add random string to .js file??
 
-	<!-- SEPARATE (Multiple network requests.) -->
-	<!-- <script src="cores/JSGAME_core/flags.js"></script> -->
-	<!-- <script src="cores/JSGAME_core/shared.js"></script> -->
-	<!-- <script src="cores/JSGAME_core/dom.js"></script> -->
-	<!-- <script src="cores/JSGAME_core/init.js"></script> -->
-	<!-- <script src="cores/JSGAME_core/gui.js"></script> -->
-	<!-- <script src="cores/JSGAME_core/gamepads.js"></script> -->
+				// JSGAME
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/FLAGS.js'   ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/SHARED.js'  ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/DOM.js'     ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/INIT.js'    ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/GUI.js'     ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/GAMEPADS.js'></script>" . "\n";
+
+				// VIDEO
+				echo "<script purpose='video' src='".$PHP_VARS['videokernel']."'></script>"      . "\n";
+
+				// SOUND
+				echo "<script purpose='sound' src='".$PHP_VARS['soundkernel']."'></script>"      . "\n";
+
+				// GAME JS
+				foreach($PHP_VARS['js_files'] as $k => $v){
+					echo '<script purpose="game" src="'.$path.'/'.$v.'"></script>' . "\n";
+				}
+
+			}
+
+			// NORMAL: Get one combined file.
+			else{
+				// ALL: JSGAME, VIDEO, SOUND, GAME JS
+				echo '<script src="index_p.php/?o=combineFiles&game='.$_GET['game'].'&jsgame=1&video=1&audio=1&gamejs=1"></script>' . "\n";
+			}
+
+		}
+		else{
+			// Only load the JSGAME core.
+			if($debug){
+				// JSGAME
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/FLAGS.js'   ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/SHARED.js'  ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/DOM.js'     ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/INIT.js'    ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/GUI.js'     ></script>" . "\n";
+				echo "<script purpose='jsgame' src='cores/JSGAME_core/GAMEPADS.js'></script>" . "\n";
+			}
+			else{
+				echo '<script src="index_p.php/?o=combineFiles&jsgame=1&video=0&audio=0&gamejs=0"></script>' . "\n";
+			}
+		}
+	?>
 
 	<!-- DEBUG AND GAMEPAD FLAGS -->
 	<?php
-		echo "<script>";
+		echo "<script>\n";
 		// DEBUG
-		if($PHP_VARS['CANLOADGAME'] && $debug)   { echo "JSGAME.SHARED.debug=true ; \n";    }
-		else                                     { echo "JSGAME.SHARED.debug=false; \n";    }
+		if($PHP_VARS['CANLOADGAME'] && $debug)   { echo "\tJSGAME.FLAGS.debug=true ; \n";    }
+		else                                     { echo "\tJSGAME.FLAGS.debug=false; \n";    }
 
 		// GAMEPADS off?
-		if($PHP_VARS['CANLOADGAME'] && $gamepads){ echo "JSGAME.SHARED.gamepads=true ; \n"; }
-		else                                     { echo "JSGAME.SHARED.gamepads=false; \n"; }
-		echo "</script>";
-	?>
-
-	<!-- VIDEO / SOUND -->
-	<?php
-		if($PHP_VARS['CANLOADGAME']){
-			// Get each file combined.
-			if($debug){
-				// Get each file individually.
-				echo "\n";
-				echo "<script purpose='video' src='".$PHP_VARS['videokernel']."'></script>";
-				echo "\n";
-				echo "<script purpose='sound' src='".$PHP_VARS['soundkernel']."'></script>";
-				echo "\n";
-				echo "\n";
-			}
-			else{
-				// Get one combined file.
-				$tmp = (json_encode([ $PHP_VARS['videokernel'], $PHP_VARS['soundkernel'] ]));
-				echo "<script src='index_p.php/?o=combineFiles&arg=CORES&cores=".$tmp."'></script>\n";
-				echo "\n <!-- -->\n";
-			}
-
-		}
-	?>
-
-
-	<!-- LOADED GAME JS FILES -->
-	<?php
-		if($PHP_VARS['CANLOADGAME']){
-
-			// Get each file combined.
-			if($debug){
-				// Get each file individually.
-				foreach($PHP_VARS['js_files'] as $k => $v){
-					// if $debug, add random string to .js file??
-					echo '<script file="'.$k.'" src="'.$path.'/'.$v.'" purpose="GAME"></script>' . "\n";
-				}
-			}
-			else{
-				// Get one combined file.
-				echo "\n <!-- -->\n";
-				echo '<script src="index_p.php/?o=combineFiles_game&game='.$_GET['game'].'"></script>' . "\n";
-				echo "\n <!-- -->\n";
-			}
-		}
+		if($PHP_VARS['CANLOADGAME'] && $gamepads){ echo "\tJSGAME.SHARED.gamepads=true ; \n"; }
+		else                                     { echo "\tJSGAME.SHARED.gamepads=false; \n"; }
+		echo "</script>\n";
 	?>
 
 	<!-- START JS GAME -->
@@ -398,7 +440,6 @@
 					<td colspan="4">
 						<?php
 							if($PHP_VARS['CANLOADGAME']){
-
 								foreach($PHP_VARS['links'] as $k => $v){
 									// Is this an absolute path?
 									if (preg_match('/:\/\//', $v["href"])) {
@@ -571,11 +612,6 @@
 			(c) 2019 Nickolas Andersen (nicksen782)<br>
 			<!--  -->
 			<div id="debug1">
-				<?php
-					if($PHP_VARS['CANLOADGAME']){
-						//
-					}
-				?>
 				<!-- -->
 				DEBUG ON: <input type="checkbox" id="debug_mode" <?php echo ($debug ? "checked" : "") ?> >
 				<span id="gp_blinker1_status" style="width:1em; height:1em; background-color:yellow; display:inline-block;visibility:hidden; ">&nbsp;</span>

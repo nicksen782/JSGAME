@@ -475,7 +475,7 @@ core.FUNCS.graphics.init = function(){
 		core.CONSTS["OffscreenCanvas_supported"] = featureDetect_OffscreenCanvas();
 
 		// DEBUG:
-		if(JSGAME.SHARED.debug) { console.log("MAIN: OffscreenCanvas support: ", core.CONSTS["OffscreenCanvas_supported"]); }
+		if(JSGAME.FLAGS.debug) { console.log("MAIN: OffscreenCanvas support: ", core.CONSTS["OffscreenCanvas_supported"]); }
 
 		// (1/2) GRAPHICS SETUP.
 		let proms1 = [
@@ -1001,7 +1001,7 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 core.FUNCS.graphics.update_layer_BG     = function(){
 	return new Promise(function(res,rej){
 		let drawStart_BG;
-		if(JSGAME.SHARED.debug)       { drawStart_BG     = performance.now();      core.GRAPHICS.performance.BG.shift();     }
+		if(JSGAME.FLAGS.debug)       { drawStart_BG     = performance.now();      core.GRAPHICS.performance.BG.shift();     }
 
 		if(core.GRAPHICS.flags.BG || core.GRAPHICS.flags.BG_force) {
 			core.GRAPHICS.flags.OUTPUT = true;
@@ -1059,7 +1059,7 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 			core.GRAPHICS["VRAM1_TO_WRITE"]=[];
 		}
 
-		if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.BG.push(performance.now()-drawStart_BG);                   }
+		if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.BG.push(performance.now()-drawStart_BG);                   }
 
 		res();
 	});
@@ -1071,7 +1071,7 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 
 	return new Promise(function(res,rej){
 		let drawStart_SPRITE;
-		if(JSGAME.SHARED.debug)       { drawStart_SPRITE = performance.now();      core.GRAPHICS.performance.SPRITE.shift(); }
+		if(JSGAME.FLAGS.debug)       { drawStart_SPRITE = performance.now();      core.GRAPHICS.performance.SPRITE.shift(); }
 
 		//
 		if(core.GRAPHICS.flags.SPRITE) {
@@ -1173,7 +1173,7 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 		}
 		//
 
-		if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.SPRITE.push(performance.now()-drawStart_SPRITE);           }
+		if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.SPRITE.push(performance.now()-drawStart_SPRITE);           }
 
 		res();
 	});
@@ -1186,7 +1186,7 @@ core.FUNCS.graphics.update_layer_TEXT   = function(){
 
 	return new Promise(function(res,rej){
 		let drawStart_TEXT;
-		if(JSGAME.SHARED.debug)       { drawStart_TEXT   = performance.now();      core.GRAPHICS.performance.TEXT.shift();   }
+		if(JSGAME.FLAGS.debug)       { drawStart_TEXT   = performance.now();      core.GRAPHICS.performance.TEXT.shift();   }
 
 		if(core.GRAPHICS.flags.TEXT || core.GRAPHICS.flags.TEXT_force){
 			core.GRAPHICS.flags.OUTPUT = true;
@@ -1261,7 +1261,7 @@ core.FUNCS.graphics.update_layer_TEXT   = function(){
 
 		}
 
-		if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.TEXT.push(performance.now()-drawStart_TEXT);               }
+		if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.TEXT.push(performance.now()-drawStart_TEXT);               }
 
 		res();
 	});
@@ -1272,9 +1272,9 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 
 	return new Promise(function(res,rej){
 		let drawStart_OUTPUT;
-		if(JSGAME.SHARED.debug)       { drawStart_OUTPUT = performance.now();      core.GRAPHICS.performance.OUTPUT.shift(); }
+		if(JSGAME.FLAGS.debug)       { drawStart_OUTPUT = performance.now();      core.GRAPHICS.performance.OUTPUT.shift(); }
 		let COMPLETED = function(){
-			if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.OUTPUT.push(performance.now()-drawStart_OUTPUT);           }
+			if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.OUTPUT.push(performance.now()-drawStart_OUTPUT);           }
 
 			// Clear the draw flags.
 			core.GRAPHICS.flags.BG     = false ;
@@ -1345,24 +1345,8 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 } ;
 //
 core.FUNCS.graphics.update_allLayers    = function(){
-	// let drawStart_update_allLayers;
-	// if(JSGAME.SHARED.debug)       { drawStart_update_allLayers = performance.now();      core.GRAPHICS.performance.update_allLayers.shift(); }
-	// if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.update_allLayers.push(performance.now()-drawStart_update_allLayers);           }
-
 	// While this flag is set, main will not run the logic loop or another graphics loop.
 	core.GRAPHICS.flags.INLAYERUPDATE=true;
-
-	// core.GRAPHICS.flags.BG     = true ;
-	// core.GRAPHICS.flags.SPRITE = true ;
-	// core.GRAPHICS.flags.TEXT   = true ;
-	// core.GRAPHICS.flags.FADE   = true ;
-	// core.GRAPHICS.flags.OUTPUT = true ;
-
-	// core.GRAPHICS.flags.BG     = false ;
-	// core.GRAPHICS.flags.SPRITE = false ;
-	// core.GRAPHICS.flags.TEXT   = false ;
-	// core.GRAPHICS.flags.FADE   = false ;
-	// core.GRAPHICS.flags.OUTPUT = false ;
 
 	// Make sure the draw flags match if the corresponding force flag is set.
 	if(core.GRAPHICS.flags.BG_force)     { core.GRAPHICS.flags.BG     = true ; }
@@ -1379,9 +1363,6 @@ core.FUNCS.graphics.update_allLayers    = function(){
 
 	Promise.all(proms).then(
 		function(){
-			// If the fade flag is set then make sure that the OUTPUT flag is also set.
-			// if(core.GRAPHICS.flags.FADE)   { core.GRAPHICS.flags.OUTPUT = true ; }
-
 			core.FUNCS.graphics.update_layer_OUTPUT().then(
 				function(){
 					// Allowing another game loop.
@@ -1400,12 +1381,8 @@ core.FUNCS.graphics.update_allLayers    = function(){
 // Sets the tileset to use when drawing bg tiles.
 core.FUNCS.graphics.SetTileTable = function(tileset){
 	// Make sure that the tileset is actually available.
-	if(core.ASSETS.graphics.tilesetNames.indexOf(tileset) != -1){
-		core.GRAPHICS.activeTileset["BG"] = tileset ;
-	}
-	else{
-		throw new Error('INVALID TILE TABLE NAME! '  + tileset);
-	}
+	if(core.ASSETS.graphics.tilesetNames.indexOf(tileset) != -1){ core.GRAPHICS.activeTileset["BG"] = tileset ; }
+	else { throw new Error('INVALID TILE TABLE NAME! '  + tileset); }
 
 	// Indicate that a background draw is needed.
 	core.GRAPHICS.flags.BG=true;
@@ -1415,39 +1392,33 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 	// vram_str can be 'VRAM1' or 'VRAM2'
 	// If neither is specified then both will be cleared.
 
+	let doboth = false;
+
+	// Was vram NOT specified?
+	if( vram_str == undefined ){ doboth = true; }
+
+	if(vram_str=='VRAM1' || doboth==true){
 		// Clear VRAM1 and VRAM1_TO_WRITE.
 		core.GRAPHICS["VRAM1"].fill(0);
+		core.GRAPHICS["VRAM1_TO_WRITE"]=[];
 
+		// Indicate that a draw is required for this layer.
+		core.GRAPHICS.flags.BG       = true;
+		core.GRAPHICS.flags.BG_force = true;
+	}
+
+	if(vram_str=='VRAM2' || doboth==true){
 		// Clear VRAM2 and VRAM2_TO_WRITE.
 		core.GRAPHICS["VRAM2"].fill(0);
+		core.GRAPHICS["VRAM2_TO_WRITE"]=[];
 
-		let doboth = false;
+		// Indicate that a draw is required for this layer.
+		core.GRAPHICS.flags.TEXT       = true;
+		core.GRAPHICS.flags.TEXT_force = true;
+	}
 
-		// Was vram NOT specified?
-		if( vram_str == undefined ){ doboth = true; }
-
-		if(vram_str=='VRAM1' || doboth==true){
-			// Set all tiles in VRAM1 to 0.
-			core.GRAPHICS["VRAM1"].fill(0);
-			core.GRAPHICS["VRAM1_TO_WRITE"]=[];
-
-			// Indicate that a draw is required for this layer.
-			core.GRAPHICS.flags.BG       = true;
-			core.GRAPHICS.flags.BG_force = true;
-		}
-
-		if(vram_str=='VRAM2' || doboth==true){
-			// Set all tiles in VRAM2 to 0.
-			core.GRAPHICS["VRAM2"].fill(0);
-			core.GRAPHICS["VRAM2_TO_WRITE"]=[];
-
-			// Indicate that a draw is required for this layer.
-			core.GRAPHICS.flags.TEXT       = true;
-			core.GRAPHICS.flags.TEXT_force = true;
-		}
-
+	// Redundant?
 	core.GRAPHICS.flags.OUTPUT_force = true;
-
 };
 // Draws a bg tile to the specified location.
 core.FUNCS.graphics.SetTile      = function(x, y, id, vram_str){
@@ -1506,20 +1477,16 @@ core.FUNCS.graphics.Fill         = function(xpos, ypos, w, h, tileid, vram_str){
 	}
 };
 //
-core.FUNCS.graphics.getTilemap   = function(tilemap_str){
-	let tilemap = core.ASSETS.graphics.tilemaps[tilemap_str];
-	if(tilemap){ return tilemap; }
-	else{ return new Uint8ClampedArray([0,0]); }
-}
+// core.FUNCS.graphics.getTilemap   = function(tilemap_str){
+// 	let tilemap = core.ASSETS.graphics.tilemaps[tilemap_str];
+// 	if(tilemap){ return tilemap; }
+// 	else{ return new Uint8ClampedArray([0,0]); }
+// }
 
 // *** SPRITE update functions. ***
 
 // Clears the core.GRAPHICS.sprites array.
 core.FUNCS.graphics.clearSprites       = function(){
-	// Blank out sprites and sprites_prev.
-	// core.GRAPHICS.sprites.length=0;
-	// core.GRAPHICS.sprites_prev.length=0;
-
 	// Blank out sprites and sprites_prev.
 	core.GRAPHICS.sprites=[];
 	core.GRAPHICS.sprites_prev=[];
@@ -1532,7 +1499,6 @@ core.FUNCS.graphics.clearSprites       = function(){
 	if(core.GRAPHICS["ctx"].SPRITE){
 		core.GRAPHICS["ctx"].SPRITE.clearRect(0, 0, core.GRAPHICS["ctx"].SPRITE.canvas.width, core.GRAPHICS["ctx"].SPRITE.canvas.height);
 	}
-
 };
 // Sets the tileset for the specified sprite bank.
 core.FUNCS.graphics.SetSpritesTileBank = function(bank, tileset){
@@ -1573,10 +1539,6 @@ core.FUNCS.graphics.hashSprite         = function(obj){
 	}
 
 	return toReturn ;
-
-	// let newToDraw  = core.GRAPHICS.sprites.find     (x => !core.GRAPHICS.sprites_prev.includes(x));
-	// let clearThese = core.GRAPHICS.sprites_prev.find(x => !core.GRAPHICS.sprites     .includes(x));
-	// core.GRAPHICS.sprites[startSprite].hash = core.FUNCS.graphics.hashSprite(core.GRAPHICS.sprites[startSprite]);
 };
 // Adds the tiles of a sprite map to the sprites array.
 core.FUNCS.graphics.MapSprite2         = function(startSprite, map, spriteFlags){
@@ -1711,7 +1673,7 @@ core.FUNCS.graphics.getSpriteData      = function(thisSprite){
 };
 // Flips a canvas on X and/or Y.
 core.FUNCS.graphics.flipImage_canvas   = function (srcCanvas, flipH, flipV) {
-	// Accepts a canvas, creates a new temp canvas to do the flip then draws the results to the src canvas.
+	// Accepts a canvas, creates a new temp canvas to do the flip then returns the new canvas.
 	// Originally based on work from: yong: http://jsfiddle.net/yong/ZJQX5/
 
 	// Create temporary canvas to match the srcCanvas.
@@ -1751,10 +1713,10 @@ core.FUNCS.graphics.Print   = function(x, y, string, vram_str){
 
 	// This assumes that the correct tileset and tilemap for the fonts have already been set.
 	// Font tiles are expected to be in the following order in the fontmap:
-	//   ! " # $ % & ' ( ) * + , - . /
-	// 0 1 2 3 4 5 6 7 8 9 : ; < = > ?
-	// @ A B C D E F G H I J K L M N O
-	// P Q R S T U V W X Y Z [ c ] ^ _
+	//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
+	// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
+	// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
 
 	// Turn the string into an iterable array.
 	Array.from( string ).forEach(function(d,i,a){
@@ -1814,7 +1776,7 @@ core.FUNCS.graphics.DrawMap_customDimensions = function(x, y, w, h, map, vram_st
 core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 	return new Promise(function(res,rej){
 			let drawStart_FADE;
-			if(JSGAME.SHARED.debug)       { drawStart_FADE   = performance.now();      core.GRAPHICS.performance.FADE.shift();   }
+			if(JSGAME.FLAGS.debug)       { drawStart_FADE   = performance.now();      core.GRAPHICS.performance.FADE.shift();   }
 
 			let lastIndex = core.GRAPHICS.FADER.CONSTS["FADER_STEPS"] -1 ;
 
@@ -1826,7 +1788,7 @@ core.GRAPHICS.FADER.FUNCS.ProcessFading = function(ctx){
 					ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 				}
 
-				if(JSGAME.SHARED.debug)       { core.GRAPHICS.performance.FADE.push(performance.now()-drawStart_FADE);           }
+				if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.FADE.push(performance.now()-drawStart_FADE);           }
 
 				res();
 			};

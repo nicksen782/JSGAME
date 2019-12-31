@@ -4,9 +4,6 @@ TO DO:
 https://github.com/g200kg/webaudio-tinysynth
 core.FUNCS.audio.TODO_resumeAllSounds
 core.FUNCS.audio.TODO_pauseAllSounds
-core.FUNCS.audio.changeMasterVolume
-
-Have the MIDI player respect the master volume value.
 
 */
 
@@ -55,49 +52,11 @@ core.FUNCS.audio.init = function(){
 						audioElem.oncanplay = function(){ audioElem.oncanplay=null; this.pause(); this.currentTime=0; };
 						audioElem.src = gamedir + "/" + d['fileurl'];
 						core.AUDIO['elems'][ d.key ] = audioElem;
-
-						// audioElem.volume=0.0;
-						// audio_proms.push( audioElem.play() );
-
-						// Check to make sure that the audio element is ready.
-						// if( ! (audioElem.readyState > 2) ){ audio_proms.push( audioElem.play() ); }
-
 					}
-
-					// JSGAME.PRELOAD.gamesettings_json['mp3_files'].forEach(function(d){
-					// 	let audioElem = document.createElement("audio");
-
-					// 	// Add entry to the lookup table.
-					// 	d['names'].forEach(function(dd){
-					// 		let audioLookup = {
-					// 			"key"  : d.key  ,
-					// 			"type" : d.type ,
-					// 		}
-					// 		core.ASSETS.audio['lookups'][ dd ] = audioLookup;
-					// 	});
-
-					// 	// Get the audio file as-is.
-					// 	audioElem.src = gamedir + "/" + d['fileurl'];
-					// 	audioElem.volume=0.0;
-					// 	audioElem.load();
-					// 	audio_proms.push( audioElem.play() );
-
-					// 	// Check to make sure that the audio element is ready.
-					// 	// if( ! (audioElem.readyState > 2) ){ audio_proms.push( audioElem.play() ); }
-
-					// 	core.AUDIO['elems'][ d.key ] = audioElem;
-					// });
 
 					Promise.all(audio_proms)
 						.then(
 							function(){
-								// Pause all audio elements and reset their time.
-								// let keys = Object.keys( core.AUDIO['elems'] ) ;
-								// for(let i=0; i<keys.length; i+=1){
-								// 	let key = keys[i];
-								// 	core.AUDIO['elems'][key].pause();
-								// 	core.AUDIO['elems'][key].currentTime=0;
-								// }
 								JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_soundsSetup_mp3","END");
 								res_soundsSetup_mp3("RESOLVED: soundsSetup_mp3");
 							}
@@ -295,8 +254,8 @@ core.FUNCS.audio.init = function(){
 			return new Promise(function(res_setup_tinysynth, rej_setup_tinysynth){
 				JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_setup_tinysynth" , "START");
 
-				// Tiny Synth outputs junk to the console when starting and when a synth is created.
-				// Temporarily remove the console.log function until Tiny Synth setup is complete.
+				// Tiny Synth outputs to the console when starting and when a synth is created.
+				// This will temporarily remove the console.log function until the Tiny Synth setup is complete.
 				let old = console.log;
 				console.log = function(){};
 
@@ -318,22 +277,19 @@ core.FUNCS.audio.init = function(){
 							let key = midi_synths[i];
 							// Get the record.
 							let rec = JSGAME.PRELOAD.gamesettings_json['midi_synths'][key];
+							// Get the used value.
+							let used = rec.used;
+							// Will this be used or skipped?
+							if(!used){ midi_resolve(); return; }
 							// Get the record synthOptions.
 							let synthOptions = rec.synthOptions;
 							// Get the record options.
 							let options = rec.synthOptions;
-							// Get the used value.
-							let used = rec.used;
-
-							// Will this be used or skipped?
-							if(!used){
-								midi_resolve();
-							}
 
 							// Create synth with the specified settings.
-							JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_setup_tinysynth_"+i,"START");
+							JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_setup_tinysynth_"+i+"_"+key,"START");
 							core.AUDIO.midiSynths[key] = new WebAudioTinySynth( synthOptions );
-							JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_setup_tinysynth_"+i,"END");
+							JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_setup_tinysynth_"+i+"_"+key,"END");
 
 							// Loop?
 							if(options.loop){ core.AUDIO.midiSynths[key].setLoop(false); }
@@ -348,15 +304,6 @@ core.FUNCS.audio.init = function(){
 							let intervalTimer = setInterval(function(){
 								// Is the synth ready?
 								if( core.AUDIO.midiSynths[key].isReady ){ clearInterval(intervalTimer); midi_resolve(); }
-
-								// If it is NOT ready then wait for it by adding a promise to the proms array.
-								// else{
-								// 	core.AUDIO.midiSynths[key].ready().then(
-								// 		function(){ midi_resolve(); },
-								// 		function(err){ console.log(err); midi_reject(); })
-								// 	;
-								// }
-
 							}, 5);
 
 						})
@@ -368,9 +315,6 @@ core.FUNCS.audio.init = function(){
 					function(res){
 						// Restore the console.log functionality.
 						console.log = old;
-
-						// console.log("midiSynths:", core.AUDIO.midiSynths);
-						// console.log("midiData  :", core.AUDIO.midiData  );
 
 						JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_setup_tinysynth" , "END");
 
@@ -449,7 +393,7 @@ core.FUNCS.audio.init = function(){
 
 // *** Sound/audio control (MP3) ***
 
-// Cancel all sounds (mp3) (stop the sound and reset the currentTime value.)
+// (MP3) Cancel all sounds (stop the sound and reset the currentTime value.)
 core.FUNCS.audio.cancelAllSounds_mp3 = function(type){
 	// EXAMPLE:
 	// core.FUNCS.audio.cancelAllSounds_mp3('all');
@@ -484,7 +428,7 @@ core.FUNCS.audio.cancelAllSounds_mp3 = function(type){
 	}
 
 };
-// Plays Sound FX and Music.
+// (MP3) Plays Sound FX and Music.
 core.FUNCS.audio.playSound_mp3 = function(soundKey, retrigger, volume){
 	// core.FUNCS.audio.playSound_mp3("payfee1", true, 1.0);
 
@@ -587,7 +531,7 @@ core.FUNCS.audio.play_midi = function(synthKey, soundKey, loop, vol){
 	synth.playMIDI();
 }
 
-// Cancel all sounds (MIDI) (can also reset the position to 0.)
+// (MIDI) Cancel all sounds (can also reset the position to 0.)
 core.FUNCS.audio.stopAllSounds_midi = function(resetPosition){
 	// Do a pause on all synths and then reset their song position to 0.
 
@@ -628,6 +572,7 @@ core.FUNCS.audio.changeMasterVolume = function(newVol){
 	}
 
 };
+
 // Pause all sounds (mp3, midi)
 core.FUNCS.audio.TODO_pauseAllSounds = function(){
 	// MIDI

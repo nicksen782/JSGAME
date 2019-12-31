@@ -3,20 +3,9 @@ JSGAME.GUI={
 
 	// Show the indicated panel and select the indicated debug button.
 	showPanel : function(panel_id, elem){
-		// EXAMPLES:
-		// JSGAME.GUI.showPanel("panel_nogame"       , this);
-		// JSGAME.GUI.showPanel("panel_loadingGame"  , this);
-		// JSGAME.GUI.showPanel("panel_game"         , this);
-		// JSGAME.GUI.showPanel("panel_gestureNeeded", this);
-		// JSGAME.GUI.showPanel("panel_gamelistEmpty", this);
-
-		// JSGAME.GUI.showPanel("panel_config_main"     , this);
-		// JSGAME.GUI.showPanel("panel_config_gamepads" , this);
-		// JSGAME.GUI.showPanel("panel_config_settings" , this);
-
 		// Get list of panel ids.
 		let panels = document.querySelectorAll('.panels');
-		let found=false;
+		let found  = false;
 
 		// Attempt to get a DOM handle to the specified panel.
 		let specifiedPanel = document.getElementById(panel_id);
@@ -60,7 +49,7 @@ JSGAME.GUI={
 			debug_navButtons[i].classList.remove("active");
 		}
 	},
-	// Change the game.Pfold
+	// Change the game.
 	changeGame : function(gamestring){
 		// Is the debug mode on?
 
@@ -94,7 +83,7 @@ JSGAME.GUI={
 
 	// *** USER GAME INPUT ***
 
-	//
+	// Show/hide the on-screen gamepads.
 	toggleGamepads      : function(){
 		// The gameControls.
 		let gameControls_hidden = JSGAME.DOM["gameControls"].classList.contains("hide") ;
@@ -104,7 +93,6 @@ JSGAME.GUI={
 
 		// Are the game controls hidden?
 		if(gameControls_hidden){
-			// console.log("showing gamepads");
 			// Make sure the inline_block class is applied to the site container.
 			JSGAME.DOM["siteContainerDiv"].classList.add("inline_block");
 
@@ -117,7 +105,6 @@ JSGAME.GUI={
 		}
 		// Are the game controls visible?
 		else         {
-			// console.log("HIDING gamepads");
 			// Do we remove the inline_block class from the site container?
 			if(!DEBUG_DIV){ JSGAME.DOM["siteContainerDiv"].classList.remove("inline_block"); }
 
@@ -143,9 +130,7 @@ JSGAME.GUI={
 					let elem = dd;
 					let pad  = elem.getAttribute("pad");
 					let btn  = elem.getAttribute("button");
-					let kb   = elem.getAttribute("kb");
-
-					// console.log("pad:",pad, "btn:", btn, "kb:", kb);
+					// let kb   = elem.getAttribute("kb");
 
 					elem.addEventListener("mousedown" , function() { JSGAME.GUI.userInput("keydown", btn , pad); }, false);
 					elem.addEventListener("mouseleave", function() { JSGAME.GUI.userInput("keyup"  , btn , pad); }, false);
@@ -162,7 +147,6 @@ JSGAME.GUI={
 
 		// For mobile devices, convert touchend to click. (This will disable the double-tap to zoom feature.)
 		JSGAME.DOM["gameControls"].addEventListener("touchend", function(e){ e.preventDefault(); this.click(); }, true) ;
-
 	},
 	// Used for user input when clicking on the gamepad buttons.
 	userInput           : function( type, btn, pad ){
@@ -192,15 +176,11 @@ JSGAME.GUI={
 				JSGAME.SHARED["LASTINPUT_P"+pad] &= ~thisButton ;
 			}
 		}
-		// else{
-		// 	console.log("Invalid button!");
-		// }
 
 	},
 	// Listen for a key to be pressed.
 	document_keydown    : function(e){
 		let index = JSGAME.consts.allowedKeys.indexOf(e.code) ;
-		// let index = JSGAME.consts.allowedKeys.indexOf(e.key) ;
 		if( index == -1){ return; }
 		else{
 			JSGAME.GUI.userInput("keydown", JSGAME.consts.allowedButtons[index] , 1);
@@ -277,8 +257,8 @@ JSGAME.GUI={
 
 			// if( app.GUI.settings.debug ){
 				// app.game.code._DEBUG_.populateDebugData_funcs.displayVars();
-				// }
-			}
+			// }
+		}
 
 		// Unpause if paused.
 		else if(JSGAME.FLAGS.manuallyPaused==true){
@@ -297,11 +277,7 @@ JSGAME.GUI={
 
 	// Toggles full screen.
 	togglefullscreen    : function(){
-		// The Emscripten way.
-
 		// The standard way.
-		// var canvas = JSGAME.DOM["canvas_OUTPUT"];
-		// var canvas = document.getElementById("gameCanvas_DIV");
 		let canvas = core.DOM['gameCanvas_DIV'];
 
 		// Go to fullscreen.
@@ -311,7 +287,7 @@ JSGAME.GUI={
 			|| document.webkitFullscreenElement // Chrome
 			|| window  .fullScreen              // Firefox
 			|| document.mozFullScreenElement    // Firefox
-			|| document.msFullscreenElement     // Edge
+			|| document.msFullscreenElement     // Edge/IE
 		))
 		{
 			if      (canvas.requestFullscreen      ) { canvas.requestFullscreen();       } // Standard

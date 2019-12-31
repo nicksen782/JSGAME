@@ -135,7 +135,6 @@ JSGAME.SHARED={
 			JSGAME.SHARED.timing._then    = performance.now()      ;
 			JSGAME.SHARED.timing.interval = 1000/core.SETTINGS.fps ; // 1000/30 == 33.333, 1000/60 == 16.666
 			JSGAME.SHARED.timing.delta    = null
-
 		}
 	},
 	// Calculates the average frames per second.
@@ -146,6 +145,7 @@ JSGAME.SHARED={
 		_sample_   : []    ,
 		_index_    : 0     ,
 		_lastTick_ : false ,
+
 		tick: function() {
 			// if is first tick, just set tick timestamp and return
 			if (!this._lastTick_) {
@@ -156,19 +156,21 @@ JSGAME.SHARED={
 			let now = performance.now();
 			let delta = (now - this._lastTick_) / 1000;
 			let fps = 1 / delta;
+
 			// add to fps samples, current tick fps value
 			this._sample_[this._index_] = Math.round(fps);
 
 			// iterate samples to obtain the average
 			let average = 0;
 			for (let i = 0; i < this._sample_.length; i++) average += this._sample_[i];
-
 			average = Math.round(average / this._sample_.length);
 
 			// set new FPS
 			this.value = average;
+
 			// store current timestamp
 			this._lastTick_ = now;
+
 			// increase sample index counter, and reset it
 			// to 0 if exceded maximum sampleSize limit
 			this._index_++;
@@ -373,15 +375,6 @@ JSGAME.SHARED={
 
 	// *** MISC ***
 
-	// Flag indicating if the debug mode is on.
-	debug : false ,
-
 	// This is the highest volume allowed.
 	masterVolume : 75 ,
-
-	// Flag used while waiting for the user to interact with the window.
-	hasUserInteractionRestriction : false ,
-
-	// Detects gamepad support.
-	support_gamepadAPI : ('GamepadEvent' in window) && typeof navigator.getGamepads == "function",
 };

@@ -39,7 +39,6 @@ function API_REQUEST( $api, $type ){
 
 	// APIs
 	$o_values["combineFiles"]      = [ "p"=>( ( $public ) ? 1 : 0 ), 'get'=>1, 'post'=>0, 'cmd'=>0,] ;
-	$o_values["combineFiles_game"] = [ "p"=>( ( $public ) ? 1 : 0 ), 'get'=>1, 'post'=>0, 'cmd'=>0,] ;
 
 	// DETERMINE IF THE API IS AVAILABLE TO THE USER.
 
@@ -75,26 +74,71 @@ function API_REQUEST( $api, $type ){
 
 }
 
-// Can be used by a game.
-function combineFiles_game(){
-	// index_p.php/?o=combineFiles_game&game=Tetris_(JS)
+function combineFiles(){
 	global $_appdir;
-
 	$output="";
+	$filelist=[];
 
-	//
-	$games   = json_decode(file_get_contents("gamelist.json"), true)['games'];
-	$key     = array_search($_GET["game"], array_column($games, 'header_gameChoice'));
-	$gamedir = $games[$key]['gamedir'];
+	$filelistonly   = $_GET["filelistonly"] == 1 ? true : false ;
 
-	// Change the the "js" folder for the game.
-	chdir($gamedir);
+	$get_jsgame     = $_GET["jsgame"]       == 1 ? true : false ;
+	$get_video      = $_GET["video"]        == 1 ? true : false ;
+	$get_audio      = $_GET["audio"]        == 1 ? true : false ;
+	$get_gamejs     = $_GET["gamejs"]       == 1 ? true : false ;
 
-	// Get the gamesettings for the specified game.
-	$gamesettings = json_decode(file_get_contents("gamesettings.json"), true);
-	$filelist = $gamesettings["js_files"];
+	// $get_debug_js   = $_GET["debug_js"]     == 1 ? true : false ;
+	// $get_midi_bin   = $_GET["midi_bin"]     == 1 ? true : false ;
+	// $get_graphics   = $_GET["graphics"]     == 1 ? true : false ;
+	// $get_mp3        = $_GET["mp3"]          == 1 ? true : false ;
 
-	// Make sure there ar files.
+	// Add JSGAME core files.
+	if($get_jsgame){
+		array_push($filelist, $_appdir . "/cores/JSGAME_core/FLAGS.js"   );
+		array_push($filelist, $_appdir . "/cores/JSGAME_core/SHARED.js"  );
+		array_push($filelist, $_appdir . "/cores/JSGAME_core/DOM.js"     );
+		array_push($filelist, $_appdir . "/cores/JSGAME_core/INIT.js"    );
+		array_push($filelist, $_appdir . "/cores/JSGAME_core/GUI.js"     );
+		array_push($filelist, $_appdir . "/cores/JSGAME_core/GAMEPADS.js");
+	}
+
+	// If a game was not specified then don't try to load game files.
+	if($_GET["game"]){
+		// Get gamelist.json.
+		$gamelist  = json_decode(file_get_contents("gamelist.json"), true)['games'];
+		$gamekey   = array_search($_GET["game"], array_column($gamelist, 'header_gameChoice'));
+		$gamedir   = realpath($gamelist[$gamekey]['gamedir']);
+
+		// Get gamesettings.json.
+		$gamesettings = json_decode(file_get_contents($gamedir."/gamesettings.json"), true);
+
+		// Add video core.
+		if($get_video){
+			$file = realpath( $_appdir . "/" . $gamesettings["videokernel"] );
+			if($file !== false){ array_push($filelist, $file); }
+		}
+
+		// Add sound core.
+		if($get_audio){
+			$file = realpath( $_appdir . "/" . $gamesettings["soundkernel"] );
+			if($file !== false){ array_push($filelist, $file); }
+		}
+
+		// Add game js files.
+		if($get_gamejs){
+			for($i=0; $i<sizeof($gamesettings["js_files"]); $i+=1){
+				$file = realpath( $gamedir . "/" . $gamesettings["js_files"][$i] );
+				if($file !== false){ array_push($filelist, $file); }
+			}
+		}
+
+		// ?? debug js
+		// ?? midi_bin
+		// ?? graphics_files
+		// ?? mp3_files
+		// ?? onscreen gamepads
+	}
+
+	// Make sure there are files.
 	if(!sizeof($filelist)){ exit(); }
 
 	// Combine the files.
@@ -102,49 +146,12 @@ function combineFiles_game(){
 		$file = $filelist[$i];
 
 		if (strpos($file, '..') !== false) { exit( "NOT ALLOWED!" ); }
-		$output .= file_get_contents($file) . "\n\n" ;
+
+		$output .= file_get_contents($file) . "\n\n\n" ;
 	}
 
-	// Output the files.
-	echo $output;
-
-	// Change back to the app dir.
-	chdir($_appdir);
+	if($filelistonly){ echo json_encode($filelist); }
+	else             { echo $output;                }
 }
-// Used for JSGAME initial loading.
-function combineFiles(){
-	global $_appdir;
-	$filelist=[];
-	$output="";
 
-	switch( $_GET["arg"] ){
-		case "JSGAME" : {
-			array_push($filelist, "cores/JSGAME_core/FLAGS.js"   );
-			array_push($filelist, "cores/JSGAME_core/SHARED.js"  );
-			array_push($filelist, "cores/JSGAME_core/DOM.js"     );
-			array_push($filelist, "cores/JSGAME_core/INIT.js"    );
-			array_push($filelist, "cores/JSGAME_core/GUI.js"     );
-			array_push($filelist, "cores/JSGAME_core/GAMEPADS.js");
-		break;
-		}
-		case "CORES" : {
-			$data = json_decode($_GET['cores'], true);
-			for($i=0; $i<sizeof($data); $i+=1){
-				array_push($filelist, $data[$i]);
-			}
-		}
-		default : { break; }
-	};
-
-	if(!sizeof($filelist)){ exit(); }
-
-	for($i=0; $i<sizeof($filelist); $i+=1){
-		$file = $filelist[$i];
-
-		if (strpos($file, '..') !== false) { exit( "NOT ALLOWED!" ); }
-		$output .= file_get_contents($_appdir."/".$file) . "\n\n" ;
-	}
-
-	echo $output;
-}
 ?>

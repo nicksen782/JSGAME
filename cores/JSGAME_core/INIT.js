@@ -66,7 +66,7 @@ JSGAME.INIT={
 	// Add wait until user gesture restriction is removed.
 	addUserInteractionRestriction : function(){
 		JSGAME.GUI.showPanel_internal("panel_gestureNeeded");
-		JSGAME.SHARED.hasUserInteractionRestriction=true;
+		JSGAME.FLAGS.hasUserInteractionRestriction=true;
 		console.log("USER MUST INTERACT WITH THE WINDOW...");
 
 		JSGAME.SHARED.gestureEvents = {
@@ -88,7 +88,7 @@ JSGAME.INIT={
 	},
 	// Remove wait-until-gesture restriction.
 	removeUserInteractionRestriction : function(e){
-		if(!JSGAME.SHARED.hasUserInteractionRestriction){ return; }
+		if(!JSGAME.FLAGS.hasUserInteractionRestriction){ return; }
 
 		// Check if related events have both occurred (pairs.)
 		if(e.type=="keydown"    || e.type=="keyup")    {
@@ -120,9 +120,8 @@ JSGAME.INIT={
 
 				// Remove the listener and load js game.
 				else{
-					// console.log("(DOUBLE-CHECKED) Removing user interaction restriction...", "(DETECTED: ", e.type, ")");
 					console.log("Removing user interaction restriction...", "\n\t(TYPE DETECTED: ", e.type, ")");
-					JSGAME.SHARED.hasUserInteractionRestriction=false;
+					JSGAME.FLAGS.hasUserInteractionRestriction=false;
 
 					document.removeEventListener('keydown'    , JSGAME.INIT.removeUserInteractionRestriction);
 					document.removeEventListener('keyup'      , JSGAME.INIT.removeUserInteractionRestriction);
@@ -139,7 +138,7 @@ JSGAME.INIT={
 			},
 			function(err){
 				// Game cannot load yet.
-				console.error("SECOND CHECK FOR USER GESTURES FAILED!");
+				console.error("CHECK FOR USER GESTURES FAILED!");
 			}
 		);
 
@@ -147,7 +146,6 @@ JSGAME.INIT={
 	// Check endianness, canloadgame, autoplay availability, provide some basic feedback on errors.
 	__PRE_INIT : function(){
 		console.log("\n=======================================");
-		// console.log("JS Game -- __PRE_INIT");
 		console.log("INIT JS GAME...");
 
 		// Make sure this environment is Little Endian.
@@ -159,13 +157,13 @@ JSGAME.INIT={
 		}
 
 		// DOM cache.
-		JSGAME.DOM["gameSelector"]     = document.getElementById  ("gameSelector");
-		JSGAME.DOM["gameControls"]     = document.getElementById  ("gameControls");
-		JSGAME.DOM["gameControls_br"]  = document.getElementById  ("gameControls_br");
-		JSGAME.DOM["siteContainerDiv"] = document.getElementById  ("siteContainerDiv");
-		JSGAME.DOM["sideDiv"]          = document.getElementById  ("sideDiv");
-		JSGAME.DOM["debug_mode"]       = document.getElementById  ("debug_mode");
-		JSGAME.DOM["panel_config_gamepads"]       = document.getElementById  ("panel_config_gamepads");
+		JSGAME.DOM["gameSelector"]          = document.getElementById("gameSelector")         ;
+		JSGAME.DOM["gameControls"]          = document.getElementById("gameControls")         ;
+		JSGAME.DOM["gameControls_br"]       = document.getElementById("gameControls_br")      ;
+		JSGAME.DOM["siteContainerDiv"]      = document.getElementById("siteContainerDiv")     ;
+		JSGAME.DOM["sideDiv"]               = document.getElementById("sideDiv")              ;
+		JSGAME.DOM["debug_mode"]            = document.getElementById("debug_mode")           ;
+		JSGAME.DOM["panel_config_gamepads"] = document.getElementById("panel_config_gamepads");
 
 		if(JSGAME.DOM["debug_mode"].checked){
 			let debug_navButtons = document.getElementById("debug_navButtons");
@@ -234,21 +232,21 @@ JSGAME.INIT={
 		JSGAME.consts["BTN_SR"]        = 2048 ; // BTN_SR     decimal: 2048, binary: 0000100000000000, HEX: 0x0800, bitWise:  1 << 11
 
 		// DOM cache.
-		JSGAME.DOM["gamepads"]             = document.querySelectorAll("#gameControls .gamepad");
-		JSGAME.DOM["gamepads_svg"]         = document.querySelectorAll("#gameControls .gamepad svg");
+		JSGAME.DOM["gamepads"]               = document.querySelectorAll("#gameControls .gamepad");
+		JSGAME.DOM["gamepads_svg"]           = document.querySelectorAll("#gameControls .gamepad svg");
 
-		JSGAME.DOM["masterVolumeSlider_td1"]= document.getElementById  ("masterVolumeSlider_td1");
-		JSGAME.DOM["masterVolumeSlider_td2"]= document.getElementById  ("masterVolumeSlider_td2");
+		JSGAME.DOM["masterVolumeSlider_td1"] = document.getElementById  ("masterVolumeSlider_td1");
+		JSGAME.DOM["masterVolumeSlider_td2"] = document.getElementById  ("masterVolumeSlider_td2");
 
-		JSGAME.DOM["masterVolumeSlider"]   = document.getElementById  ("masterVolumeSlider");
-		JSGAME.DOM["canvasScaleSlider"]    = document.getElementById  ("canvasScaleSlider");
+		JSGAME.DOM["masterVolumeSlider"]     = document.getElementById  ("masterVolumeSlider");
+		JSGAME.DOM["canvasScaleSlider"]      = document.getElementById  ("canvasScaleSlider");
 
-		JSGAME.DOM["gameCanvas_DIV"]       = document.getElementById  ("gameCanvas_DIV");
-		JSGAME.DOM["indicator"]            = document.getElementById  ("indicator");
+		JSGAME.DOM["gameCanvas_DIV"]         = document.getElementById  ("gameCanvas_DIV");
+		JSGAME.DOM["indicator"]              = document.getElementById  ("indicator");
 
-		JSGAME.DOM["btn_toggleGamepads"]   = document.getElementById  ("btn_toggleGamepads");
-		JSGAME.DOM["btn_togglePause"]      = document.getElementById  ("btn_togglePause");
-		JSGAME.DOM["btn_toggleFullscreen"] = document.getElementById  ("btn_toggleFullscreen");
+		JSGAME.DOM["btn_toggleGamepads"]     = document.getElementById  ("btn_toggleGamepads");
+		JSGAME.DOM["btn_togglePause"]        = document.getElementById  ("btn_togglePause");
+		JSGAME.DOM["btn_toggleFullscreen"]   = document.getElementById  ("btn_toggleFullscreen");
 
 		// *** DOM init (event listeners, etc.) ***
 
@@ -272,6 +270,7 @@ JSGAME.INIT={
 			JSGAME.SHARED.canvasResize(this.value);
 		}, false);
 
+		//
 		JSGAME.DOM["btn_togglePause"]      .addEventListener("click"    , JSGAME.GUI.togglePause     , false);
 		JSGAME.DOM["btn_toggleFullscreen"] .addEventListener("click"    , JSGAME.GUI.togglefullscreen, false);
 		JSGAME.DOM["gameCanvas_DIV"]       .addEventListener("dblclick" , JSGAME.GUI.togglefullscreen, true );
@@ -357,7 +356,8 @@ JSGAME.INIT={
 						// console.log("GAME CORES ARE READY");
 						console.log("STARTING GAME...");
 
-						if(JSGAME.SHARED.debug)       {
+						// Show the performance/timing data if in debug mode.
+						if(JSGAME.FLAGS.debug)       {
 							JSGAME.SHARED.PERFORMANCE.output();
 							JSGAME.SHARED.PERFORMANCE.clearAll();
 						}
