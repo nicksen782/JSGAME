@@ -69,333 +69,11 @@
 		JSGAME.PRELOAD.gamelist_json     = null ;
 		JSGAME.PRELOAD.gameselected_json = null ;
 		JSGAME.PRELOAD.gamesettings_json = null ;
-
-		<?php
-			$devServer=false;
-			if      ( strpos($_SERVER['SERVER_NAME'], "dev2.nicksen782.net" ) !== false ) { $devServer=true; }
-
-			if($_GET['debug']=="true"){ $debug=true;  }
-			else                      { $debug=false; }
-
-			if($debug && isset($_GET["cf_overrides"])){
-				// &cf_overrides={"jsg":0,"v":0,"a":0,"gjs":0}
-				// &cf_overrides={"jsg":1,"v":1,"a":1,"gjs":1}
-				$cf_overrides = json_decode($_GET["cf_overrides"], true);
-
-				if($cf_overrides == null){
-					$cf_overrides['jsg'] = 0;
-					$cf_overrides['v']   = 0;
-					$cf_overrides['a']   = 0;
-					$cf_overrides['gjs'] = 0;
-					$debug_cf_override=false;
-				}
-				else{
-					$cf_overrides['jsg'] == 1 ? 1 : 0;
-					$cf_overrides['v']   == 1 ? 1 : 0;
-					$cf_overrides['a']   == 1 ? 1 : 0;
-					$cf_overrides['gjs'] == 1 ? 1 : 0;
-					$debug_cf_override=true;
-				}
-			}
-
-			// Gamepads are off by default.
-			if( $_GET['gamepads'] ){ $gamepads= $_GET['gamepads']=="true" ? true : false;  }
-			else                   { $gamepads=false; }
-
-			$outputText = "";
-			$outputText_errors = "";
-
-			// These values will be determined here and later copied to JavaScript.
-			$PHP_VARS["gamelist_json"]     = null  ; // Was gamelist.json found?
-			$PHP_VARS["gamesettings_json"] = null  ; // Was gamesettings.json found?
-			$PHP_VARS["gameSelected"]      = null  ; // Was a game selected?
-			$PHP_VARS["typeGamepads"]      = null  ; //
-			$PHP_VARS["numGamepads"]       = null  ; //
-			$PHP_VARS["fps"]               = null  ; //
-			$PHP_VARS["videokernel"]       = null  ; //
-			// $PHP_VARS["queryString"]       = $_GET ; //
-			$PHP_VARS["CANLOADGAME"]       = null  ; //
-
-			// ***************************************
-			//  FIND AND LOAD THE gamelist.json FILE.
-			// ***************************************
-
-			// Look for the gamelist.json file. Save to JavaScript if found.
-			$gamelist_json = [];
-
-			// Not there? Use the built-in blank one.
-			$gamelistjson_file = "gamelist.json";
-			if( ! file_exists ($gamelistjson_file) ) {
-				// Create the gamelist file from the template.
-				// Make sure that other users can write to it.
-				$oldmask = umask(0);
-				$src     = "template_gamelist.json" ;
-				$dest    = "gamelist.json" ;
-				copy( $src , $dest );
-				chmod($dest, 0666);
-				umask($oldmask);
-				// file_put_contents("gamelist.json", file_get_contents("template_gamelist.json"));
-			}
-
-			if( file_exists ($gamelistjson_file) )     {
-				// Set the flag indicating the $gamelistjson_file file was found.
-				$PHP_VARS['gamelist_json']=true;
-
-				// Get a handle on the 'games' key in the $gamelistjson_file file.
-				$games=json_decode(file_get_contents($gamelistjson_file), true)['games'];
-
-				// Output as JavaScript variable.
-				$outputText .= "\nJSGAME.PRELOAD.gamelist_json = " . json_encode($games, JSON_PRETTY_PRINT) . ";" ;
-				$outputText .= "\n";
-			}
-			else                                    {
-				$outputText_errors .= 'NO GAMELIST.JSON' . "\n";
-			}
-
-			// Was the $gamelistjson_file file found AND was a game selected?
-			// If so, start loading the assets for the game.
-			if( $PHP_VARS['gamelist_json'] && isset($_GET['game']) ){
-				// Find this entry in the gamelist_json.
-				$thisgame = array_filter($games, function($entry){
-					return $entry['header_gameChoice'] == $_GET['game'] ;
-				} );
-
-				// Array filter returns an array with the original index values. Fix!
-				$thisgame = array_values($thisgame)[0];
-
-				// Handle invalid game title:
-				//
-
-				// With the gamesettings we should be able to get the path to the game.
-				$path = $thisgame['gamedir'];
-
-				// gamesettings.json
-				if( file_exists ($path . '/gamesettings.json') ) {
-					$PHP_VARS['gamesettings_json'] = true ;
-					$PHP_VARS['gameSelected']      = true ;
-
-					$gamesettings=json_decode(file_get_contents($path . '/gamesettings.json'),true) ;
-
-					// Fix the path for gamesettings.
-					//
-
-					// Gamepads:
-					$PHP_VARS['typeGamepads'] = $gamesettings["typeGamepads"] ; // : "nes",
-					$PHP_VARS['numGamepads']  = $gamesettings["numGamepads"]  ; // : 1,
-
-					// FPS:
-					$PHP_VARS['fps']          = $gamesettings["fps"]          ; // : 30,
-
-					// Video kernel:
-					$PHP_VARS['videokernel']  = $gamesettings["videokernel"]  ; // : "",
-
-					// Fonts:
-					$PHP_VARS['fonts']        = $gamesettings["fonts"]  ; // : "",
-
-					// Sounds/Music?
-					$PHP_VARS['soundkernel']  = $gamesettings["soundkernel"]  ; // : "",
-
-					// MP3
-					$PHP_VARS['mp3_files']    = [] ;
-					if( $gamesettings["mp3_files"] ) { $PHP_VARS['mp3_files'] = $gamesettings["mp3_files"]; }
-
-					// MIDI
-					$PHP_VARS['midi_bin']     = [] ;
-					if( $gamesettings["midi_bin"] ) { $PHP_VARS['midi_bin'] = $gamesettings["midi_bin"]; }
-
-					// MIDI
-					$PHP_VARS['midi_synths']  = [] ;
-					if( $gamesettings["midi_synths"] ) { $PHP_VARS['midi_synths'] = $gamesettings["midi_synths"]; }
-
-					// Graphics assets.
-					$PHP_VARS['graphics_conversionSettings'] = $gamesettings["graphics_conversionSettings"];
-
-					// Links:
-					$PHP_VARS['links'] = $gamesettings["links"];
-
-					// Canvas scale factor
-					$PHP_VARS['canvas_scaleFactor'] = $gamesettings["canvas_scaleFactor"];
-
-					// JavaScript files for the game:
-					$PHP_VARS['js_files'] = $gamesettings["js_files"];
-
-					// Start-up logo (on by default.)
-					if( isSet($gamesettings["INTRO_LOGO"]) )         { $PHP_VARS['INTRO_LOGO'] = $gamesettings["INTRO_LOGO"]; }
-					else                                             { $PHP_VARS['INTRO_LOGO'] = 1 ;                          }
-					// Start-up logo: Get the files from PHP as base64.
-					switch( $PHP_VARS['INTRO_LOGO'] ){
-						case    0 : { $img_filename = '';                                                             break; }
-						case    1 : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = true;  break; }
-						case    2 : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = false; break; }
-						default   : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = true;  break; }
-					};
-					if($img_filename){
-						$image        = file_get_contents($img_filename);
-						$imageData    = base64_encode($image);
-						$src          = 'data:'.mime_content_type($img_filename).';base64,'.$imageData;
-						$PHP_VARS['INTRO_LOGO_IMGB64'] = $src;
-					}
-
-					// Output as JavaScript variable.
-					$outputText .= "JSGAME.PRELOAD.gamesettings_json = " . json_encode($gamesettings, JSON_PRETTY_PRINT) . ";" ;
-					$outputText .= "\n";
-					$outputText .= "\n";
-					$outputText .= "\nJSGAME.PRELOAD.gameselected_json = " . json_encode($thisgame, JSON_PRETTY_PRINT) . "; \n\n";
-
-					// Set the game can load flag.
-					$PHP_VARS['CANLOADGAME']  = true;
-				}
-				else                                    {
-					echo "console.log('PATH:', '".$path."' );" . "\n";
-					echo "// no gamesettings.json " . "\n";
-				}
-			}
-			else{
-				$outputText_errors .= 'GAME HAS NOT BEEN SELECTED' . "\n";
-			}
-
-			// END: Output the PHP vars as JavaScript vars.
-			echo "\n";
-			echo "// ******************************************** \n";
-			foreach($PHP_VARS as $k => $v){
-				if( is_array($PHP_VARS[$k]) ) {
-					$outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = "  . json_encode($PHP_VARS[$k]) . "; // \n";
-				}
-				else if( is_string($PHP_VARS[$k]) ) {
-					$outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = '" . $PHP_VARS[$k] . "'; // \n";
-				}
-				else if(is_null($PHP_VARS[$k])){
-					$outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = null; // \n"  ;
-				}
-				else{
-					// Make sure that specifically true or false values are not written as 1 or zero.
-					if     ($PHP_VARS[$k]===true) { $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = true  ; "; }
-					else if($PHP_VARS[$k]===false){ $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = false ; "; }
-					// Other values.
-					else                          { $outputText .= "JSGAME.PRELOAD.PHP_VARS['$k'] = " . $PHP_VARS[$k] . ";"; }
-					$outputText .= "\n";
-				}
-			}
-
-			// Output the $outputText.
-			echo trim($outputText);
-
-			// Output the error status(es).
-			if($outputText_errors != ""){
-				echo "\n\n// ERRORS: \n";
-				echo "/*\n";
-				echo trim($outputText_errors);
-				echo "\n*/\n\n";
-				echo 'console.log("ERRORS:");' . "\n";
-				echo 'console.log('.json_encode(trim($outputText_errors)) . ')';
-				// echo "\n";
-			}
-		?>
-
 	</script>
 
-	<!-- VIDEO / SOUND / GAME JS -->
-	<?php
-		if($PHP_VARS['CANLOADGAME']){
-			// Download some files individually and/or some combined.
-			if( $debug && $debug_cf_override ){
-				// JSGAME
-				if( $cf_overrides['jsg'] == 0){
-					echo "<script src='cores/JSGAME_core/FLAGS.js'   ></script>" . "\n";
-					echo "<script src='cores/JSGAME_core/SHARED.js'  ></script>" . "\n";
-					echo "<script src='cores/JSGAME_core/DOM.js'     ></script>" . "\n";
-					echo "<script src='cores/JSGAME_core/INIT.js'    ></script>" . "\n";
-					echo "<script src='cores/JSGAME_core/GUI.js'     ></script>" . "\n";
-					echo "<script src='cores/JSGAME_core/GAMEPADS.js'></script>" . "\n";
-				}
-				// VIDEO
-				if( $cf_overrides['v']   == 0){
-					echo "<script purpose='video' src='".$PHP_VARS['videokernel']."'></script>"      . "\n";
-				}
-				// SOUND
-				if( $cf_overrides['a']   == 0){
-					echo "<script purpose='sound' src='".$PHP_VARS['soundkernel']."'></script>"      . "\n";
-				}
-				// GAME JS
-				if( $cf_overrides['gjs']   == 0){
-					foreach($PHP_VARS['js_files'] as $k => $v){
-						echo '<script purpose="game" src="'.$path.'/'.$v.'"></script>' . "\n";
-					}
-				}
-				if( $cf_overrides['jsg'] || $cf_overrides['v'] || $cf_overrides['a'] || $cf_overrides['gjs'] ){
-					echo '<script src="index_p.php/?o=combineFiles&game='.$_GET['game'].'&jsgame='.$cf_overrides['jsg'].'&video='.$cf_overrides['v'].'&audio='.$cf_overrides['a'].'&gamejs='.$cf_overrides['gjs'].'"></script>' . "\n";
-				}
-			}
-
-			// Get each file individually.
-			else if($debug){
-				// if $debug, add random string to .js file??
-
-				// JSGAME
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/FLAGS.js'   ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/SHARED.js'  ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/DOM.js'     ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/INIT.js'    ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/GUI.js'     ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/GAMEPADS.js'></script>" . "\n";
-
-				// VIDEO
-				echo "<script purpose='video' src='".$PHP_VARS['videokernel']."'></script>"      . "\n";
-
-				// SOUND
-				echo "<script purpose='sound' src='".$PHP_VARS['soundkernel']."'></script>"      . "\n";
-
-				// GAME JS
-				foreach($PHP_VARS['js_files'] as $k => $v){
-					echo '<script purpose="game" src="'.$path.'/'.$v.'"></script>' . "\n";
-				}
-
-			}
-
-			// NORMAL: Get one combined file.
-			else{
-				// ALL: JSGAME, VIDEO, SOUND, GAME JS
-				echo '<script src="index_p.php/?o=combineFiles&game='.$_GET['game'].'&jsgame=1&video=1&audio=1&gamejs=1"></script>' . "\n";
-			}
-
-		}
-		else{
-			// Only load the JSGAME core.
-			if($debug){
-				// JSGAME
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/FLAGS.js'   ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/SHARED.js'  ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/DOM.js'     ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/INIT.js'    ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/GUI.js'     ></script>" . "\n";
-				echo "<script purpose='jsgame' src='cores/JSGAME_core/GAMEPADS.js'></script>" . "\n";
-			}
-			else{
-				echo '<script src="index_p.php/?o=combineFiles&jsgame=1&video=0&audio=0&gamejs=0"></script>' . "\n";
-			}
-		}
-	?>
-
-	<!-- DEBUG AND GAMEPAD FLAGS -->
-	<?php
-		echo "<script>\n";
-		// DEBUG
-		if($PHP_VARS['CANLOADGAME'] && $debug)   { echo "\tJSGAME.FLAGS.debug=true ; \n";    }
-		else                                     { echo "\tJSGAME.FLAGS.debug=false; \n";    }
-
-		// GAMEPADS off?
-		if($PHP_VARS['CANLOADGAME'] && $gamepads){ echo "\tJSGAME.SHARED.gamepads=true ; \n"; }
-		else                                     { echo "\tJSGAME.SHARED.gamepads=false; \n"; }
-		echo "</script>\n";
-	?>
-
-	<!-- START JS GAME -->
-	<script purpose="INIT">
-		window.onload=function(){
-			window.onload=null;
-			JSGAME.INIT.__PRE_INIT();
-		};
-	</script>
+	<!-- Init via PHP : gameslist.json, gamesettings.json -->
+	<!-- Also includes the window.onload function. -->
+	<script src='index_p.php/?o=init&qs=<?php echo htmlentities(json_encode(($_GET))); ?>'></script>
 
 </head>
 
@@ -412,21 +90,6 @@
 					<tr colspan="1">
 							<select id="gameSelector" onchange="JSGAME.GUI.changeGame(this.value);">
 								<option value="">... Choose a Game ...</option>
-								<?php
-									foreach($games as $k => $v){
-										if($v['AVAILABLE']==1){
-											echo '<option ' . "\n" .
-												'value   ="'.$v["header_gameChoice"] . '" ' . "\n" .
-												'gamename="'.$v["gamename"]          . '" ' . "\n" .
-												'author  ="'.$v["author"]            . '" ' . "\n" .
-												'gamedesc="'.$v["gamedesc"]          . '" ' . "\n" .
-												($v["header_gameChoice"]==$_GET['game'] ? "selected" : "") . "\n" .
-											">" . "\n" .
-											$v['gamename'] . "\n".
-											'</option>' . "\n";
-										}
-									}
-								?>
 							</select>
 						</td>
 					</tr>
@@ -437,22 +100,7 @@
 				<!-- LINKS -->
 				<tr>
 					<td>Links:</td>
-					<td colspan="4">
-						<?php
-							if($PHP_VARS['CANLOADGAME']){
-								foreach($PHP_VARS['links'] as $k => $v){
-									// Is this an absolute path?
-									if (preg_match('/:\/\//', $v["href"])) {
-										echo '<a href="'.$v["href"].'" target="_blank">['.$v["text"].']</a>' . "\n";
-									}
-									// It is a relative path.
-									else{
-										echo '<a href="'.$path."/".$v["href"].'" target="_blank">['.$v["text"].']</a>' . "\n";
-									}
-								}
-							}
-						?>
-					</td>
+					<td colspan="4" id="gameinfolinks"></td>
 				</tr>
 
 				<!-- GAME CONFIG -->
@@ -637,56 +285,13 @@
 
 	<div id="sideDiv" class="hide">
 		<div id="gameControls" class="hide">
-			<?php
-				// Only do this if the game can load.
-				if($PHP_VARS['CANLOADGAME']){
+		</div>
 
-					if($PHP_VARS['typeGamepads']=="nes" && $PHP_VARS['numGamepads'] > 0){
-						// Output the SVG.
-						for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
-							$class="";
-							if($debug){ $class = "twoGamepads";}
-							else{
-								if     ($PHP_VARS['numGamepads']==1){ $class="oneGamepad"; }
-								else if($PHP_VARS['numGamepads']==2){ $class="twoGamepads"; }
-							}
-
-							echo "<div class='".$class." gamepad gamepad_nes noSelect2' pad='".($i+1)."'>";
-							require "gamepadconfigs/gamepad_nes.svg";
-							echo "</div>";
-						}
-
-						// Output the keyboard keys.
-						require "gamepadconfigs/keyboard_nes.html";
-					}
-
-					else if($PHP_VARS['typeGamepads']=="snes" && $PHP_VARS['numGamepads'] > 0){
-						// Output the SVG.
-						for($i=0; $i<$PHP_VARS['numGamepads']; $i+=1){
-							$class="";
-							if($debug){ $class = "twoGamepads";}
-							else{
-								if     ($PHP_VARS['numGamepads']==1){ $class="oneGamepad"; }
-								else if($PHP_VARS['numGamepads']==2){ $class="twoGamepads"; }
-							}
-
-							echo "<div class='".$class." gamepad gamepad_snes noSelect2' pad='".($i+1)."'>";
-							require "gamepadconfigs/gamepad_snes.svg";
-							echo "</div>";
-						}
-
-						// Output the keyboard keys.
-						require "gamepadconfigs/keyboard_snes.html";
-					}
-					else{
-						// No gamepads?
-						echo "\n" . '<!-- NO GAMEPADS ???-->' . "\n";
-					}
-				}
-			?>
+		<div id="debug_container">
 		</div>
 
 		<?php
+			/*
 			if($PHP_VARS['CANLOADGAME'] && $debug){
 				echo "\n";
 				if( $debug) {
@@ -707,10 +312,12 @@
 					echo "\n";
 				}
 			}
+			*/
 		?>
 	</div>
 
 	<?php
+		/*
 		if($_GET["hidden"]=="true"){
 		?>
 		<style>
@@ -758,9 +365,7 @@
 			}
 			opacityAdjust(0.000, document.getElementById("O_0_000"));
 		</script>
-
-		<?php
-		}
+	*/
 	?>
 
 </body>
