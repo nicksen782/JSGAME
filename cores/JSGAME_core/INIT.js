@@ -138,7 +138,7 @@ JSGAME.INIT={
 			},
 			function(err){
 				// Game cannot load yet.
-				console.error("CHECK FOR USER GESTURES FAILED!");
+				// console.error("CHECK FOR USER GESTURES FAILED!");
 			}
 		);
 

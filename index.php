@@ -16,65 +16,6 @@
 	<!-- JS GAME styling -->
 	<link rel="stylesheet" type="text/css" href="index.css">
 
-	<!-- gameslist.json and main PHP setup portion. -->
-	<script>
-		// window.location.origin
-		var thisPath   = window.location.pathname;
-		var parentPath = thisPath.split("/");
-		parentPath.pop(); parentPath.pop();
-		parentPath = window.location.origin + (parentPath.join("/")) + "/" ;
-		// console.log( parentPath );
-
-		var app = {};
-		var JSGAME={
-			PRELOAD    : {} ,
-			FLAGS      : {} ,
-			SHARED     : {} ,
-			DOM        : {} ,
-			INIT       : {} ,
-			GUI        : {} ,
-			GAMEPADS   : {} ,
-			consts     : {} , //
-			CORE_SETUP_PERFORMANCE : {
-				"starts" : {} ,
-				"ends"   : {} ,
-				"times"  : {} ,
-			},
-		};
-		var core = {
-			SETTINGS   : {} , // Core kernel settings.
-			DOM        : {} , // DOM cache.
-			debug      : {} , // Holds DOM specific to debugging.
-			ASSETS     : {} , // Populated by Populated by game init code.
-			AUDIO      : {} , // Populated by game init code.
-			GRAPHICS   : {} , // Populated by game init code.
-			CONSTS     : {} , // Populated by video/audio kernels.
-			FUNCS      : {} , // Populated by video/audio kernels.
-			EXTERNAL   : {} , // The game can add to this. The cores determine the default contents.
-		};
-		var game={};
-
-		JSGAME.PRELOAD.PHP_VARS = {
-			"gamelist_json"     : null ,
-			"gamesettings_json" : null ,
-			"gameSelected"      : null ,
-			"typeGamepads"      : null ,
-			"numGamepads"       : null ,
-			"fps"               : null ,
-			"videokernel"       : null ,
-			"queryString"       : <?php echo json_encode($_GET); ?> ,
-			"CANLOADGAME"       : null ,
-		};
-
-		JSGAME.PRELOAD.gamelist_json     = null ;
-		JSGAME.PRELOAD.gameselected_json = null ;
-		JSGAME.PRELOAD.gamesettings_json = null ;
-	</script>
-
-	<!-- Init via PHP : gameslist.json, gamesettings.json -->
-	<!-- Also includes the window.onload function. -->
-	<script src='index_p.php/?o=init&qs=<?php echo htmlentities(json_encode(($_GET))); ?>'></script>
-
 </head>
 
 <body>
@@ -141,6 +82,12 @@
 
 		<!-- MAIN DISPLAY -->
 		<div id="mainCenter">
+			<div id="panel_jsgamesetup" class="panels show">
+				<div class="oneLineVH_center" id="presetup_div">
+					Starting JS GAME
+				</div>
+			</div>
+
 			<div id="panel_nogame" class="panels">
 				<div class="oneLineVH_center">
 					A game has not been selected.
@@ -261,22 +208,23 @@
 			<!--  -->
 			<div id="debug1">
 				<!-- -->
-				DEBUG ON: <input type="checkbox" id="debug_mode" <?php echo ($debug ? "checked" : "") ?> >
+				DEBUG ON: <input type="checkbox" id="debug_mode">
 				<span id="gp_blinker1_status" style="width:1em; height:1em; background-color:yellow; display:inline-block;visibility:hidden; ">&nbsp;</span>
 				<span id="gp_blinker2_status" style="width:1em; height:1em; display:inline-block;visibility:hidden; background-image: url('data:image/gif;base64,R0lGODlhEAAQAPAAAJYcHAAAACH5BAwUAAAAIf8LTkVUU0NBUEUyLjADAQAAACwAAAAAEAAQAAACDoSPqcvtD6OctNqLsz4FACH5BA0UAAAAIf8LSW1hZ2VNYWdpY2sOZ2FtbWE9MC40NTQ1NDUALAAAAAAQABAAgAAAAAAAAAIOhI+py+0Po5y02ouzPgUAOw==')   ">&nbsp;</span>
 
 				<!-- QUICK DEBUG BUTTONS -->
 				<div id="debug_navButtons" class="hidden">
 					VIEWS:<br>
-					<button class="debug_navButtons" panel="panel_nogame"        title='nogame'        onclick='JSGAME.GUI.showPanel("panel_nogame"       ,this);'>UNLOADED</button>
-					<button class="debug_navButtons" panel="panel_loadingGame"   title='loadingGame'   onclick='JSGAME.GUI.showPanel("panel_loadingGame"  ,this);'>LOAD</button>
-					<button class="debug_navButtons" panel="panel_game"          title='game'          onclick='JSGAME.GUI.showPanel("panel_game"         ,this);'>GAME</button>
-					<button class="debug_navButtons" panel="panel_gestureNeeded" title='gestureNeeded' onclick='JSGAME.GUI.showPanel("panel_gestureNeeded",this);'>GESTURE</button>
-					<button class="debug_navButtons" panel="panel_gamelistEmpty" title='gamelistEmpty' onclick='JSGAME.GUI.showPanel("panel_gamelistEmpty",this);'>NO GAMES</button>
+					<button class="debug_navButtons" panel="panel_nogame"        title='nogame'                   onclick='JSGAME.GUI.showPanel("panel_nogame"         ,this);'>UNLOADED</button>
+					<button class="debug_navButtons" panel="panel_jsgamesetup"   title='panel_jsgamesetup active' onclick='JSGAME.GUI.showPanel("panel_jsgamesetup"    ,this);'>INIT</button>
+					<button class="debug_navButtons" panel="panel_loadingGame"   title='loadingGame'              onclick='JSGAME.GUI.showPanel("panel_loadingGame"    ,this);'>LOAD</button>
+					<button class="debug_navButtons" panel="panel_game"          title='game'                     onclick='JSGAME.GUI.showPanel("panel_game"           ,this);'>GAME</button>
+					<button class="debug_navButtons" panel="panel_gestureNeeded" title='gestureNeeded'            onclick='JSGAME.GUI.showPanel("panel_gestureNeeded"  ,this);'>GESTURE</button>
+					<button class="debug_navButtons" panel="panel_gamelistEmpty" title='gamelistEmpty'            onclick='JSGAME.GUI.showPanel("panel_gamelistEmpty"  ,this);'>NO GAMES</button>
 					<br>
-					<button class="debug_navButtons" panel="panel_config_main"     title='config_main'     onclick='JSGAME.GUI.showPanel("panel_config_main"    ,this);'>config_main</button>
-					<button class="debug_navButtons" panel="panel_config_gamepads" title='config_gamepads' onclick='JSGAME.GUI.showPanel("panel_config_gamepads",this);'>config_gamepads</button>
-					<button class="debug_navButtons" panel="panel_config_settings" title='config_settings' onclick='JSGAME.GUI.showPanel("panel_config_settings",this);'>config_settings</button>
+					<button class="debug_navButtons" panel="panel_config_main"     title='config_main'            onclick='JSGAME.GUI.showPanel("panel_config_main"    ,this);'>config_main</button>
+					<button class="debug_navButtons" panel="panel_config_gamepads" title='config_gamepads'        onclick='JSGAME.GUI.showPanel("panel_config_gamepads",this);'>config_gamepads</button>
+					<button class="debug_navButtons" panel="panel_config_settings" title='config_settings'        onclick='JSGAME.GUI.showPanel("panel_config_settings",this);'>config_settings</button>
 					<br>
 				</div>
 			</div>
@@ -289,35 +237,9 @@
 
 		<div id="debug_container">
 		</div>
-
-		<?php
-			/*
-			if($PHP_VARS['CANLOADGAME'] && $debug){
-				echo "\n";
-				if( $debug) {
-					echo "\n";
-					echo "<!-- ******* DEBUG CODE ******* --> \n";
-					echo "<!-- ******* DEBUG CODE ******* --> \n";
-					echo "<!-- ******* DEBUG CODE ******* --> \n";
-					echo "\n";
-
-					if( file_exists ($path . '/DEBUG/debug.css') ) { echo "<style>\n";  require $path . '/DEBUG/debug.css'; echo "\n</style>";  }
-					if( file_exists ($path . '/DEBUG/debug.js' ) ) { echo "<script>\n"; require $path . '/DEBUG/debug.js' ; echo "\n</script>"; }
-					if( file_exists ($path . '/DEBUG/debug.php') ) {                    require $path . '/DEBUG/debug.php'; echo "\n";          }
-
-					echo "\n";
-					echo "<!-- ******* DEBUG CODE ******* --> \n";
-					echo "<!-- ******* DEBUG CODE ******* --> \n";
-					echo "<!-- ******* DEBUG CODE ******* --> \n";
-					echo "\n";
-				}
-			}
-			*/
-		?>
 	</div>
 
 	<?php
-		/*
 		if($_GET["hidden"]=="true"){
 		?>
 		<style>
@@ -365,8 +287,68 @@
 			}
 			opacityAdjust(0.000, document.getElementById("O_0_000"));
 		</script>
-	*/
+	<?php
+		}
 	?>
+
+	<!-- gameslist.json and main PHP setup portion. -->
+	<script>
+		// window.location.origin
+		var thisPath   = window.location.pathname;
+		var parentPath = thisPath.split("/");
+		parentPath.pop(); parentPath.pop();
+		parentPath = window.location.origin + (parentPath.join("/")) + "/" ;
+		// console.log( parentPath );
+
+		var app = {};
+		var JSGAME={
+			PRELOAD    : {} ,
+			FLAGS      : {} ,
+			SHARED     : {} ,
+			DOM        : {} ,
+			INIT       : {} ,
+			GUI        : {} ,
+			GAMEPADS   : {} ,
+			consts     : {} , //
+			CORE_SETUP_PERFORMANCE : {
+				"starts" : {} ,
+				"ends"   : {} ,
+				"times"  : {} ,
+			},
+		};
+		var core = {
+			SETTINGS   : {} , // Core kernel settings.
+			DOM        : {} , // DOM cache.
+			debug      : {} , // Holds DOM specific to debugging.
+			ASSETS     : {} , // Populated by Populated by game init code.
+			AUDIO      : {} , // Populated by game init code.
+			GRAPHICS   : {} , // Populated by game init code.
+			CONSTS     : {} , // Populated by video/audio kernels.
+			FUNCS      : {} , // Populated by video/audio kernels.
+			EXTERNAL   : {} , // The game can add to this. The cores determine the default contents.
+		};
+		var game={};
+
+		JSGAME.PRELOAD.PHP_VARS = {
+			"gamelist_json"     : null ,
+			"gamesettings_json" : null ,
+			"gameSelected"      : null ,
+			"typeGamepads"      : null ,
+			"numGamepads"       : null ,
+			"fps"               : null ,
+			"videokernel"       : null ,
+			"queryString"       : null ,
+			"CANLOADGAME"       : null ,
+		};
+
+		JSGAME.PRELOAD.gamelist_json     = null ;
+		JSGAME.PRELOAD.gameselected_json = null ;
+		JSGAME.PRELOAD.gamesettings_json = null ;
+	</script>
+
+	<!-- Init via PHP : gameslist.json, gamesettings.json -->
+	<!-- Also includes the window.onload function. -->
+	<script src='index_p.php/?o=init&qs=<?php echo htmlentities(json_encode(($_GET))); ?>'></script>
 
 </body>
 

@@ -12,11 +12,11 @@
 >
 <style>
 	/* HOVER GROUPS */
-	.hover_group        { opacity: 0.95; fill: rgba(66, 44, 255, 0.45); stroke: rgb(27, 0, 255); stroke-width: 2px; cursor: pointer; }
+	.hover_group        { opacity: 0.95; fill: rgba(255, 127, 44, 0.4); stroke: rgb(27, 0, 255); stroke-width: 2px; cursor: pointer; }
 	.hover_group:hover  { fill: rgba(255, 171, 44, 0.65); }
 	.hover_group.active { fill: rgba(255, 153, 0, 0.9); }
 
-	/* .hover_group:active { fill: rgba(255, 153, 0, 0.9); } */
+	/* .hover_group:active { fill: rgba(255, 153, 0, 0.9); } */zz
 	/* .hover_group:hover  { fill: rgba(66, 44, 255, 0.65); } */
 	/* .hover_group:active { fill: rgba(80, 44, 128, 0.80); } */
 
