@@ -273,10 +273,10 @@ window.onload=function(){
 				case "js"   : {
 					proms.push(addScript(url) ); break;
 				}
-				case "php"  : {
+				case "html" : {
 					proms.push(addHTML  (url, debug_container) ); break;
 				}
-				case "html" : {
+				case "php"  : {
 					proms.push(addHTML  (url, debug_container) ); break;
 				}
 				default     : { break; }

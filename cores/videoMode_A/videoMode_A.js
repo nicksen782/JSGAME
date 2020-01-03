@@ -413,8 +413,9 @@ core.FUNCS.graphics.init = function(){
 				let proms_gfx = [];
 
 				JSGAME.PRELOAD.gamesettings_json['graphics_files'].forEach(function(d){
+					let rel_url = JSGAME.PRELOAD.gameselected_json['gamedir'] + "/"+ d;
 					proms_gfx.push(
-						JSGAME.SHARED.getFile_fromUrl(gamedir + "/" + d, false, "text")
+						JSGAME.SHARED.getFile_fromUrl(rel_url, true, "text")
 					);
 				});
 

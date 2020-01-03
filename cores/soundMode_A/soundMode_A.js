@@ -26,7 +26,7 @@ core.FUNCS.audio.init = function(){
 				return new Promise(function(res_soundsSetup_mp3, rej_soundsSetup_mp3){
 					JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_soundsSetup_mp3","START");
 
-					let gamedir     = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'].replace("../", "");
+					// let gamedir     = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'].replace("../", "");
 					let audio_proms = [];
 					core.AUDIO['elems']          = {};
 					core.ASSETS.audio['lookups'] = {};
@@ -34,6 +34,8 @@ core.FUNCS.audio.init = function(){
 					let mp3_files_len = JSGAME.PRELOAD.gamesettings_json['mp3_files'].length;
 					for(let i=0; i<mp3_files_len; i+=1){
 						let d = JSGAME.PRELOAD.gamesettings_json['mp3_files'][i];
+						let rel_url = JSGAME.PRELOAD.gameselected_json['gamedir'] + "/"+ d.fileurl;
+						// console.log("+--------- mp3 file:", rel_url, JSGAME.PRELOAD.gameselected_json['gamedir'], d);
 
 						// Add entry to the lookup table.
 						d['names'].forEach(function(dd){
@@ -47,10 +49,37 @@ core.FUNCS.audio.init = function(){
 						// Get the audio file as-is.
 						let audioElem = document.createElement("audio");
 						audioElem.setAttribute("preload", "auto");
-						audioElem.load();
+						// audioElem.load();
 						// https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Media_events
-						audioElem.oncanplay = function(){ audioElem.oncanplay=null; this.pause(); this.currentTime=0; };
-						audioElem.src = gamedir + "/" + d['fileurl'];
+						// audioElem.oncanplay = function(){ audioElem.oncanplay=null; this.pause(); this.currentTime=0; };
+
+						// Add this to the audio proms array.
+						audio_proms.push(
+							new Promise(function(res_in, rej_in){
+								JSGAME.SHARED.getFile_fromUrl( rel_url, true, "blob" )
+								.then(
+									function(res){
+										// OLD WAY
+										// audioElem.src = gamedir + "/" + d['fileurl'];
+
+										audioElem.oncanplaythrough = function(){
+											audioElem.oncanplaythrough = null;
+											// URL.revokeObjectURL(audioElem.src) ;
+											// URL.revokeObjectURL(audioElem.currentSrc) ;
+											res_in();
+										};
+
+										// Create an object url on the arraybuffer converted to blob and set it as the src of the audio element. (faster.)
+										audioElem.src = URL.createObjectURL( res );
+										res_in();
+
+									},
+									function(err){ console.log("err:", err); rej_in();}
+								)
+							})
+						);
+
+						// audioElem.src = gamedir + "/" + d['fileurl'];
 						core.AUDIO['elems'][ d.key ] = audioElem;
 					}
 
@@ -190,15 +219,14 @@ core.FUNCS.audio.init = function(){
 			return new Promise(function(res_load_midi_bin, rej_load_midi_bin){
 				JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_load_midi_bin"   , "START");
 
-				// Determine the http filepath to the file.
-				let gamedir      = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'].replace("../", "");
-				let bin_filepath = gamedir + "/"+JSGAME.PRELOAD.gamesettings_json['midi_bin'] ;
+				// Determine the relative filepath to the file.
+				let rel_url = JSGAME.PRELOAD.gameselected_json['gamedir'] + "/"+ JSGAME.PRELOAD.gamesettings_json['midi_bin'];
 
 				// Each file download is a promise. Keep an array of the promises.
 				let proms = [];
 
 				// Start file download.
-				proms.push( JSGAME.SHARED.getFile_url_arraybuffer( bin_filepath ) );
+				proms.push( JSGAME.SHARED.getFile_fromUrl( rel_url, true, "arraybuffer" ) );
 
 				// When all file downloads have completed then parse the binary data.
 				Promise.all(proms).then(

@@ -8,6 +8,9 @@ chdir(__DIR__);
 // Set the app dir.
 $_appdir = getcwd() ;
 
+// Set the games dir.
+$_gamesdir = realpath($_appdir . "/../JS_GAMES");
+
 // Determine if this server is the dev server.
 $devServer=false;
 if( strpos($_SERVER['SERVER_NAME'], "dev2.nicksen782.net" ) !== false ) { $devServer=true; }
@@ -25,9 +28,8 @@ define('TIMEZONE', 'America/Detroit');
 date_default_timezone_set(TIMEZONE);
 
 // Was a request received? Process it.
-if     ( $_POST['o'] ){ API_REQUEST( $_POST['o'], 'post' ); }
-else if( $_GET ['o'] ){ API_REQUEST( $_GET ['o'], 'get'  ); }
-// else{ exit( $stats ); }
+if     ( isset($_POST['o']) ){ API_REQUEST( $_POST['o'], 'post' ); }
+else if( isset($_GET ['o']) ){ API_REQUEST( $_GET ['o'], 'get'  ); }
 else{ }
 
 // Handles calls to this script.
@@ -43,8 +45,8 @@ function API_REQUEST( $api, $type ){
 	$o_values=array();
 
 	// APIs
-	$o_values["init"]              = [ "p"=>( ( $public ) ? 1 : 0 ), 'get'=>1, 'post'=>0, 'cmd'=>0,] ;
-
+	$o_values["init"]            = [ "p"=>( ( $public ) ? 1 : 0 ), 'get'=>1, 'post'=>0, 'cmd'=>0,] ;
+	$o_values["gzip_getFile"]    = [ "p"=>( ( $public ) ? 1 : 0 ), 'get'=>1, 'post'=>1, 'cmd'=>0,] ;
 
 	// DETERMINE IF THE API IS AVAILABLE TO THE USER.
 
@@ -200,7 +202,7 @@ function combineFiles_typeByKey($keys){
 		// Add the data to $output[$ext] key.
 		else{
 			// Create the extension key if it does not exist.
-			if( ! isset($output[$ext])     ){ $output[$ext] = []; }
+			if( ! isset($output[$ext])     ){ $output[$ext] = ""; }
 			$output[$ext] .= file_get_contents($file) . "\n\n\n" ;
 		}
 	}
@@ -236,7 +238,7 @@ function init(){
 	//
 	$combine = [];
 
-	// Is the combine key set? If so json_decode it.
+	// Is the combine key set? If so json_decode it then fix it if needed.
 	if(isset($qs['combine'])){
 		$qs['combine'] = json_decode($qs['combine'], true);
 
@@ -281,35 +283,11 @@ function init(){
 	// Correct the data types within the querystring.
 	foreach($qs as $k => $v){ $qs[$k] = correctDataTypes($qs[$k]); }
 
-	// These values will be determined here and later copied to JavaScript.
-	$PHP_VARS["gamelist_json"]               = null ; // Was gamelist.json found?
-	$PHP_VARS["gamesettings_json"]           = null ; // Was gamesettings.json found?
-	$PHP_VARS["gameSelected"]                = null ; // Was a game selected?
-	$PHP_VARS["typeGamepads"]                = null ; // What type of gamepad(s)?
-	$PHP_VARS["numGamepads"]                 = null ; // How many gamepads? (1 or 2)
-	$PHP_VARS["fps"]                         = null ; // Frames Per Second.
-	$PHP_VARS["soundkernel"]                 = null ; // Game dir relative url for the sound kernel.
-	$PHP_VARS["videokernel"]                 = null ; // Game dir relative url for the video kernel.
-	$PHP_VARS["queryString"]                 = $qs  ; // The query string provided.
-	$PHP_VARS["CANLOADGAME"]                 = null ; // Flag used to indicate that a game can be loaded.
-	$PHP_VARS["fonts"]                       = null ; //
-	$PHP_VARS["mp3_files"]                   = null ; //
-	$PHP_VARS["midi_synths"]                 = null ; //
-	$PHP_VARS["graphics_conversionSettings"] = null ; //
-	$PHP_VARS["links"]                       = null ; //
-	$PHP_VARS["js_files"]                    = null ; //
-	$PHP_VARS["debug_files"]                 = null ; //
-	$PHP_VARS["combine"]                     = null ; //
-	$PHP_VARS["gamename"]                    = null ; //
-	$PHP_VARS["gamedir"]                     = null ; //
-	$PHP_VARS["relative_gamedir"]            = null ; //
-	$PHP_VARS["midi_bin"]                    = null ; //
-	$PHP_VARS["INTRO_LOGO_IMGB64"]           = null ; //
-	$PHP_VARS["canvas_scaleFactor"]          = null ; //
-	$PHP_VARS["INTRO_LOGO"]                  = null ; //
-	$PHP_VARS["INTRO_LOGO_STRETCH"]          = null ; //
-	$PHP_VARS["debug"]                       = null ; //
-	$PHP_VARS["gamepads"]                    = null ; //
+	// These values will be copied to JavaScript. (There will be more.)
+	$PHP_VARS["queryString"]  = $qs                   ; // The query string provided.
+	$PHP_VARS['gamename']     = $qs['game']           ;
+	$PHP_VARS['debug']        = $debug ? true : false ;
+	$PHP_VARS['combine']      = $combine              ;
 
 	// ***************************************
 	//  FIND AND LOAD THE gamelist.json FILE.
@@ -318,7 +296,7 @@ function init(){
 	// gamelist.json file.
 	$gamelist_json = [];
 
-	// Is there a gamelist.json file? If not then built-in blank one.
+	// Is there a gamelist.json file? If not then use the built-in blank one.
 	$gamelistjson_file = "gamelist.json";
 	if( ! file_exists ($gamelistjson_file) ) {
 		// Create the gamelist file from the template.
@@ -353,9 +331,6 @@ function init(){
 		$outputText_errors .= 'NO GAMELIST.JSON' . "\n";
 	}
 
-	// NEEDED FOR PRESETUP.js and file loading.
-	$PHP_VARS['gamename']       = $qs['game'];
-
 	// *******************************************
 	//  Read and load the gamesettings.json file.
 	// *******************************************
@@ -376,69 +351,51 @@ function init(){
 
 		// Does the gamesettings.json file exist?
 		if( file_exists ($gamedir . '/gamesettings.json') ) {
+			$gamesettings = json_decode(file_get_contents($gamedir."/gamesettings.json"), true);
+
 			$PHP_VARS['gamesettings_json'] = true ;
 			$PHP_VARS['gameSelected']      = true ;
 			$PHP_VARS['gamedir']           = $gamedir ;
 			$PHP_VARS['relative_gamedir']  = $relative_gamedir ;
-			$PHP_VARS['debug']             = $debug    ? true : false ;
 			$PHP_VARS['gamepads']          = $gamepads ? true : false ;
-
-			$gamesettings = json_decode(file_get_contents($gamedir."/gamesettings.json"), true);
 
 			// Fix the path for gamesettings.
 			//
 
-			// Gamepads:
-			$PHP_VARS['typeGamepads'] = $gamesettings["typeGamepads"] ; // : "nes",
-			$PHP_VARS['numGamepads']  = $gamesettings["numGamepads"]  ; // : 1,
+			// Set the default settings.
+			$PHP_VARS['typeGamepads']                = "nes";
+			$PHP_VARS['numGamepads']                 = 1    ;
+			$PHP_VARS['fps']                         = 30   ;
+			$PHP_VARS['videokernel']                 = "cores/videoMode_A/videoMode_A.js"   ;
+			$PHP_VARS['soundkernel']                 = "cores/soundMode_A/soundMode_A.js"   ;
+			$PHP_VARS['fonts']                       = []   ;
+			$PHP_VARS['mp3_files']                   = []   ;
+			$PHP_VARS['midi_bin']                    = []   ;
+			$PHP_VARS['midi_synths']                 = []   ;
+			$PHP_VARS['graphics_conversionSettings'] = []   ;
+			$PHP_VARS['links']                       = []   ;
+			$PHP_VARS['canvas_scaleFactor']          = 2.0  ;
+			$PHP_VARS['js_files']                    = []   ;
+			$PHP_VARS['debug_files']                 = []   ;
+			$PHP_VARS['INTRO_LOGO']                  = 1    ;
 
-			// FPS:
-			$PHP_VARS['fps']          = $gamesettings["fps"]          ; // : 30,
+			// Override the default settings with values from gamesettings.json.
+			if( isset($gamesettings["typeGamepads"])                ) { $PHP_VARS['typeGamepads']                = $gamesettings["typeGamepads"];                }
+			if( isset($gamesettings["numGamepads"])                 ) { $PHP_VARS['numGamepads']                 = $gamesettings["numGamepads"];                 }
+			if( isset($gamesettings["fps"])                         ) { $PHP_VARS['fps']                         = $gamesettings["fps"];                         }
+			if( isset($gamesettings["videokernel"])                 ) { $PHP_VARS['videokernel']                 = $gamesettings["videokernel"];                 }
+			if( isset($gamesettings["soundkernel"])                 ) { $PHP_VARS['soundkernel']                 = $gamesettings["soundkernel"];                 }
+			if( isset($gamesettings["fonts"])                       ) { $PHP_VARS['fonts']                       = $gamesettings["fonts"];                       }
+			if( isset($gamesettings["mp3_files"])                   ) { $PHP_VARS['mp3_files']                   = $gamesettings["mp3_files"];                   }
+			if( isset($gamesettings["midi_bin"])                    ) { $PHP_VARS['midi_bin']                    = $gamesettings["midi_bin"];                    }
+			if( isset($gamesettings["midi_synths"])                 ) { $PHP_VARS['midi_synths']                 = $gamesettings["midi_synths"];                 }
+			if( isset($gamesettings["graphics_conversionSettings"]) ) { $PHP_VARS['graphics_conversionSettings'] = $gamesettings["graphics_conversionSettings"]; }
+			if( isset($gamesettings["links"])                       ) { $PHP_VARS['links']                       = $gamesettings["links"];                       }
+			if( isset($gamesettings["canvas_scaleFactor"])          ) { $PHP_VARS['canvas_scaleFactor']          = $gamesettings["canvas_scaleFactor"];          }
+			if( isset($gamesettings["js_files"])                    ) { $PHP_VARS['js_files']                    = $gamesettings["js_files"];                    }
+			if( isset($gamesettings["debug_files"])                 ) { $PHP_VARS['debug_files']                 = $gamesettings["debug_files"];                 }
+			if( isset($gamesettings["INTRO_LOGO"])                  ) { $PHP_VARS['INTRO_LOGO']                  = $gamesettings["INTRO_LOGO"];                  }
 
-			// Video kernel:
-			$PHP_VARS['videokernel']  = $gamesettings["videokernel"]  ; // : "",
-
-			// Fonts:
-			$PHP_VARS['fonts']        = $gamesettings["fonts"]  ; // : "",
-
-			// Sounds/Music?
-			$PHP_VARS['soundkernel']  = $gamesettings["soundkernel"]  ; // : "",
-
-			// MP3
-			$PHP_VARS['mp3_files']    = [] ;
-			if( $gamesettings["mp3_files"] ) { $PHP_VARS['mp3_files'] = $gamesettings["mp3_files"]; }
-
-			// MIDI
-			$PHP_VARS['midi_bin']     = [] ;
-			if( $gamesettings["midi_bin"] ) { $PHP_VARS['midi_bin'] = $gamesettings["midi_bin"]; }
-
-			// MIDI
-			$PHP_VARS['midi_synths']  = [] ;
-			if( $gamesettings["midi_synths"] ) { $PHP_VARS['midi_synths'] = $gamesettings["midi_synths"]; }
-
-			// Graphics conversion settings.
-			$PHP_VARS['graphics_conversionSettings'] = [];
-			$PHP_VARS['graphics_conversionSettings'] = $gamesettings["graphics_conversionSettings"];
-
-			// Links.
-			$PHP_VARS['links'] = [];
-			if( $gamesettings["links"] ) { $PHP_VARS['links'] = $gamesettings["links"]; }
-
-			// Canvas scale factor
-			$PHP_VARS['canvas_scaleFactor'] = 2.0;
-			if( $gamesettings["canvas_scaleFactor"] ) { $PHP_VARS['canvas_scaleFactor'] = $gamesettings["canvas_scaleFactor"]; }
-
-			// JavaScript files for the game:
-			$PHP_VARS['js_files'] = [];
-			if( $gamesettings["js_files"] ) { $PHP_VARS['js_files'] = $gamesettings["js_files"]; }
-
-			// Debug files for the game:
-			$PHP_VARS['debug_files'] = [];
-			if( $gamesettings["debug_files"] ) { $PHP_VARS['debug_files'] = $gamesettings["debug_files"]; }
-
-			// Start-up logo (on by default.)
-			if( isset($gamesettings["INTRO_LOGO"]) )         { $PHP_VARS['INTRO_LOGO'] = $gamesettings["INTRO_LOGO"]; }
-			else                                             { $PHP_VARS['INTRO_LOGO'] = 1 ;                          }
 			// Start-up logo: Get the files from PHP as base64.
 			switch( $PHP_VARS['INTRO_LOGO'] ){
 				case    0 : { $img_filename = '';                                                             break; }
@@ -453,7 +410,7 @@ function init(){
 				$PHP_VARS['INTRO_LOGO_IMGB64'] = $src;
 			}
 
-			// Output as JavaScript variable.
+			// Output as JavaScript variables.
 			$outputText .= "JSGAME.PRELOAD.gamesettings_json = " . json_encode($gamesettings) . ";\n" ;
 			$outputText .= "JSGAME.PRELOAD.gameselected_json = " . json_encode($thisgame)     . ";\n";
 			$outputText .= "\n";
@@ -477,7 +434,7 @@ function init(){
 		// Download files combined if specified.
 		if($debug){
 			// Get the list of JSGAME core files?
-			if($debug && $combine['jsg'] == 0){
+			if($combine['jsg'] == 0){
 				$keys = [
 					"game"         => $PHP_VARS['gamename'],
 					"filelistonly" => 1 ,
@@ -530,7 +487,6 @@ function init(){
 			if( isset($combined['js']) ){ $outputText .= $combined['js']; }
 		}
 	}
-
 	// If a game has not been specified...
 	else{
 		// Download files combined if specified.
@@ -556,7 +512,6 @@ function init(){
 				}
 
 				if( isset($combined['js']) ){ $PHP_VARS['jsgamefiles'] = $combined['js'] ; }
-
 			}
 
 			// Get the rest of the files.
@@ -601,8 +556,7 @@ function init(){
 		"other"   => [] ,
 	];
 
-	$PHP_VARS['combine']        = $combine ;
-
+	// Add each PHP_VARS value to $vars.
 	foreach($PHP_VARS as $k => $v){
 		if     ( is_array  ($PHP_VARS[$k]) ) { $vars['array'  ][$k] = $PHP_VARS[$k]; }
 		else if( is_string ($PHP_VARS[$k]) ) { $vars['string' ][$k] = $PHP_VARS[$k]; }
@@ -617,6 +571,7 @@ function init(){
 		}
 	}
 
+	// Output and correct the $vars. Use string padding to neaten the output.
 	foreach($vars["array"]   as $k => $v){
 		$js_key = str_pad('JSGAME.PRELOAD.PHP_VARS["'.$k.'"]', 54, " ", STR_PAD_RIGHT);
 		$outputText .= "" . $js_key . " = "  . json_encode($PHP_VARS[$k]) . " ;\n";
@@ -655,20 +610,33 @@ function init(){
 	// Include the PRESETUP.JS
 	$outputText .= file_get_contents("cores/JSGAME_core/PRESETUP.js");
 
-	// Output the $outputText.
-	echo ($outputText);
-	echo "\n";
+	//
+	$outputText .= "\n";
 
-	// Output the error status(es).
+	// Add the error status(es).
 	if($outputText_errors != ""){
-		echo "\n\n// ERRORS: \n";
-		echo "/*\n";
-		echo ($outputText_errors);
-		echo "\n*/\n\n";
-		echo 'console.log("ERRORS:");' . "\n";
-		echo 'console.log('.json_encode(($outputText_errors)) . ')';
-		echo "\n";
+		$outputText .= "\n\n// ERRORS: \n";
+		$outputText .= "/*\n";
+		$outputText .= ($outputText_errors);
+		$outputText .= "\n*/\n\n";
+		$outputText .= 'console.log("ERRORS:");' . "\n";
+		$outputText .= 'console.log('.json_encode(($outputText_errors)) . ')';
+		$outputText .= "\n";
 	}
+
+	// If gzencode is availble then use it to compress and send the data.
+	// This may be redundant because Apache does this by default on text files.
+	if (function_exists('gzencode')) {
+		// Set the headers.
+		header('Content-Encoding: gzip');
+		// header("Content-type: plain/text");
+		echo gzencode( $outputText ) ;
+	}
+	// Or just send the data.
+	else{
+		echo $outputText  ;
+	}
+
 }
 
 // Utility to correct data types (used by: init).
@@ -689,4 +657,56 @@ function correctDataTypes($data){
 	return $output;
 }
 
+// Retrieves a file. Allows for optional gzip compression.
+function gzip_getFile(){
+	global $_appdir;
+	global $_gamesdir;
+
+	// Get the specified filename (can include a path with the path is within JSGAME.)
+	$file = "";
+	if     ( isset($_GET ['filename']) ){ $file = $_GET ['filename']; }
+	else if( isset($_POST['filename']) ){ $file = $_POST['filename']; }
+	else{}
+
+	// Was a file specified?
+	if( $file == "" ){ exit ( "NO FILE SPECIFIED." ); }
+
+	// Get the full server path to the file.
+	$realpath = realpath($file);
+
+	// Stop the request if there are ".." in the path. (security)
+	if (strpos($file, '..') !== false) {
+		// However, allow it if it is within JS_GAME or JS_GAMES
+		if(
+			strpos($realpath, $_appdir) === false
+			&&
+			strpos($realpath, $_gamesdir) === false
+		){
+			exit( "PATH IS NOT ALLOWED!");
+			// exit( "PATH IS NOT ALLOWED!" .
+				// "\nfile     : " . $file .
+				// "\nrealpath : " . $realpath .
+				// "\n_appdir  : " . $_appdir .
+				// "\n_gamesdir: " . $_gamesdir
+			// );
+		}
+	}
+
+	// Check if the file exists.
+	if( $realpath === false || !file_exists($realpath) ) {
+		exit("FILE NOT AVAILABLE!");
+	}
+
+	// Compress and then send the data.
+	if (function_exists('gzencode')) {
+		// Set the headers.
+		header('Content-Encoding: gzip');
+		// header("Content-type: plain/text");
+		echo gzencode( file_get_contents( $realpath ) ) ;
+	}
+	// Or just send the data.
+	else{
+		echo ( file_get_contents( $realpath  ) ) ;
+	}
+}
 ?>

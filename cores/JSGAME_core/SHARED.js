@@ -202,42 +202,30 @@ JSGAME.SHARED={
 	},
 	// Get a file as-is via a url (optional compression.)
 	getFile_fromUrl                  : function(url, useGzip, responseType){
-		// console.log("getFile_fromUrl:", url, useGzip, responseType)
-		// return;
-
-		let method = "GET";
-
-		// The production host has a bug and this is the only way I know to fix it right now.
-		if(
-			window.location.origin.indexOf("//www.nicksen782.net") !=-1
-			||
-			window.location.origin.indexOf("//nicksen782.net") !=-1
-		){
-			useGzip=false;
-		}
-
 		return new Promise(function(resolve, reject) {
 			var finished = function(data) {
 
 				let resp;
 				switch( this.responseType ){
+					case    ''            : { resp = this.responseText ; break; }
 					case    'text'        : { resp = this.responseText ; break; }
 					case    'arraybuffer' : { resp = this.response     ; break; }
 					case    'blob'        : { resp = this.response     ; break; }
 					case    'json'        : { resp = this.response     ; break; }
-					default               : { resp = this.responseText ; break; }
+					default               : { resp = this.response     ; break; }
 				}
 
 				resolve( resp );
 			};
 			var error    = function(data) {
-				console.log("getFile_fromUrl: error:", this, data);
+				console.log("getFile_fromUrl: error:", "\nthis:", this, "\ndata", data);
 				reject({
 					type: data.type,
 					xhr: xhr
 				});
 			};
 
+			let method = "GET";
 			var xhr = new XMLHttpRequest();
 
 			xhr.addEventListener("load", finished);
@@ -246,6 +234,7 @@ JSGAME.SHARED={
 			// Ask the server to use gzencode for this file instead of just retrieving it directly?
 			if(useGzip){
 				method="POST";
+				// console.log("using gzip");
 
 				// Create the form.
 				var fd = new FormData();
@@ -271,6 +260,7 @@ JSGAME.SHARED={
 
 			// Set the responseType.
 			switch( responseType ){
+				case    ''            : { xhr.responseType = "text"       ; break; }
 				case    'text'        : { xhr.responseType = "text"       ; break; }
 				case    'arraybuffer' : { xhr.responseType = "arraybuffer"; break; }
 				case    'blob'        : { xhr.responseType = "blob"       ; break; }
@@ -282,19 +272,22 @@ JSGAME.SHARED={
 
 		});
 	},
-	getFile_url_arraybuffer          : function(url){
-		return new Promise(function(resolve,reject){
-			if(!url) { return; }
-			var xhr=new XMLHttpRequest();
-			xhr.open("GET",url,true);
-			xhr.responseType="arraybuffer";
-			xhr.onload=function(e){
-				if(this.status==200){ resolve(this.response);}
-				else{ reject(this); }
+	// Converts an array buffer to data uri.
+	arrayBufferToBase64_datauri : function( buffer, type, callback ) {
+		// Works as a promise or with a callback function.
+		return new Promise(function(res,rej){
+			var blob = new Blob([buffer],{type:type});
+			var reader = new FileReader();
+			reader.onload = function(evt){
+				var dataurl = evt.target.result;
+				// console.log(dataurl);
+				res(dataurl);
+				if(callback){ callback(dataurl); }
 			};
-			xhr.send();
+			reader.readAsDataURL(blob);
 		});
 	},
+
 	// Changes the dimensions of the containing DIV for the game canvas (Canvas has CSS dims at 100%.)
 	canvasResize : function(scale){
 		let canvas_width  = core.GRAPHICS.canvas.OUTPUT.width  ;
