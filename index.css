@@ -118,7 +118,7 @@ body {
 #gameControls .gamepad_snes svg { width: 240px; height: 100%; background-color: rgba(255, 255, 255, 0.25); }
 
 #gameControls .gamepad_nes.oneGamepad      { display:block; vertical-align: top; }
-#gameControls .gamepad_nes.oneGamepad svg  {width:480px;margin:0px;}
+#gameControls .gamepad_nes.oneGamepad svg  { width:480px;margin:0px; }
 #gameControls .gamepad_nes.twoGamepads     { display:inline-block; vertical-align: top; }
 #gameControls .gamepad_nes.twoGamepads svg { width:240px; margin:0px; }
 

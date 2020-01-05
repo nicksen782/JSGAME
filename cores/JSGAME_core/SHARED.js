@@ -366,6 +366,15 @@ JSGAME.SHARED={
 		return ((Math.random() * (max - min + 1)) + min) << 0;
 	},
 
+	apply_bitMask : function(src, mask, value){
+		let newValue;
+		if     (value==1){ newValue = src |  (mask); }
+		else if(value==0){ newValue = src & ~(mask); }
+		else             { console.log("applyMask: not 0 or 1."); }
+		// console.log("old:", src, "new:", newValue, " :: " ,value, mask, value);
+		return newValue;
+	},
+
 	// *** MISC ***
 
 	// This is the highest volume allowed.

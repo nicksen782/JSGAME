@@ -1098,17 +1098,23 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 					// Get local copies of the sprite values and flags.
 					thisSprite = core.FUNCS.graphics.getSpriteData( changes.draw[i] );
 
-					// If this sprite is off then skip this sprite.
-					// if(thisSprite.SPRITE_OFF){ console.log("sprite was off!"); return; }
-					if(thisSprite.SPRITE_OFF){
-						// console.log("sprite was off!");
-						continue;
-					}
-
 					// If the tileset name was not available, skip this sprite.
 					// if(!thisSprite.tilesetname){ console.log("tileset name not found!"); return; }
 					if(!thisSprite.tilesetname){
 						// console.log("tileset name not found!");
+						continue;
+					}
+
+					// If this sprite is off then skip this sprite.
+					// if(thisSprite.SPRITE_OFF){ console.log("sprite was off!"); return; }
+					if(thisSprite.SPRITE_OFF){
+						// console.log("sprite was off!");
+						canvasLayer.clearRect(
+							(thisSprite.x) ,
+							(thisSprite.y) ,
+							core.SETTINGS.TILE_WIDTH,
+							core.SETTINGS.TILE_HEIGHT
+						);
 						continue;
 					}
 
@@ -1377,7 +1383,7 @@ core.FUNCS.graphics.update_allLayers    = function(){
 
 };
 
-// *** VRAM update functions.
+// *** VRAM functions.
 
 // Sets the tileset to use when drawing bg tiles.
 core.FUNCS.graphics.SetTileTable = function(tileset){
@@ -1477,12 +1483,36 @@ core.FUNCS.graphics.Fill         = function(xpos, ypos, w, h, tileid, vram_str){
 		}
 	}
 };
-//
-// core.FUNCS.graphics.getTilemap   = function(tilemap_str){
-// 	let tilemap = core.ASSETS.graphics.tilemaps[tilemap_str];
-// 	if(tilemap){ return tilemap; }
-// 	else{ return new Uint8ClampedArray([0,0]); }
-// }
+// Gets the tile id value at the specified coordinates from the specified vram.
+core.FUNCS.graphics.GetTile = function(x, y, vram_str){
+	// vramSrc can be 'vram' or 'vram2'
+	if( vram_str==undefined){ vram_str = 'VRAM1'; }
+	return core.GRAPHICS[vram_str][ ( y * core.SETTINGS.VRAM_TILES_H ) + x ] ;
+};
+// Return a the specified tilemap.
+core.FUNCS.graphics.getTilemap   = function(tilemap_str, vram_str){
+	if( vram_str==undefined ){ vram_str='VRAM1'; }
+	let tilemap = core.ASSETS.graphics.tilemaps[tilemap_str];
+	if(tilemap){ return tilemap; }
+	else{ return new Uint8ClampedArray([0,0]); }
+}
+// Return a tilemap of the specified region of VRAM.
+core.FUNCS.graphics.vramRegionToTilemap   = function(startx, starty, w, h, vram_str){
+	// Give the width and height to the new tilemap.
+	let tilemap = [w,h];
+
+	// Get the tiles.
+	for(    let y=0; y<h; y+=1){
+		for(let x=0; x<w; x+=1){
+			tilemap.push(
+				core.FUNCS.graphics.GetTile(x+startx,y+starty, vram_str)
+			);
+		}
+	}
+
+	// Return the tilemap.
+	return tilemap;
+}
 
 // *** SPRITE update functions. ***
 
@@ -1630,6 +1660,12 @@ core.FUNCS.graphics.MoveSprite         = function(startSprite, x, y, width, heig
 	// Indicate that a sprite draw is needed.
 	core.GRAPHICS.flags.SPRITE=true;
 };
+// Accepts new flags for a sprite and then re-maps and moves it.
+core.FUNCS.graphics.changeSpriteFlags = function(spriteNum, newFlags){
+	let sprite=core.GRAPHICS.sprites[spriteNum];
+	core.FUNCS.graphics.MapSprite2(spriteNum, [1,1,sprite.tileIndex], newFlags);
+	core.FUNCS.graphics.MoveSprite(spriteNum, sprite.x, sprite.y, 1, 1);
+};
 //
 core.FUNCS.graphics.getSpriteData      = function(thisSprite){
 	// Get local copies of the sprite values and flags.
@@ -1702,9 +1738,69 @@ core.FUNCS.graphics.flipImage_canvas   = function (srcCanvas, flipH, flipV) {
 // *** TEXT update functions. ***
 
 // Prints a line of text at the specified location.
-core.FUNCS.graphics.Print   = function(x, y, string, vram_str){
+core.FUNCS.graphics.Print   = function(x, y, string, vram_str, fontsetname){
 	let tileid;
-	let fontmap   = core.ASSETS.graphics.tilemaps[core.GRAPHICS.fontSettings.fontmap];
+
+	// Allow for the fontset to be temporarily switched.
+	let fontmap ;
+	if( fontsetname && core.ASSETS.graphics.tilemaps[fontsetname] ){
+		fontmap = core.ASSETS.graphics.tilemaps[fontsetname];
+	}
+	else{
+		fontmap = core.ASSETS.graphics.tilemaps[core.GRAPHICS.fontSettings.fontmap];
+	}
+
+	// Make sure that only a whole number makes it through.
+	x = (x) << 0;
+	y = (y) << 0;
+
+	if( vram_str==undefined ){ vram_str='VRAM2'; }
+
+	// This assumes that the correct tileset and tilemap for the fonts have already been set.
+	// Font tiles are expected to be in the following order in the fontmap:
+	//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
+	// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
+	// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
+
+	let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
+
+	// Turn the string into an iterable array.
+	Array.from( string ).forEach(function(d,i,a){
+		// Get the tileid for this character.
+		tileid = d.toUpperCase().charCodeAt() - 32;
+
+		// Make sure this is a valid tile in the font map (bounds-check.)
+		if(tileid < fontmap_len){ core.FUNCS.graphics.SetTile(x, y, fontmap[ tileid+2 ], vram_str ); }
+
+		// If it is out of bounds, (such as the "|" character) print a space.
+		else {
+			tileid = " ".toUpperCase().charCodeAt() - 32;
+			core.FUNCS.graphics.SetTile(x, y, fontmap[ tileid+2 ], vram_str );
+		}
+
+		// Move the "cursor" over one to the right.
+		x+=1;
+
+		// Wrapping?
+		if(x>=core.SETTINGS.VRAM_TILES_H-1){ x=0; y+=1; }
+		if(y>=core.SETTINGS.VRAM_TILES_V-1){ x=0; y=0;  }
+	});
+};
+// Prints a line of text at the specified location (accepts an object with text and font settings for each char.)
+core.FUNCS.graphics.Print_multiFont   = function(x, y, data, vram_str){
+	// Example usage:
+	// core.FUNCS.graphics.Print_multiFont(
+	// 	0, 0,
+	// 	{
+	// 		"text"  : "This is a test." ,
+	// 		"font"  : "010101010101010".split("").map(function(d){ return parseInt(d,10); }) ,
+	// 		"fonts" : [ "fonts1", "fonts2" ]
+	// 	},
+	// 	"VRAM2"
+	// );
+
+	let tileid;
 
 	// Make sure that only a whole number makes it through.
 	x = (x) << 0;
@@ -1720,10 +1816,36 @@ core.FUNCS.graphics.Print   = function(x, y, string, vram_str){
 	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
 
 	// Turn the string into an iterable array.
-	Array.from( string ).forEach(function(d,i,a){
+	Array.from( data.text ).forEach(function(d,i){
+		// Determine which fontmap will be used.
+		let fontmap = core.ASSETS.graphics.tilemaps[ data.fonts[ data.font[i] ] ];
+
+		// If fontmap isn't set then use the current global font.
+		if(!fontmap){ fontmap = fontmap = core.ASSETS.graphics.tilemaps[core.GRAPHICS.fontSettings.fontmap]; }
+
+		// NOTE: Fontsets should all be the same length.
+		let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
+
+		// Get the tileid for this character.
 		tileid = d.toUpperCase().charCodeAt() - 32;
-		core.FUNCS.graphics.SetTile(x, y, fontmap[ tileid+2 ], vram_str );
+
+		// Make sure this is a valid tile in the font map (bounds-check.)
+		if(tileid < fontmap_len){
+			core.FUNCS.graphics.SetTile(x, y, fontmap[ tileid+2 ], vram_str, fontmap );
+		}
+
+		// If it is out of bounds, (such as the "|" character) print a space.
+		else {
+			tileid = " ".toUpperCase().charCodeAt() - 32;
+			core.FUNCS.graphics.SetTile(x, y, fontmap[ tileid+2 ], vram_str, fontmap );
+		}
+
+		// Move the "cursor" over one to the right.
 		x+=1;
+
+		// Wrapping?
+		if(x>=core.SETTINGS.VRAM_TILES_H-1){ x=0; y+=1; }
+		if(y>=core.SETTINGS.VRAM_TILES_V-1){ x=0; y=0;  }
 	});
 };
 // Set the font to use.
