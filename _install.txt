@@ -1,0 +1,47 @@
+#! /bin/sh
+
+
+# ###################################################################################
+# DIRECTIONS: Make a new folder for everything then run this script from that folder.
+# You will need to rename the script to install.sh and do chmod +x install.sh on it.
+# The script renames itself afterwards.
+# The rest is handled automatically.
+# This will create the base directory structure and do a git clone of JS_GAME.
+# Since it will be a fresh clone there likely will not be a gameslist.json file
+# so a starter file will be created.
+# Additionally, the game JS_GAME: Tetris will be included.
+# ###################################################################################
+
+# Make the directory structure.
+mkdir JS_GAME
+mkdir JS_GAME/APP
+mkdir JS_GAME/JS_GAMES
+
+# Enter the JS_GAME directory and then clone JS_GAME into APP.
+cd JS_GAME
+git clone https://github.com/nicksen782/JSGAME.git APP
+
+# Test for the existence of the gamelist.json file.
+destfile=APP/gamelist.json
+if [ ! -f "$destfile" ]
+then
+# The file was not found. Create a starter gamelist.jsonfile with JS_GAME: Tetris.
+cat > "$destfile" <<- EOM
+{
+	"games": [
+		{ "gamename":""           ,"header_gameChoice":""           ,"gamedesc":"","author":""          ,"gamedir":""                  ,"AVAILABLE":false},
+		{ "gamename":"Tetris (JS)","header_gameChoice":"Tetris_(JS)","gamedesc":"","author":"nicksen782","gamedir":"../JS_GAMES/Tetris","AVAILABLE":true }
+	]
+}
+EOM
+# Clone a copy of JS_GAME: Tetris too.
+git clone https://github.com/nicksen782/JSGAME_Tetris.git JS_GAMES/Tetris
+fi
+
+# If you want a DOCKER build then uncomment this line:
+# cd APP/DOCKER_BUILD && ./00A_buildCreateStart.sh
+
+# Rename the install script that it does not get accidentally run again.
+cd ..
+chmod -x _install.sh
+mv _install.sh _install.txt

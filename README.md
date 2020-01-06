@@ -13,34 +13,39 @@ The JS_GAME framework is designed to allow for multiple games selectable via a s
 
 ## How do you make a game?
 * The games themselves must select a video and audio core. Games can depend on those cores and JS_GAME itself.
-* I cannot explain how to make a game with only a few lines here. However, there are demo games and eventually a tutorial will be created for this. For now check out the game "[JSGAME_Tetris](_jsgame_tetris)".
+* I cannot explain how to make a game with only a few lines here. However, there are demo games and eventually a tutorial will be created for this. For now check out the game "[JS_GAME: Tetris][_link_jsgame_tetris]."
 * Everything about the game should be rendered to the HTML5 canvas but it does not have to be limited to that. You can use "alert" or "prompt" or even AJAX. Do keep in mind though that if you do something visual outside of the game with HTML that it may not look very "retro."
 
 ## HOW TO INSTALL:
 ```sh
-# BASE BUILD (BOTH BUILD OPTIONS REQUIRE THIS):
-$ mkdir JS_GAME
-$ mkdir JS_GAME/APP
-$ mkdir JS_GAME/JS_GAMES
-$ js JS_GAME
-$ git clone https://github.com/nicksen782/JSGAME.git APP
+# ############
+# The easy way
+# NOTE: "JS_GAME: Tetris" will be installed automatically if you use the install script.
+# ############
 
-# (OPTION #1) DOCKER BUILD:
-$ cd JS_GAME/APP/DOCKER_BUILD
-$ ./00A_buildCreateStart.sh
-# Then, use your browser to go to 127.0.0.1:8080 and click the JS_GAME link.
+# Create a new directory on the destination computer.
+# Download the _install.txt file into that directory.
 
-# (OPTION #2) LOCAL/SERVER BUILD:
-# You will need to have PHP and Apache setup.
-# Look at the JS_GAME/APP/DOCKER_BUILD files for details.
-# Setup a virtual host for the JS_GAME directory.
+#Rename that file to _install.sh.
+mv _install.txt _install.sh
+# Make the file executable.
+chmod +x _install.sh
+
+# If you want DOCKER container created to host this then un-comment this line in _install.sh (near the bottom.)
+#   cd APP/DOCKER_BUILD && ./00A_buildCreateStart.sh
+# URL: http://127.0.0.1:8080/
+
+# Run the file
+./_install.sh
+
+# After install the file will disable itself.
 ```
 
 ## Install a game! (Manual example)
-```sh
-$ js JS_GAME
-$ git clone https://github.com/nicksen782/JSGAME_Tetris.git JS_GAMES/Tetris
+* To manually install a game you must copy the game directory to JS_GAMES.
+* Then you must create an entry in the APP/gamelist.json file.
 
+```sh
 # Create/edit the JS_GAME/APP/gameslist.json file to look something like this:
 {
 	"games": [
@@ -68,9 +73,9 @@ This is a mostly "Vanilla JS" build. Libraries are used when needed. Here they a
 
 ## Additional links/resources
 
-* [Uzebox Main]  [_link_uzebox.org] - Source inspiration. I have been with Uzebox for many years and the experience helpped me to make this project possible.
-* [Uzebox Forums][_link_uzebox.org] - Uzebox forums.
-* [Uzebox Wiki]  [_link_uzebox.org] - Uzebox wiki
+* [Uzebox Main]   [_link_uzebox.org] - Source inspiration. I have been with Uzebox for many years and the experience helped me to make this project possible.
+* [Uzebox Forums] [_link_uzebox.org] - Uzebox forums.
+* [Uzebox Wiki]   [_link_uzebox.org] - Uzebox wiki
 
 
 [_link_fileSaver.js]:          <https://github.com/eligrey/FileSaver.js/>
@@ -79,3 +84,4 @@ This is a mostly "Vanilla JS" build. Libraries are used when needed. Here they a
 [_link_uzebox_forums]:         <http://uzebox.org/forums/>
 [_link_uzebox_wiki]:           <http://uzebox.org/wiki/>
 [_link_jsgame_tetris]:         <https://github.com/nicksen782/JSGAME_Tetris/>
+
