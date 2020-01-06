@@ -183,6 +183,40 @@ JSGAME.SHARED={
 	// Keeps the requestAnimationFrame id of the currently requested animation frame.
 	raf_id : null ,
 
+	// Parses the queryString in the url and returns the data as an object of key:value pairs.
+	getQueryStringAsObj              : function() {
+		// Nickolas Andersen (nicksen782)
+		// NOTE: May fail for values that are JSON encoded and/or also include "=" or "&" in the value.
+
+		let str = window.location.search ;
+		let obj = {} ;
+		let key ;
+		let val ;
+		let i ;
+
+		// Work with the string if there was one.
+		if(str=="" || str==null || str==undefined){ return {}; }
+
+		// Take off the "?".
+		str = str.slice(1);
+
+		// Split on "&".
+		str = str.split("&");
+
+		// Go through all the key=value and split them on "=".
+		for(i=0; i<str.length; i+=1){
+			// Split on "=" to get the key and the value.
+			key = str[i].split("=")[0];
+			val = str[i].replace(key+"=", "");
+
+			// Add this to the return object.
+			obj[key] = decodeURIComponent(val);
+		}
+
+		// Finally, return the object.
+		return obj;
+	},
+
 	// *** DISPLAY AND FILES ***
 
 	// Set the pixelated settings for a canvas.

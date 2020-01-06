@@ -291,18 +291,25 @@ core.FUNCS.graphics.init = function(){
 			return new Promise(function(res_vramSetup, rej_vramSetup){
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_vramSetup"                        , "START");
 
+				let VRAM_ADDR_SIZE = JSGAME.PRELOAD.PHP_VARS.VRAM_ADDR_SIZE;
+
 				// Get the number of tiles for VRAM.
 				let screen_wh   = (core.SETTINGS.VRAM_TILES_H * core.SETTINGS.VRAM_TILES_V);
 
-				// VRAM1 (BG layer.) (Set all to tile id 0.)
-				// core.GRAPHICS.VRAM1 = new Uint8ClampedArray( screen_wh );
-				core.GRAPHICS.VRAM1 = new Uint8Array ( screen_wh );
-				// core.GRAPHICS.VRAM1 = new Uint16Array( screen_wh );
-
-				// VRAM2 (TEXT layer.) (Set all to tile id 0.)
-				// core.GRAPHICS.VRAM2 = new Uint8ClampedArray( screen_wh );
-				core.GRAPHICS.VRAM2 = new Uint8Array ( screen_wh );
-				// core.GRAPHICS.VRAM2 = new Uint16Array( screen_wh );
+				// VRAM can use up to 256 unique tile indexes.
+				if(VRAM_ADDR_SIZE==1){
+					core.GRAPHICS.VRAM1 = new Uint8Array ( screen_wh ); // VRAM1 (BG layer.) (Set all to tile id 0.)
+					core.GRAPHICS.VRAM2 = new Uint8Array ( screen_wh ); // VRAM2 (TEXT layer.) (Set all to tile id 0.)
+				}
+				// VRAM can use up to 65535 unique tile indexes.
+				else if(VRAM_ADDR_SIZE==2){
+					core.GRAPHICS.VRAM1 = new Uint16Array ( screen_wh ); // VRAM1 (BG layer.) (Set all to tile id 0.)
+					core.GRAPHICS.VRAM2 = new Uint16Array ( screen_wh ); // VRAM2 (TEXT layer.) (Set all to tile id 0.)
+				}
+				else{
+					// Invalid VRAM size was specified.
+					throw new Error("INVALID VRAM SIZE WAS SPECIFIED.");
+				}
 
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_vramSetup"                        , "END");
 

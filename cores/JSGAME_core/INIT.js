@@ -2,42 +2,12 @@ var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAni
 							window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 var cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
 
+//
 JSGAME.INIT={
 	// Detects little or big endianness for the browser.
 	endianness : {
 		isBigEndian    : new Uint8Array(new Uint32Array([0x12345678]).buffer)[0] === 0x12 ? true : false,
 		isLittleEndian : new Uint8Array(new Uint32Array([0x12345678]).buffer)[0] === 0x78 ? true : false,
-	},
-	// Parses the queryString in the url and returns the data as an object of key:value pairs.
-	getQueryStringAsObj              : function() {
-		// Nickolas Andersen (nicksen782)
-
-		let str = window.location.search ;
-		let obj = {} ;
-		let part ;
-		let i ;
-
-		if(str=="" || str==null || str==undefined){ return {}; }
-
-		// Work with the string if there was one.
-
-		// Take off the "?".
-		str = str.slice(1);
-
-		// Split on "&".
-		str = str.split("&");
-
-		// Go through all the key=value and split them on "=".
-		for(i=0; i<str.length; i+=1){
-			// Split on "=".
-			part = str[i].split("=");
-
-			// Add this to the return object.
-			obj[ part[0] ] = part[1];
-		}
-
-		// Finally, return the object.
-		return obj;
 	},
 	// Detects if the user has performed actions capable of allowing audio autoplay.
 	detectUserInteraction : function(){

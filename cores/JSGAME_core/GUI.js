@@ -51,30 +51,37 @@ JSGAME.GUI={
 	},
 	// Change the game.
 	changeGame : function(gamestring){
-		// Is the debug mode on?
+		// Read in some values from RAM/DOM.
+		let gamepads  = ! JSGAME.DOM["gameControls"].classList.contains("hide") ;
+		let debug     = document.getElementById("debug_mode").checked ? true : false;
+		let qsFromPHP = JSGAME.PRELOAD.PHP_VARS.queryString;
 
-		let extraUrl = "";
-		let debug    = document.getElementById("debug_mode").checked ? true : false;
-		let gamepads = ! JSGAME.DOM["gameControls"].classList.contains("hide") ;
+		let vals = {
+			"game"      : gamestring ? gamestring : "" ,
+			"gamepads"  : gamepads   ? gamepads   : "" ,
+			"debug"     : debug      ? debug      : "" ,
+			"hidden"    : debug && [undefined, "undefined"].indexOf(qsFromPHP.hidden)    == -1 ? qsFromPHP.hidden                         : "" ,
+			"mastervol" : debug && [undefined, "undefined"].indexOf(qsFromPHP.mastervol) == -1 ? qsFromPHP.mastervol                      : "" ,
+			"combine"   : debug && [undefined, "undefined"].indexOf(qsFromPHP.combine)   == -1 ? JSON.stringify(qsFromPHP.combine,null,0) : "" ,
+		};
+		keys = Object.keys(vals);
 
-		if(!gamestring){
-			extraUrl = ""
-			+ (debug    ? "?debug=true"    : "")
-			+ (gamepads ? "&gamepads=true" : "&gamepads=false")
-			// + (hidden   ? "&hidden=true"   : "&hidden=false")
-			;
-		}
-		else{
-			extraUrl = "?game=" + gamestring
-			+ (debug    ? "&debug=true"    : "")
-			+ (gamepads ? "&gamepads=true" : "&gamepads=false")
-			// + (hidden   ? "&hidden=true"   : "&hidden=false")
-			;
+		// Create the querystring.
+		let qs="";
+		let firstKey=true;
+		for(let i=0; i<keys.length; i+=1){
+			let key = keys[i];
+			let val = vals[key];
+
+			if(val!=""){
+				if(firstKey==true){ qs+="?"; firstKey=false; }
+				else              { qs+="&"; }
+				qs+=key+"="+val;
+			}
 		}
 
 		// Redirect to the new game URL.
-		window.location.href = window.location.origin + window.location.pathname + extraUrl;
-
+		window.location.href = window.location.origin + window.location.pathname + qs;
 	},
 	// Reload the game (whole page.)
 	reloadGame : function(){
@@ -277,8 +284,14 @@ JSGAME.GUI={
 
 	// Toggles full screen.
 	togglefullscreen    : function(){
-		// The standard way.
-		let canvas = core.DOM['gameCanvas_DIV'];
+		let canvas;
+
+		// Choose the output canvas to display fullscreen. If it is not available then use the gameCanvas_DIV.
+		try{
+			canvas = core.GRAPHICS.canvas.OUTPUT;
+			if(!canvas){ canvas = core.DOM['gameCanvas_DIV']; }
+		}
+		catch(e){ canvas = core.DOM['gameCanvas_DIV']; }
 
 		// Go to fullscreen.
 		if(!(

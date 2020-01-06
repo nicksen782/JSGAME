@@ -378,6 +378,7 @@ function init(){
 			$PHP_VARS['js_files']                    = []   ;
 			$PHP_VARS['debug_files']                 = []   ;
 			$PHP_VARS['INTRO_LOGO']                  = 1    ;
+			$PHP_VARS['VRAM_ADDR_SIZE']              = 1    ;
 
 			// Override the default settings with values from gamesettings.json.
 			if( isset($gamesettings["typeGamepads"])                ) { $PHP_VARS['typeGamepads']                = $gamesettings["typeGamepads"];                }
@@ -395,6 +396,7 @@ function init(){
 			if( isset($gamesettings["js_files"])                    ) { $PHP_VARS['js_files']                    = $gamesettings["js_files"];                    }
 			if( isset($gamesettings["debug_files"])                 ) { $PHP_VARS['debug_files']                 = $gamesettings["debug_files"];                 }
 			if( isset($gamesettings["INTRO_LOGO"])                  ) { $PHP_VARS['INTRO_LOGO']                  = $gamesettings["INTRO_LOGO"];                  }
+			if( isset($gamesettings["VRAM_ADDR_SIZE"])              ) { $PHP_VARS['VRAM_ADDR_SIZE']              = $gamesettings["VRAM_ADDR_SIZE"];              }
 
 			// Start-up logo: Get the files from PHP as base64.
 			switch( $PHP_VARS['INTRO_LOGO'] ){
