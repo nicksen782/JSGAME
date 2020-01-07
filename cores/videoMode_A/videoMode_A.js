@@ -167,7 +167,8 @@ core.FUNCS.graphics.logo = function(){
 				output.drawImage( img  , 0  , 0 , img.width, img.height, xpos , ypos , width , height  );
 
 				// Hold the image for a moment. It should be cleared by the game.
-				setTimeout( res , 1000);
+				// setTimeout( res , 1000);
+				setTimeout( res , 750);
 			};
 			img.src = logo;
 		}
