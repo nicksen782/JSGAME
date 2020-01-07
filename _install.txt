@@ -13,9 +13,9 @@
 # ###################################################################################
 
 # Make the directory structure.
-mkdir JS_GAME
-mkdir JS_GAME/APP
-mkdir JS_GAME/JS_GAMES
+if [ ! -f "JS_GAME" ]          then mkdir JS_GAME
+if [ ! -f "JS_GAME/APP" ]      then mkdir JS_GAME/APP
+if [ ! -f "JS_GAME/JS_GAMES" ] then mkdir JS_GAME/JS_GAMES
 
 # Enter the JS_GAME directory and then clone JS_GAME into APP.
 cd JS_GAME
@@ -38,10 +38,24 @@ EOM
 git clone https://github.com/nicksen782/JSGAME_Tetris.git JS_GAMES/Tetris
 fi
 
-# If you want a DOCKER build then uncomment this line:
-# cd APP/DOCKER_BUILD && ./00A_buildCreateStart.sh
+# If you want a DOCKER build then uncomment these lines:
+# cd APP
+# cd DOCKER_BUILD
+# chmod +x 00A_buildCreateStart.sh
+# chmod +x 00B_stopRemoveAll.sh
+# chmod +x 00C_stopRemoveContainer.sh
+# chmod +x 01_build.sh
+# chmod +x 02_create.sh
+# chmod +x 03_start.sh
+# chmod +x 04_stop.sh
+# chmod +x 05_removeContainer.sh
+# chmod +x 06_removeImage.sh
+# ./00A_buildCreateStart.sh
+# cd ..
+# cd ..
 
-# Rename the install script that it does not get accidentally run again.
+
+# Rename the install script so that it does not get accidentally run again.
 cd ..
 chmod -x _install.sh
 mv _install.sh _install.txt
