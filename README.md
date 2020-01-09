@@ -31,11 +31,12 @@ mv _install.txt _install.sh
 # Make the file executable.
 chmod +x _install.sh
 
-# If you want DOCKER container created to host this then un-comment this line in _install.sh (near the bottom.)
-#   cd APP/DOCKER_BUILD && ./00A_buildCreateStart.sh
-# URL: http://127.0.0.1:8080/
+# Run the file (Setup with Docker container./)
+./_install.sh DOCKER
 
-# Run the file
+# OR
+
+# Run the file (no Docker)
 ./_install.sh
 
 # After install the file will disable itself.
@@ -73,9 +74,9 @@ This is a mostly "Vanilla JS" build. Libraries are used when needed. Here they a
 
 ## Additional links/resources
 
-* [Uzebox Main]   [_link_uzebox.org] - Source inspiration. I have been with Uzebox for many years and the experience helped me to make this project possible.
-* [Uzebox Forums] [_link_uzebox.org] - Uzebox forums.
-* [Uzebox Wiki]   [_link_uzebox.org] - Uzebox wiki
+* [Uzebox Main][_link_uzebox.org] - Source inspiration. I have been with Uzebox for many years and the experience helped me to make this project possible.
+* [Uzebox Forums][_link_uzebox_forums] - Uzebox forums.
+* [Uzebox Wiki][_link_uzebox_wiki] - Uzebox wiki
 
 
 [_link_fileSaver.js]:          <https://github.com/eligrey/FileSaver.js/>
