@@ -1747,6 +1747,9 @@ core.FUNCS.graphics.flipImage_canvas   = function (srcCanvas, flipH, flipV) {
 
 // Prints a line of text at the specified location.
 core.FUNCS.graphics.Print   = function(x, y, string, vram_str, fontsetname){
+	// Example usage:
+	// core.FUNCS.graphics.Print(0,0, "HELLO", "VRAM2", "fonts1");
+
 	let tileid;
 
 	// Allow for the fontset to be temporarily switched.
@@ -1761,6 +1764,7 @@ core.FUNCS.graphics.Print   = function(x, y, string, vram_str, fontsetname){
 	// Make sure that only a whole number makes it through.
 	x = (x) << 0;
 	y = (y) << 0;
+	let startx = x;
 
 	if( vram_str==undefined ){ vram_str='VRAM2'; }
 
@@ -1775,6 +1779,9 @@ core.FUNCS.graphics.Print   = function(x, y, string, vram_str, fontsetname){
 
 	// Turn the string into an iterable array.
 	Array.from( string ).forEach(function(d,i,a){
+		// Move down a line if a line break is found.
+		if(d=="\n"){ x=startx; y+=1; return; }
+
 		// Get the tileid for this character.
 		tileid = d.toUpperCase().charCodeAt() - 32;
 
@@ -1791,8 +1798,8 @@ core.FUNCS.graphics.Print   = function(x, y, string, vram_str, fontsetname){
 		x+=1;
 
 		// Wrapping?
-		if(x>=core.SETTINGS.VRAM_TILES_H-1){ x=0; y+=1; }
-		if(y>=core.SETTINGS.VRAM_TILES_V-1){ x=0; y=0;  }
+		if(x>=core.SETTINGS.VRAM_TILES_H-0){ x=0; y+=1; }
+		if(y>=core.SETTINGS.VRAM_TILES_V-0){ x=0; y=0;  }
 	});
 };
 // Prints a line of text at the specified location (accepts an object with text and font settings for each char.)
@@ -1813,6 +1820,7 @@ core.FUNCS.graphics.Print_multiFont   = function(x, y, data, vram_str){
 	// Make sure that only a whole number makes it through.
 	x = (x) << 0;
 	y = (y) << 0;
+	let startx = x;
 
 	if( vram_str==undefined ){ vram_str='VRAM2'; }
 
@@ -1825,6 +1833,9 @@ core.FUNCS.graphics.Print_multiFont   = function(x, y, data, vram_str){
 
 	// Turn the string into an iterable array.
 	Array.from( data.text ).forEach(function(d,i){
+		// Move down a line if a line break is found.
+		if(d=="\n"){ x=startx; y+=1; return; }
+
 		// Determine which fontmap will be used.
 		let fontmap = core.ASSETS.graphics.tilemaps[ data.fonts[ data.font[i] ] ];
 
@@ -1852,8 +1863,8 @@ core.FUNCS.graphics.Print_multiFont   = function(x, y, data, vram_str){
 		x+=1;
 
 		// Wrapping?
-		if(x>=core.SETTINGS.VRAM_TILES_H-1){ x=0; y+=1; }
-		if(y>=core.SETTINGS.VRAM_TILES_V-1){ x=0; y=0;  }
+		if(x>=core.SETTINGS.VRAM_TILES_H-0){ x=0; y+=1; }
+		if(y>=core.SETTINGS.VRAM_TILES_V-0){ x=0; y=0;  }
 	});
 };
 // Set the font to use.
