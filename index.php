@@ -267,6 +267,8 @@
 
 			<br>
 			<button class="hiddenOpacityButtons" onclick='showOnlySideDiv();'>showOnlySideDiv</button><br>
+			<br>
+			<button class="hiddenOpacityButtons" onclick='JSGAME.GUI.reloadGame();'>RELOAD</button><br>
 
 		</div>
 

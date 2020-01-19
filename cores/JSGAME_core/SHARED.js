@@ -377,12 +377,23 @@ JSGAME.SHARED={
 	},
 	// Convenience function for checking button state.
 	checkButton : function(btnConst1, btnConst2){
-		// EXAMPLE USAGE: if     ( game.chkBtn("BTN_UP"    , "btnPressed1") ) {}
+		// EXAMPLE USAGE: if( game.chkBtn              ("BTN_UP" , "btnPressed1") ) {}
+		// EXAMPLE USAGE: if( game.chkBtn              ("ANY"    , "btnPressed1") ) {}
+		// EXAMPLE USAGE: if( JSGAME.SHARED.checkButton("BTN_UP" , "btnPressed1") ) {}
+		// EXAMPLE USAGE: if( JSGAME.SHARED.checkButton("ANY"    , "btnPressed1") ) {}
 
-		return JSGAME.consts[btnConst1] & JSGAME.SHARED.buttons[btnConst2] ? true : false ;
+		// Check for match on specific button.
+		if(btnConst1 != "ANY"){
+			return JSGAME.consts[btnConst1] & JSGAME.SHARED.buttons[btnConst2] ? true : false ;
+		}
+		// If ANY button matches btnConst2.
+		else{
+			return JSGAME.SHARED.buttons[btnConst2] ? true : false ;
+		}
 	},
 	// Holds the current button states for the gamepads.
 	buttons : {
+		// JSGAME.SHARED.buttons.btnHeld1
 		btnPrev1 : 0 , btnHeld1 : 0 , btnPressed1 : 0 , btnReleased1 : 0 ,
 		btnPrev2 : 0 , btnHeld2 : 0 , btnPressed2 : 0 , btnReleased2 : 0 ,
 	},
@@ -390,8 +401,11 @@ JSGAME.SHARED={
 	// *** UTILITY FUNCTIONS ***
 
 	// Accepts seconds (decimal or int). Returns number of frames for that quanity of seconds (rounded up) .
-	secondsToFrames : function(seconds){
-		return Math.ceil((core.SETTINGS.fps) * seconds);
+	secondsToFrames : function(seconds, rounding){
+		if(!rounding){ rounding="up"; }
+		if     (rounding=="up")  { return Math.ceil((core.SETTINGS.fps) * seconds); }
+		else if(rounding=="down"){ return Math.ceil((core.SETTINGS.fps) * seconds); }
+
 	},
 	// Get a random integer in the specified range.
 	getRandomInt_inRange : function (min, max) {
@@ -400,12 +414,19 @@ JSGAME.SHARED={
 		return ((Math.random() * (max - min + 1)) + min) << 0;
 	},
 
-	apply_bitMask : function(src, mask, value){
+	// Update a value using a bit mask. (Per call can only turn "ON" or "OFF" bits. Not both.)
+	get_new_bitMask : function(src, mask, value){
+		// Example usage:
+		//  # To set an updated flags value (SPRITE_OFF set) for a sprite:
+		//  let spriteNum = 0;
+		//  let newFlags = JSGAME.SHARED.get_new_bitMask(core.GRAPHICS.sprites[d].flags, core.CONSTS["SPRITE_OFF"], 1);
+		//  core.FUNCS.graphics.changeSpriteFlags(spriteNum, newFlags);
+
 		let newValue;
 		if     (value==1){ newValue = src |  (mask); }
 		else if(value==0){ newValue = src & ~(mask); }
 		else             { console.log("applyMask: not 0 or 1."); }
-		// console.log("old:", src, "new:", newValue, " :: " ,value, mask, value);
+
 		return newValue;
 	},
 

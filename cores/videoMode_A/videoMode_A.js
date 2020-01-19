@@ -51,6 +51,9 @@ core.GRAPHICS["VRAM1_TO_WRITE"] = [] ; // What needs to be drawn on the current 
 core.GRAPHICS["VRAM2"]          = [] ; // VRAM2, text (previous)
 core.GRAPHICS["VRAM2_TO_WRITE"] = [] ; // What needs to be drawn on the current frame.
 
+// TRACKED TILES THAT HAVE TRANSPARENCY
+core.GRAPHICS.trackedTransparentTiles = {};
+
 // FLAGS - A change has been specified.
 core.GRAPHICS.flags.BG     = false ; // Draw layer.
 core.GRAPHICS.flags.SPRITE = false ; // Draw layer.
@@ -108,7 +111,6 @@ core.CONSTS["OffscreenCanvas_supported"] ;
 core.GRAPHICS.FADER.CONSTS = {}
 core.GRAPHICS.FADER.FUNCS = {}
 
-core.GRAPHICS.FADER.CONSTS["FADER_STEPS"] = 12 ; // Number of steps in a fade.
 core.GRAPHICS.FADER.CONSTS["fader"] = [
 	//                               INDEX BB GGG RRR  B G R    DEC   HEX
 	{ b: 0  , g: 0   , r: 0   } , // 0     00 000 000  0 0 0  , 0   , 0x00
@@ -123,7 +125,10 @@ core.GRAPHICS.FADER.CONSTS["fader"] = [
 	{ b: 66 , g: 100 , r: 85  } , // 9     10 111 110  2 7 6  , 190 , 0xBE
 	{ b: 66 , g: 100 , r: 100 } , // 10    10 111 111  2 7 7  , 191 , 0xBF
 	{ b: 100, g: 100 , r: 100 } , // 11    11 111 111  3 7 7  , 255 , 0xFF
+	{ b: 100, g: 100 , r: 100 } , // 12    11 111 111  3 7 7  , 255 , 0xFF
 ]; // The rgb values for each fade level.
+
+core.GRAPHICS.FADER.CONSTS["FADER_STEPS"] = core.GRAPHICS.FADER.CONSTS["fader"].length ; // Number of steps in a fade.
 core.GRAPHICS.FADER.prevFadeStep   = 0     ; // Previous frame step.
 core.GRAPHICS.FADER.fadeStep       = 0     ; // Current frame step.
 core.GRAPHICS.FADER.fadeSpeed      = 0     ; // Speed between fader array index changes.
@@ -187,10 +192,6 @@ core.WORKERS.VIDEO = new Worker("cores/videoMode_A/videoMode_A_webworker.js");
 // *** Init conversion functions - Removed after use. ***
 
 core.FUNCS.graphics.init = function(){
-	// TODO:
-
-	// Take performance metrics.
-
 	return new Promise(function(res_VIDEO_INIT, rej_VIDEO_INIT){
 		JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "START");
 
@@ -209,8 +210,29 @@ core.FUNCS.graphics.init = function(){
 				core.SETTINGS['INTRO_LOGO']        = JSGAME.PRELOAD.gamesettings_json['INTRO_LOGO']       ;
 				core.SETTINGS['fps']               = JSGAME.PRELOAD.gamesettings_json['fps']              ;
 
-				// Convert the TRANSLUCENT_COLOR string to integer. (If specified as HEX then it is likely a string.)
+				// Convert the TRANSLUCENT_COLOR string to integer. (Should be specifed in HEX in RGB332 format.)
 				core.SETTINGS['TRANSLUCENT_COLOR'] = parseInt(core.SETTINGS['TRANSLUCENT_COLOR'], 16);
+
+				// Get the canvas alpha settings.
+				try{
+					if(JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings'] != undefined){
+						JSGAME.PRELOAD.gamesettings_json['BG_alpha']     = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['BG_alpha']     ;
+						JSGAME.PRELOAD.gamesettings_json['SPRITE_alpha'] = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['SPRITE_alpha'] ;
+						JSGAME.PRELOAD.gamesettings_json['TEXT_alpha']   = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['TEXT_alpha']   ;
+						JSGAME.PRELOAD.gamesettings_json['FADE_alpha']   = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['FADE_alpha']   ;
+						JSGAME.PRELOAD.gamesettings_json['OUTPUT_alpha'] = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['OUTPUT_alpha'] ;
+					}
+					else{ throw "canvas_alphaSettings was undefined. Using default values."; }
+				}
+				catch(e){
+					console.log("WARNING:", e);
+					// Use the default alpha settings.
+					JSGAME.PRELOAD.gamesettings_json['BG_alpha']     = false ;
+					JSGAME.PRELOAD.gamesettings_json['SPRITE_alpha'] = true  ;
+					JSGAME.PRELOAD.gamesettings_json['TEXT_alpha']   = true  ;
+					JSGAME.PRELOAD.gamesettings_json['FADE_alpha']   = false ;
+					JSGAME.PRELOAD.gamesettings_json['OUTPUT_alpha'] = false ;
+				}
 
 				// These will be added in graphicsSetup.
 				// core.GRAPHICS.tilesetNames = [] ;
@@ -245,18 +267,25 @@ core.FUNCS.graphics.init = function(){
 				// This video mode requires 5 canvases. 4 for the layers and 1 for the output.
 
 				// CANVAS
-				core.GRAPHICS.canvas.BG     = document.createElement('canvas'); // Background tiles - Tile grid-aligned, no alpha.
-				core.GRAPHICS.canvas.SPRITE = document.createElement('canvas'); // Sprite tiles     - Tile pixel-aligned, with alpha.
-				core.GRAPHICS.canvas.TEXT   = document.createElement('canvas'); // Text tiles       - Tile grid-aligned, with alpha.
-				core.GRAPHICS.canvas.FADE   = document.createElement('canvas'); // Fade layer       - Used for Fading. General purpose bitmap canvas. (no alpha.)
-				core.GRAPHICS.canvas.OUTPUT = document.createElement('canvas'); // Output canvas    - Combination of the other 4 layers. (no alpha.)
+				core.GRAPHICS.canvas.BG     = document.createElement('canvas'); // Background tiles - Tile grid-aligned. (Default: no alpha.)
+				core.GRAPHICS.canvas.SPRITE = document.createElement('canvas'); // Sprite tiles     - Tile pixel-aligned. (Default: with alpha.)
+				core.GRAPHICS.canvas.TEXT   = document.createElement('canvas'); // Text tiles       - Tile grid-aligned. (Default: with alpha.)
+				core.GRAPHICS.canvas.FADE   = document.createElement('canvas'); // Fade layer       - Used for Fading. General purpose bitmap canvas. (Default: no alpha.)
+				core.GRAPHICS.canvas.OUTPUT = document.createElement('canvas'); // Output canvas    - Combination of the other 4 layers. (Default: no alpha.)
+
+				// Canvas alpha values.
+				let BG_alpha     = JSGAME.PRELOAD.gamesettings_json['BG_alpha']     ? true : false;
+				let SPRITE_alpha = JSGAME.PRELOAD.gamesettings_json['SPRITE_alpha'] ? true : false;
+				let TEXT_alpha   = JSGAME.PRELOAD.gamesettings_json['TEXT_alpha']   ? true : false;
+				let FADE_alpha   = JSGAME.PRELOAD.gamesettings_json['FADE_alpha']   ? true : false;
+				let OUTPUT_alpha = JSGAME.PRELOAD.gamesettings_json['OUTPUT_alpha'] ? true : false;
 
 				// CANVAS CTX
-				core.GRAPHICS.ctx.BG     = core.GRAPHICS.canvas.BG    .getContext('2d', { alpha: false });
-				core.GRAPHICS.ctx.SPRITE = core.GRAPHICS.canvas.SPRITE.getContext('2d', { alpha: true  });
-				core.GRAPHICS.ctx.TEXT   = core.GRAPHICS.canvas.TEXT  .getContext('2d', { alpha: true  });
-				core.GRAPHICS.ctx.FADE   = core.GRAPHICS.canvas.FADE  .getContext('2d', { alpha: false });
-				core.GRAPHICS.ctx.OUTPUT = core.GRAPHICS.canvas.OUTPUT.getContext('2d', { alpha: false });
+				core.GRAPHICS.ctx.BG     = core.GRAPHICS.canvas.BG    .getContext('2d', { alpha: BG_alpha     });
+				core.GRAPHICS.ctx.SPRITE = core.GRAPHICS.canvas.SPRITE.getContext('2d', { alpha: SPRITE_alpha });
+				core.GRAPHICS.ctx.TEXT   = core.GRAPHICS.canvas.TEXT  .getContext('2d', { alpha: TEXT_alpha   });
+				core.GRAPHICS.ctx.FADE   = core.GRAPHICS.canvas.FADE  .getContext('2d', { alpha: FADE_alpha   });
+				core.GRAPHICS.ctx.OUTPUT = core.GRAPHICS.canvas.OUTPUT.getContext('2d', { alpha: OUTPUT_alpha });
 
 				// CANVAS ARRAY (temp.)
 				let canvases = [
@@ -273,7 +302,7 @@ core.FUNCS.graphics.init = function(){
 				canvases.forEach(function(d){
 					d.width  = width  ; d.height = height ;
 					JSGAME.SHARED.setpixelated(d);                         // This may not be necessary.
-					d.getContext('2d').clearRect(0, 0, d.width, d.height); // This may not be necessary.
+					// d.getContext('2d').clearRect(0, 0, d.width, d.height); // This may not be necessary.
 				});
 
 				// Set an id on the canvas_OUTPUT.
@@ -543,10 +572,10 @@ core.FUNCS.graphics.init = function(){
 						view32 = new Uint32Array(buf);
 
 						view32 =
-							(alpha << 24) | // alpha
-							(nB    << 16) | // blue
-							(nG    <<  8) | // green
-							nR              // red
+						(alpha << 24) | // alpha
+						(nB    << 16) | // blue
+						(nG    <<  8) | // green
+						nR              // red
 						;
 
 						return view32;
@@ -587,7 +616,7 @@ core.FUNCS.graphics.init = function(){
 					}
 				};
 				// Converts Uzebox tiles to Canvas. Respects transparency if indicated.
-				convertUzeboxTilesToCanvasTiles = function(inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType){
+				convertUzeboxTilesToCanvasTiles = function(inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType, trackTransparent){
 					// console.log( inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType  );
 					// console.log(  inputTilesetName, newTilesetKey, handleTransparency, outputType  );
 					let curTileId;
@@ -604,6 +633,7 @@ core.FUNCS.graphics.init = function(){
 					let ii;
 					let vramdata_rgb32;
 					let len = 0;
+					let convertedPixel;
 					try{
 						len = inputTileset.length / tile_size;
 					}
@@ -613,6 +643,8 @@ core.FUNCS.graphics.init = function(){
 						throw "ERROR";
 					}
 					let arr=[];
+					let hasTransparency ;
+					let transparencies = [];
 
 					// Create the tempCanvas.
 					let tempCanvas     = document.createElement('canvas') ;
@@ -621,6 +653,7 @@ core.FUNCS.graphics.init = function(){
 					tempCanvas.height  = tile_height ;
 
 					for(i=0; i<len; i+=1){
+						hasTransparency = false;
 						curTileId = i;
 
 						// BY VALUE: Returns the portion of the vram array buffer for the specified tileset and tile.
@@ -639,20 +672,28 @@ core.FUNCS.graphics.init = function(){
 
 						vramdata_rgb_332_length = vramdata_rgb_332.length;
 						for(ii=0; ii<vramdata_rgb_332_length; ii+=1){
-							pixel = vramdata_rgb_332[ii];
-							pixel_index = ii;
-							buf32[pixel_index] = rgb_decode332( pixel, "arraybuffer_32", handleTransparency ) ;
+							pixel              = vramdata_rgb_332[ii];
+							pixel_index        = ii;
+							convertedPixel     = rgb_decode332( pixel, "arraybuffer_32", handleTransparency ) ;
+							buf32[pixel_index] = convertedPixel;
+
+							// A transparent pixel will come back as 0.
+							if(trackTransparent && handleTransparency && convertedPixel==0){ hasTransparency = true; }
 						}
+						//
+						if(trackTransparent && handleTransparency && hasTransparency){ transparencies.push(curTileId); }
 
 						// Write the arraybuffer to the imageData.
 						vramdata_rgb32.data.set(buf8);
 
+						// Store the data.
 						if     (outputType=="canvas"){
 							// Write the imageData to a canvas element.
 							let canvas = document.createElement('canvas');
+							let ctx    = canvas.getContext("2d", { alpha: true }) ;
 							canvas.width  = tile_width;
 							canvas.height = tile_height;
-							canvas.getContext('2d').putImageData( vramdata_rgb32, 0, 0 );
+							ctx.putImageData( vramdata_rgb32, 0, 0 );
 
 							// Store the canvas element.
 							arr[curTileId]=canvas;
@@ -667,6 +708,8 @@ core.FUNCS.graphics.init = function(){
 
 					core.GRAPHICS.tiles[newTilesetKey] = arr ;
 					// arr=null;
+
+					return transparencies;
 				};
 				// Graphics conversions.
 				post_graphicsConversion         = function(){
@@ -676,12 +719,13 @@ core.FUNCS.graphics.init = function(){
 					// Go through each of those canvases...
 					for(let i=0; i<len; i+=1){
 						// Convert from the Uzebox format to canvas format and handle transparent pixels.
-						let thisCanvas = JSGAME.PRELOAD.PHP_VARS.graphics_conversionSettings[i];
-						let tilesSource = core.ASSETS.graphics.tiles[ thisCanvas.tileset ] ;
+						let thisCanvas       = JSGAME.PRELOAD.PHP_VARS.graphics_conversionSettings[i] ;
+						let tilesSource      = core.ASSETS.graphics.tiles[ thisCanvas.tileset ] ;
+						let trackTransparent = thisCanvas.trackTransparent ;
 
 						if(!tilesSource){
 							console.log(
-								"WE ARE GOING TO HAVE AN ERROR!",
+								"Tile not found! WE ARE GOING TO HAVE AN ERROR!",
 								"\n thisCanvas                 : ", thisCanvas,
 								"\n tilesSource                : ", tilesSource,
 								"\n core.ASSETS.graphics.tiles : ", core.ASSETS.graphics.tiles,
@@ -689,13 +733,20 @@ core.FUNCS.graphics.init = function(){
 							);
 						}
 
-						convertUzeboxTilesToCanvasTiles(
+						//
+						let returnValue = convertUzeboxTilesToCanvasTiles(
 							tilesSource,
 							thisCanvas.tileset ,
 							thisCanvas.tileset ,
 							thisCanvas.handleTransparency,
-							thisCanvas.type
+							thisCanvas.type,
+							thisCanvas.trackTransparent
 						);
+
+						// With the BG canvas, tiles can be fully solid or have transparent pixels.
+						if(trackTransparent && returnValue.length){
+							core.GRAPHICS.trackedTransparentTiles[thisCanvas.tileset] = returnValue;
+						}
 					}
 				};
 				// Apply font settings. (Adds the font data from PRELOAD into core.GRAPHICS.fonts.)
@@ -751,7 +802,9 @@ core.FUNCS.graphics.init = function(){
 core.FUNCS.graphics.clearAllCanvases       = function(){
 	// BG layer
 	if(core.GRAPHICS["ctx"].BG    ){
-		core.GRAPHICS["ctx"].BG    .clearRect(0, 0, core.GRAPHICS["ctx"].BG    .canvas.width, core.GRAPHICS["ctx"].BG    .canvas.height);
+		// core.GRAPHICS["ctx"].BG.fillStyle = "rgba(0, 0, 0, 1.0)";
+		// core.GRAPHICS["ctx"].BG.fillRect(0, 0, core.GRAPHICS["ctx"].BG.canvas.width, core.GRAPHICS["ctx"].BG.canvas.height);
+		core.GRAPHICS["ctx"].BG.clearRect(0, 0, core.GRAPHICS["ctx"].BG    .canvas.width, core.GRAPHICS["ctx"].BG    .canvas.height);
 	}
 
 	// SPRITE layer
@@ -1012,21 +1065,73 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 		let drawStart_BG;
 		if(JSGAME.FLAGS.debug)       { drawStart_BG     = performance.now();      core.GRAPHICS.performance.BG.shift();     }
 
+		let canvasLayer = core.GRAPHICS["ctx"].BG;
+		let len ;
+		let transparentTiles = [];
+
+		let activeTileset = core.GRAPHICS.activeTileset["BG"];
+		if(!activeTileset){ console.log("ERROR: update_layer_BG: Missing activeTileset!"); return; }
+
+		// Draws the tiles that have transparencies. Used AFTER the rest of the tiles have been drawn.
+		let drawTransparentTiles = function(tiles){
+			for(let t=0; t<tiles.length; t+=1){
+				// Write the tile data to the tempCanvas.
+				let rec = tiles[t];
+				// let canvas = rec.canvas;
+				let tileid = rec.tileid;
+				let x      = rec.x;
+				let y      = rec.y;
+				// canvasLayer.drawImage(canvas, x, y );
+				canvasLayer.drawImage(core.GRAPHICS.tiles[ activeTileset ][ tileid ], x, y );
+			}
+		};
+
+		// Will this layer have an update?
 		if(core.GRAPHICS.flags.BG || core.GRAPHICS.flags.BG_force) {
+			// Set the OUTPUT flag.
 			core.GRAPHICS.flags.OUTPUT = true;
-			let canvasLayer = core.GRAPHICS["ctx"].BG;
-			let y = 0 ;
-			let x = 0 ;
-			let thisTile;
-			let i;
-			let activeTileset = core.GRAPHICS.activeTileset["BG"];
-			if(!activeTileset){ console.log("ERROR: update_layer_BG: Missing activeTileset!"); return; }
 
 			let force = core.GRAPHICS.flags.BG_force;
+			let y ;
+			let x ;
+			let thisTile;
+			let i;
+			let coord;
+			let previd;
 
-			// If force then draw EVERYTHING in VRAM1
+			// STEP 1: Find the transparent tiles in VRAM1.
+			y = 0 ;
+			x = 0 ;
+			len = core.GRAPHICS["VRAM1"].length;
+			for(i=0; i<len; i+=1){
+				// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
+				if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
+				if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
+
+				// Get the tile id at this region of the vram.
+				thisTile = core.GRAPHICS["VRAM1"][i];
+
+				// Is this id one of the tiles with transparencies? Add it to the list.
+				if(core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1){
+					transparentTiles.push(
+						{
+							// "canvas" : core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+							"tileid" : thisTile ,
+							"x"      : (x*core.SETTINGS.TILE_WIDTH)  << 0,
+							"y"      : (y*core.SETTINGS.TILE_HEIGHT) << 0,
+						}
+					);
+				}
+
+				// Increment x.
+				x+=1;
+			}
+
+			// STEP 2: If force then draw EVERYTHING in VRAM1.
 			if(force){
-				let len = core.GRAPHICS["VRAM1"].length;
+				y = 0 ;
+				x = 0 ;
+				len = core.GRAPHICS["VRAM1"].length;
 				for(i=0; i<len; i+=1){
 					// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
 					if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
@@ -1045,27 +1150,47 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 					// Increment x.
 					x+=1;
 				}
+
+				// Reset VRAM1_TO_WRITE since everything has been written. (NO, THAT WILL CAUSE THE TRANSPARENT PARTS TO BE BLACK.)
+				// core.GRAPHICS["VRAM1_TO_WRITE"]=[];
 			}
 
-			// Otherwise only draw what needs to be drawn.
-			else{
-				let len = core.GRAPHICS["VRAM1_TO_WRITE"].length;
+			// STEP 3: Now draw what needs to be drawn.
+			len = core.GRAPHICS["VRAM1_TO_WRITE"].length;
+			if(len){
 				for(i=0; i<len; i+=1){
-					let coord = core.GRAPHICS["VRAM1_TO_WRITE"][i] ;
-					let x     = coord.x  ;
-					let y     = coord.y  ;
-					let id    = coord.id ;
+					coord    = core.GRAPHICS["VRAM1_TO_WRITE"][i] ;
+					thisTile = coord.id ;
+					x        = coord.x  ;
+					y        = coord.y  ;
+					previd   = coord.previd ;
 
-					// Write the tile data to the tempCanvas.
-					canvasLayer.drawImage(
-						core.GRAPHICS.tiles[ activeTileset ][ id ],
-						(x*core.SETTINGS.TILE_WIDTH)  << 0,
-						(y*core.SETTINGS.TILE_HEIGHT) << 0
-					);
+					// Is the new tile a tile with transparency? Write the previous tile instead (new tile will be written later. )
+					if(transparentTiles.length && core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1){
+						// Write the previous tile data to the tempCanvas.
+						canvasLayer.drawImage(
+							core.GRAPHICS.tiles[ activeTileset ][ previd ],
+							(x*core.SETTINGS.TILE_WIDTH)  << 0,
+							(y*core.SETTINGS.TILE_HEIGHT) << 0
+						);
+					}
+					// Write the new tile.
+					else{
+						// Write the tile data to the tempCanvas.
+						canvasLayer.drawImage(
+							core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+							(x*core.SETTINGS.TILE_WIDTH)  << 0,
+							(y*core.SETTINGS.TILE_HEIGHT) << 0
+						);
+					}
 				}
+
+				// Reset VRAM1_TO_WRITE since everything has been written.
+				core.GRAPHICS["VRAM1_TO_WRITE"]=[];
 			}
 
-			core.GRAPHICS["VRAM1_TO_WRITE"]=[];
+			// STEP 4: Now do the second layer tiles...
+			if(transparentTiles.length){ drawTransparentTiles(transparentTiles); }
 		}
 
 		if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.BG.push(performance.now()-drawStart_BG);                   }
@@ -1420,6 +1545,9 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 		// Indicate that a draw is required for this layer.
 		core.GRAPHICS.flags.BG       = true;
 		core.GRAPHICS.flags.BG_force = true;
+
+		// Force clear the canvas with clearRect.
+		// core.GRAPHICS["ctx"].BG.clearRect(0,0, core.GRAPHICS["canvas"].BG.width, core.GRAPHICS["canvas"].BG.height);
 	}
 
 	if(vram_str=='VRAM2' || doboth==true){
@@ -1430,10 +1558,14 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 		// Indicate that a draw is required for this layer.
 		core.GRAPHICS.flags.TEXT       = true;
 		core.GRAPHICS.flags.TEXT_force = true;
+
+		// Force clear the canvas with clearRect.
+		// core.GRAPHICS["ctx"].TEXT.clearRect(0,0, core.GRAPHICS["canvas"].TEXT.width, core.GRAPHICS["canvas"].TEXT.height);
 	}
 
-	// Redundant?
-	core.GRAPHICS.flags.OUTPUT_force = true;
+	// Force output.
+	core.GRAPHICS.flags.OUTPUT_force = true ;
+	core.GRAPHICS.flags.OUTPUT       = true ;
 };
 // Draws a bg tile to the specified location.
 core.FUNCS.graphics.SetTile      = function(x, y, id, vram_str){
@@ -1447,7 +1579,12 @@ core.FUNCS.graphics.SetTile      = function(x, y, id, vram_str){
 	core.GRAPHICS[vram_str+"_TO_WRITE"].push({
 		"x"  : x  ,
 		"y"  : y  ,
+
 		"id" : id ,
+		"hash"     : id.toString()+x.toString()+y.toString() ,
+
+		"previd"   : core.GRAPHICS[vram_str][ addr ] ,
+		"prevhash" : core.GRAPHICS[vram_str][ addr ].toString()+x.toString()+y.toString() ,
 	});
 
 	// Make the change.
@@ -1670,8 +1807,13 @@ core.FUNCS.graphics.MoveSprite         = function(startSprite, x, y, width, heig
 };
 // Accepts new flags for a sprite and then re-maps and moves it.
 core.FUNCS.graphics.changeSpriteFlags = function(spriteNum, newFlags){
+	// Get handle to the specified sprite.
 	let sprite=core.GRAPHICS.sprites[spriteNum];
+
+	// Map the sprite again (single sprite at a time.)
 	core.FUNCS.graphics.MapSprite2(spriteNum, [1,1,sprite.tileIndex], newFlags);
+
+	// Move the sprite to update it on screen.
 	core.FUNCS.graphics.MoveSprite(spriteNum, sprite.x, sprite.y, 1, 1);
 };
 //
