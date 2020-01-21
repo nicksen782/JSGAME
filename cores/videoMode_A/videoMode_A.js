@@ -892,28 +892,28 @@ core.FUNCS.graphics.findFlippedTileInCache = function(tilesetname, tileIndex, FL
 core.FUNCS.graphics.update_sprites_prev    = function(){
 	// Clear core.GRAPHICS.sprites_prev.
 	// core.GRAPHICS.sprites_prev.length=0;
+	core.GRAPHICS.sprites_prev=[];
 
 	// Get length of core.GRAPHICS.sprites array.
 	let len = core.GRAPHICS.sprites.length;
 
 	// Set all values in core.GRAPHICS.sprites into core.GRAPHICS.sprites_prev.
 	for(let i=0; i<len; i+=1){
+		let flags     = core.GRAPHICS.sprites[i].flags    ;
+		let hash      = core.GRAPHICS.sprites[i].hash     ;
+		let tileIndex = core.GRAPHICS.sprites[i].tileIndex;
+		let x         = core.GRAPHICS.sprites[i].x << 0   ;
+		let y         = core.GRAPHICS.sprites[i].y << 0   ;
+
+		// Add the data.
 		core.GRAPHICS.sprites_prev[i] = {
-			"flags"     : core.GRAPHICS.sprites[i].flags     ,
-			"hash"      : core.GRAPHICS.sprites[i].hash      ,
-			"tileIndex" : core.GRAPHICS.sprites[i].tileIndex ,
-			"x"         : core.GRAPHICS.sprites[i].x << 0    ,
-			"y"         : core.GRAPHICS.sprites[i].y << 0    ,
+			"flags"     : flags     ,
+			"hash"      : hash      ,
+			"tileIndex" : tileIndex ,
+			"x"         : x         ,
+			"y"         : y         ,
 		}
 	}
-
-	// for is fastest                                   (100 sprites, 0.0029)
-	// .map with Object.assign is a little slower.      (100 sprites, 0.0146)
-	// JSON is slowest.                                 (100 sprites, 0.0914)
-
-	// core.GRAPHICS.sprites_prev = core.GRAPHICS.sprites.map(a => Object.assign({}, a));
-	// core.GRAPHICS.sprites_prev = JSON.parse(JSON.stringify(core.GRAPHICS.sprites));
-
 };
 // Axis-Aligned Bounding Box collision check. Checks for overlap of the two specified rectangles.
 core.FUNCS.graphics.rectCollisionDetection = function(src_rect1, src_rect2){
@@ -968,17 +968,26 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 		// To DRAW
 		let len2 = core.GRAPHICS.sprites.length;
 		for(let i=0; i<len2; i+=1){
-			try{
-				retval.draw.push( {
-					"flags"     : core.GRAPHICS.sprites[i].flags     ,
-					"tileIndex" : core.GRAPHICS.sprites[i].tileIndex ,
-					"x"         : core.GRAPHICS.sprites[i].x << 0    ,
-					"y"         : core.GRAPHICS.sprites[i].y << 0    ,
-				} );
+			// Detect sprites that are set to (empty) instead of being an object.
+			if(core.GRAPHICS.sprites[i] == null){
+				// If the value is null then provide SPRITE_OFF data in it's place.
+				core.GRAPHICS.sprites[i] = {
+					"x"         : 0                         ,
+					"y"         : 0                         ,
+					"tileIndex" : 0                         ,
+					"flags"     : core.CONSTS["SPRITE_OFF"] ,
+					"hash"      : ""
+				}
+				// console.log("value was null at:", i);
 			}
-			catch(e){
-				console.log("ERROR: getSpriteChanges: Cannot read value from sprite.", e, "i:", i, "sprite:", core.GRAPHICS.sprites[i], "all:", core.GRAPHICS.sprites);
-			}
+
+			// Push the sprite data.
+			retval.draw.push( {
+				"flags"     : core.GRAPHICS.sprites[i].flags     ,
+				"tileIndex" : core.GRAPHICS.sprites[i].tileIndex ,
+				"x"         : core.GRAPHICS.sprites[i].x << 0    ,
+				"y"         : core.GRAPHICS.sprites[i].y << 0    ,
+			} );
 		}
 
 		retval.changeDetected = true;
@@ -1197,7 +1206,6 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 
 		res();
 	});
-
 } ;
 // Read through core.GRAPHICS.sprites and update any sprites tiles that have changed.
 core.FUNCS.graphics.update_layer_SPRITE = function(){
@@ -1232,14 +1240,12 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 					thisSprite = core.FUNCS.graphics.getSpriteData( changes.draw[i] );
 
 					// If the tileset name was not available, skip this sprite.
-					// if(!thisSprite.tilesetname){ console.log("tileset name not found!"); return; }
 					if(!thisSprite.tilesetname){
 						// console.log("tileset name not found!");
 						continue;
 					}
 
 					// If this sprite is off then skip this sprite.
-					// if(thisSprite.SPRITE_OFF){ console.log("sprite was off!"); return; }
 					if(thisSprite.SPRITE_OFF){
 						// console.log("sprite was off!");
 						canvasLayer.clearRect(
@@ -1291,13 +1297,23 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 						}
 					}
 
-					// Draw the tile.
-					canvasLayer.drawImage(
-						spriteTileData,
-						(thisSprite.x) << 0,
-						(thisSprite.y) << 0
-					);
+					// Is this a real tile?
+					if(!canvasLayer){
+						console.log(
+							""  +"canvas:", spriteTileData,
+							"\n"+"x     :", (thisSprite.x) << 0,
+							"\n"+"y     :", (thisSprite.y) << 0
+						);
+					}
 
+					// Draw the tile.
+					else{
+						canvasLayer.drawImage(
+							spriteTileData,
+							(thisSprite.x) << 0,
+							(thisSprite.y) << 0
+						);
+					}
 				}
 
 				// Update sprites_prev.
@@ -1612,6 +1628,11 @@ core.FUNCS.graphics.DrawMap2     = function(x, y, map, vram_str){
 		}
 	}
 };
+// Fills a region with a tile based on map dimensions.
+core.FUNCS.graphics.FillMap     = function(x, y, map, vram_str, tileid){
+	console.log("FillMap:",  x, y, map[0], map[1], tileid, vram_str );
+	core.FUNCS.graphics.Fill(x, y, map[0], map[1], tileid, vram_str );
+};
 // Fills a rectangular region with the specified tile id.
 core.FUNCS.graphics.Fill         = function(xpos, ypos, w, h, tileid, vram_str){
 	// vram_str can be 'VRAM1' or 'VRAM2'
@@ -1663,13 +1684,28 @@ core.FUNCS.graphics.vramRegionToTilemap   = function(startx, starty, w, h, vram_
 
 // Clears the core.GRAPHICS.sprites array.
 core.FUNCS.graphics.clearSprites       = function(){
-	// Blank out sprites and sprites_prev.
-	core.GRAPHICS.sprites=[];
+	// Set all existing sprites to be SPRITE_OFF.
+	// core.GRAPHICS.sprites=[];
+	let len = core.GRAPHICS.sprites.length;
+	for(let i=0; i<len; i+=1){
+		core.GRAPHICS.sprites[i] = {
+			"x"         : 0                         ,
+			"y"         : 0                         ,
+			"tileIndex" : 0                         ,
+			"flags"     : core.CONSTS["SPRITE_OFF"] ,
+			"hash"      : ""
+		}
+	}
+
+	// Blank out sprites_prev.
 	core.GRAPHICS.sprites_prev=[];
 
 	// Set the force draw flag on the sprites.
 	core.GRAPHICS.flags.SPRITE = true ;
 	core.GRAPHICS.flags.SPRITE_force = true ;
+
+	core.GRAPHICS.flags.OUTPUT = true ;
+	core.GRAPHICS.flags.OUTPUT_force = true ;
 
 	// Clear the canvas.
 	if(core.GRAPHICS["ctx"].SPRITE){
@@ -1815,6 +1851,9 @@ core.FUNCS.graphics.changeSpriteFlags = function(spriteNum, newFlags){
 
 	// Move the sprite to update it on screen.
 	core.FUNCS.graphics.MoveSprite(spriteNum, sprite.x, sprite.y, 1, 1);
+
+	// Redundant.
+	// core.GRAPHICS.flags.SPRITE=true;
 };
 //
 core.FUNCS.graphics.getSpriteData      = function(thisSprite){
