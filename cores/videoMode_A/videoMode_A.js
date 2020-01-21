@@ -1555,8 +1555,12 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 
 	if(vram_str=='VRAM1' || doboth==true){
 		// Clear VRAM1 and VRAM1_TO_WRITE.
-		core.GRAPHICS["VRAM1"].fill(0);
 		core.GRAPHICS["VRAM1_TO_WRITE"]=[];
+		for(let y=0; y<core.SETTINGS.VRAM_TILES_V; y+=1){
+			for(let x=0; x<core.SETTINGS.VRAM_TILES_H; x+=1){
+				core.FUNCS.graphics.SetTile(x,y,0,"VRAM1");
+			}
+		}
 
 		// Indicate that a draw is required for this layer.
 		core.GRAPHICS.flags.BG       = true;
@@ -1568,8 +1572,12 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 
 	if(vram_str=='VRAM2' || doboth==true){
 		// Clear VRAM2 and VRAM2_TO_WRITE.
-		core.GRAPHICS["VRAM2"].fill(0);
 		core.GRAPHICS["VRAM2_TO_WRITE"]=[];
+		for(let y=0; y<core.SETTINGS.VRAM_TILES_V; y+=1){
+			for(let x=0; x<core.SETTINGS.VRAM_TILES_H; x+=1){
+				core.FUNCS.graphics.SetTile(x,y,0,"VRAM2");
+			}
+		}
 
 		// Indicate that a draw is required for this layer.
 		core.GRAPHICS.flags.TEXT       = true;
@@ -1577,11 +1585,12 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 
 		// Force clear the canvas with clearRect.
 		// core.GRAPHICS["ctx"].TEXT.clearRect(0,0, core.GRAPHICS["canvas"].TEXT.width, core.GRAPHICS["canvas"].TEXT.height);
+		// Clear the canvas.
 	}
 
-	// Force output.
-	core.GRAPHICS.flags.OUTPUT_force = true ;
-	core.GRAPHICS.flags.OUTPUT       = true ;
+	// Force output. (unneeded?)
+	// core.GRAPHICS.flags.OUTPUT_force = true ;
+	// core.GRAPHICS.flags.OUTPUT       = true ;
 };
 // Draws a bg tile to the specified location.
 core.FUNCS.graphics.SetTile      = function(x, y, id, vram_str){
@@ -1593,14 +1602,10 @@ core.FUNCS.graphics.SetTile      = function(x, y, id, vram_str){
 
 	// Update VRAMx_TO_WRITE.
 	core.GRAPHICS[vram_str+"_TO_WRITE"].push({
-		"x"  : x  ,
-		"y"  : y  ,
-
-		"id" : id ,
-		"hash"     : id.toString()+x.toString()+y.toString() ,
-
-		"previd"   : core.GRAPHICS[vram_str][ addr ] ,
-		"prevhash" : core.GRAPHICS[vram_str][ addr ].toString()+x.toString()+y.toString() ,
+		"x"      : x  ,
+		"y"      : y  ,
+		"id"     : id ,
+		"previd" : core.GRAPHICS[vram_str][ addr ] ,
 	});
 
 	// Make the change.
@@ -1707,7 +1712,7 @@ core.FUNCS.graphics.clearSprites       = function(){
 	core.GRAPHICS.flags.OUTPUT = true ;
 	core.GRAPHICS.flags.OUTPUT_force = true ;
 
-	// Clear the canvas.
+	// Clear the canvas layer for sprites.
 	if(core.GRAPHICS["ctx"].SPRITE){
 		core.GRAPHICS["ctx"].SPRITE.clearRect(0, 0, core.GRAPHICS["ctx"].SPRITE.canvas.width, core.GRAPHICS["ctx"].SPRITE.canvas.height);
 	}
