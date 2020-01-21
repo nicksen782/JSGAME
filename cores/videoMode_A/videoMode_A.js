@@ -1077,7 +1077,13 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 		let canvasLayer = core.GRAPHICS["ctx"].BG;
 		let len ;
 		let transparentTiles = [];
-
+		let force = core.GRAPHICS.flags.BG_force;
+		let y ;
+		let x ;
+		let thisTile;
+		let i;
+		let coord;
+		let previd;
 		let activeTileset = core.GRAPHICS.activeTileset["BG"];
 		if(!activeTileset){ console.log("ERROR: update_layer_BG: Missing activeTileset!"); return; }
 
@@ -1099,14 +1105,6 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 		if(core.GRAPHICS.flags.BG || core.GRAPHICS.flags.BG_force) {
 			// Set the OUTPUT flag.
 			core.GRAPHICS.flags.OUTPUT = true;
-
-			let force = core.GRAPHICS.flags.BG_force;
-			let y ;
-			let x ;
-			let thisTile;
-			let i;
-			let coord;
-			let previd;
 
 			// STEP 1: Find the transparent tiles in VRAM1.
 			y = 0 ;
@@ -1150,21 +1148,29 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 					thisTile = core.GRAPHICS["VRAM1"][i];
 
 					// Write the tile data to the tempCanvas.
-					canvasLayer.drawImage(
-						core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
-						(x*core.SETTINGS.TILE_WIDTH)  << 0,
-						(y*core.SETTINGS.TILE_HEIGHT) << 0
-					);
+					try{
+						canvasLayer.drawImage(
+							core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+							(x*core.SETTINGS.TILE_WIDTH)  << 0,
+							(y*core.SETTINGS.TILE_HEIGHT) << 0
+						);
+					}
+					catch(e){
+						console.log(
+							e,
+							"\n"+"canvas  :", core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+							"\n"+"x       :", (x) << 0,
+							"\n"+"y       :", (y) << 0,
+							"\n"+"thisTile:", thisTile
+						);
+					}
 
 					// Increment x.
 					x+=1;
 				}
-
-				// Reset VRAM1_TO_WRITE since everything has been written. (NO, THAT WILL CAUSE THE TRANSPARENT PARTS TO BE BLACK.)
-				// core.GRAPHICS["VRAM1_TO_WRITE"]=[];
 			}
 
-			// STEP 3: Now draw what needs to be drawn.
+			// STEP 3: Now draw what needs to be drawn in VRAM1_TO_WRITE.
 			len = core.GRAPHICS["VRAM1_TO_WRITE"].length;
 			if(len){
 				for(i=0; i<len; i+=1){
@@ -1177,29 +1183,50 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 					// Is the new tile a tile with transparency? Write the previous tile instead (new tile will be written later. )
 					if(transparentTiles.length && core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1){
 						// Write the previous tile data to the tempCanvas.
-						canvasLayer.drawImage(
-							core.GRAPHICS.tiles[ activeTileset ][ previd ],
-							(x*core.SETTINGS.TILE_WIDTH)  << 0,
-							(y*core.SETTINGS.TILE_HEIGHT) << 0
-						);
+						try{
+							canvasLayer.drawImage(
+								core.GRAPHICS.tiles[ activeTileset ][ previd ],
+								(x*core.SETTINGS.TILE_WIDTH)  << 0,
+								(y*core.SETTINGS.TILE_HEIGHT) << 0
+							);
+						}
+						catch(e){
+							console.log(
+								e,
+								"\n"+"canvas:", core.GRAPHICS.tiles[ activeTileset ][ previd ],
+								"\n"+"previd:", previd
+							);
+						}
 					}
 					// Write the new tile.
 					else{
 						// Write the tile data to the tempCanvas.
-						canvasLayer.drawImage(
-							core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
-							(x*core.SETTINGS.TILE_WIDTH)  << 0,
-							(y*core.SETTINGS.TILE_HEIGHT) << 0
-						);
+						try{
+							canvasLayer.drawImage(
+								core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+								(x*core.SETTINGS.TILE_WIDTH)  << 0,
+								(y*core.SETTINGS.TILE_HEIGHT) << 0
+							);
+						}
+						catch(e){
+							console.log(
+								e,
+								"\n"+"canvas:", core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+								"\n"+"thisTile:", thisTile
+							);
+						}
 					}
 				}
 
-				// Reset VRAM1_TO_WRITE since everything has been written.
-				core.GRAPHICS["VRAM1_TO_WRITE"]=[];
 			}
 
 			// STEP 4: Now do the second layer tiles...
 			if(transparentTiles.length){ drawTransparentTiles(transparentTiles); }
+
+			// Reset VRAM1_TO_WRITE since everything has been written.
+			core.GRAPHICS["VRAM1_TO_WRITE"]=[];
+
+			core.GRAPHICS.flags.OUTPUT = true;
 		}
 
 		if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.BG.push(performance.now()-drawStart_BG);                   }
@@ -1209,8 +1236,6 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 } ;
 // Read through core.GRAPHICS.sprites and update any sprites tiles that have changed.
 core.FUNCS.graphics.update_layer_SPRITE = function(){
-	// GETTING HERE MEANS THAT SOMETHING SPRITE-RELATED HAS CHANGED.
-
 	return new Promise(function(res,rej){
 		let drawStart_SPRITE;
 		if(JSGAME.FLAGS.debug)       { drawStart_SPRITE = performance.now();      core.GRAPHICS.performance.SPRITE.shift(); }
@@ -1241,13 +1266,11 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 
 					// If the tileset name was not available, skip this sprite.
 					if(!thisSprite.tilesetname){
-						// console.log("tileset name not found!");
 						continue;
 					}
 
-					// If this sprite is off then skip this sprite.
+					// If this sprite is off then clear the sprite's area and skip drawing it.
 					if(thisSprite.SPRITE_OFF){
-						// console.log("sprite was off!");
 						canvasLayer.clearRect(
 							(thisSprite.x) ,
 							(thisSprite.y) ,
@@ -1298,7 +1321,7 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 					}
 
 					// Is this a real tile?
-					if(!canvasLayer){
+					if(!spriteTileData){
 						console.log(
 							""  +"canvas:", spriteTileData,
 							"\n"+"x     :", (thisSprite.x) << 0,
@@ -1321,11 +1344,7 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 
 				core.GRAPHICS.flags.OUTPUT = true;
 			}
-			// No sprite changes? Nothing to do.
-			else{
-				// IGNORE
-				//
-			}
+
 		}
 		//
 
@@ -1333,36 +1352,35 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 
 		res();
 	});
-
 } ;
 // Read through VRAM2 and update any tiles that have changed.
 core.FUNCS.graphics.update_layer_TEXT   = function(){
-	// core.GRAPHICS.fontSettings.tileset
-	// core.GRAPHICS.fontSettings.map
-
 	return new Promise(function(res,rej){
 		let drawStart_TEXT;
+
+		let canvasLayer = core.GRAPHICS["ctx"].TEXT;
+		let force = core.GRAPHICS.flags.TEXT_force;
+		let y = 0 ;
+		let x = 0 ;
+		let thisTile;
+		let i;
+		let len;
+		let coord;
+		let id;
+		let activeTileset = core.GRAPHICS.fontSettings.tileset;
+		if(!activeTileset){ console.log("ERROR: update_layer_TEXT: Missing activeTileset!"); return; }
+
 		if(JSGAME.FLAGS.debug)       { drawStart_TEXT   = performance.now();      core.GRAPHICS.performance.TEXT.shift();   }
 
 		if(core.GRAPHICS.flags.TEXT || core.GRAPHICS.flags.TEXT_force){
 			core.GRAPHICS.flags.OUTPUT = true;
 
-			let canvasLayer = core.GRAPHICS["ctx"].TEXT;
-
-			let y = 0 ;
-			let x = 0 ;
-			let thisTile;
-			let i;
-			let activeTileset = core.GRAPHICS.fontSettings.tileset;
-
-			if(!activeTileset){ console.log("ERROR: update_layer_TEXT: Missing activeTileset!"); return; }
-
-			let force = core.GRAPHICS.flags.TEXT_force;
-
 			// If force then draw EVERYTHING in VRAM2.
 			if(force){
 				// Go through each vram index.
-				let len = core.GRAPHICS["VRAM2"].length;
+				len = core.GRAPHICS["VRAM2"].length;
+				y = 0 ;
+				x = 0 ;
 				for(i=0; i<len; i+=1){
 					// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
 					if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
@@ -1371,6 +1389,7 @@ core.FUNCS.graphics.update_layer_TEXT   = function(){
 					// Get the tile id at this region of the vram.
 					thisTile      = core.GRAPHICS["VRAM2"][i];
 
+					// Clear the tile destination first.
 					canvasLayer.clearRect(
 						(x*core.SETTINGS.TILE_WIDTH)  << 0,
 						(y*core.SETTINGS.TILE_HEIGHT) << 0,
@@ -1379,24 +1398,37 @@ core.FUNCS.graphics.update_layer_TEXT   = function(){
 					);
 
 					// Write the tile data to the tempCanvas.
-					canvasLayer.drawImage(
-						core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
-						(x*core.SETTINGS.TILE_WIDTH)  << 0,
-						(y*core.SETTINGS.TILE_HEIGHT) << 0
-					);
+					try{
+						canvasLayer.drawImage(
+							core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+							(x*core.SETTINGS.TILE_WIDTH)  << 0,
+							(y*core.SETTINGS.TILE_HEIGHT) << 0
+						);
+					}
+					catch(e){
+						console.log(
+							e,
+							"\n"+"canvas  :", core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+							"\n"+"x       :", x << 0,
+							"\n"+"y       :", y << 0,
+							"\n"+"thisTile:", thisTile
+						);
+					}
 
 					// Increment x.
 					x+=1;
 				}
 			}
+			// Otherwise, draw what needs to be drawn in VRAM2_TO_WRITE.
 			else{
-				let len = core.GRAPHICS["VRAM2_TO_WRITE"].length;
+				len = core.GRAPHICS["VRAM2_TO_WRITE"].length;
 				for(i=0; i<len; i+=1){
-					let coord = core.GRAPHICS["VRAM2_TO_WRITE"][i] ;
-					let x     = coord.x  ;
-					let y     = coord.y  ;
-					let id    = coord.id ;
+					coord = core.GRAPHICS["VRAM2_TO_WRITE"][i] ;
+					x     = coord.x  ;
+					y     = coord.y  ;
+					id    = coord.id ;
 
+					// Clear the tile destination first.
 					canvasLayer.clearRect(
 						(x*core.SETTINGS.TILE_WIDTH)  << 0,
 						(y*core.SETTINGS.TILE_HEIGHT) << 0,
@@ -1405,16 +1437,29 @@ core.FUNCS.graphics.update_layer_TEXT   = function(){
 					);
 
 					// Write the tile data to the tempCanvas.
-					canvasLayer.drawImage(
-						core.GRAPHICS.tiles[ activeTileset ][ id ],
-						(x*core.SETTINGS.TILE_WIDTH)  << 0,
-						(y*core.SETTINGS.TILE_HEIGHT) << 0
-					);
+					try{
+						canvasLayer.drawImage(
+							core.GRAPHICS.tiles[ activeTileset ][ id ],
+							(x*core.SETTINGS.TILE_WIDTH)  << 0,
+							(y*core.SETTINGS.TILE_HEIGHT) << 0
+						);
+					}
+					catch(e){
+						console.log(
+							e,
+							"\n"+"canvas:", core.GRAPHICS.tiles[ activeTileset ][ id ],
+							"\n"+"id:", id
+						);
+					}
+
 				}
+
 			}
 
-		core.GRAPHICS["VRAM2_TO_WRITE"]=[];
+			// Reset VRAM2_TO_WRITE since everything has been written.
+			core.GRAPHICS["VRAM2_TO_WRITE"]=[];
 
+			core.GRAPHICS.flags.OUTPUT = true;
 		}
 
 		if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.TEXT.push(performance.now()-drawStart_TEXT);               }
@@ -1629,6 +1674,10 @@ core.FUNCS.graphics.DrawMap2     = function(x, y, map, vram_str){
 	// Set the tiles.
 	for(let dy = 0; dy < mapHeight; dy++){
 		for(let dx = 0; dx < mapWidth; dx++){
+			// This bounds check will force the drawn image to wrap.
+			// if(x+dx >= core.SETTINGS.VRAM_TILES_H){ x=0; }
+			// if(y+dy >= core.SETTINGS.VRAM_TILES_V){ y=0; }
+
 			core.FUNCS.graphics.SetTile(x + dx, y + dy, map[ (dy * mapWidth) + dx + 2 ], vram_str);
 		}
 	}
@@ -2066,35 +2115,18 @@ core.FUNCS.graphics.SetFont = function(fontmap){
 	core.GRAPHICS.fontSettings.fontmap   = core.GRAPHICS.fonts[fontmap]["fontmap"]   ;
 };
 
-// Draws a tilemap but uses the specified w and h to specify the dimensions.
-core.FUNCS.graphics.DrawMap_customDimensions = function(x, y, w, h, map, vram_str){
+// Allows for repeating a tilemap over a larger surface.
+core.FUNCS.graphics.DrawMap_customDimensions = function(sx, sy, nw, nh, map, vram_str){
 	// EXAMPLES:
-	// core.FUNCS.graphics.DrawMap_customDimensions(0, 0, core.SETTINGS.VRAM_TILES_H, 1,                          core.ASSETS.graphics.tilemaps["nums_0_9_wh"], "VRAM2");
-	// core.FUNCS.graphics.DrawMap_customDimensions(0, 0, 1                         , core.SETTINGS.VRAM_TILES_V, core.ASSETS.graphics.tilemaps["nums_0_9_wv"], "VRAM2");
-	// core.FUNCS.graphics.DrawMap_customDimensions(0, 0, core.SETTINGS.VRAM_TILES_H, 1,                          core.ASSETS.graphics.tilemaps["nums_0_9_bh"], "VRAM2");
-	// core.FUNCS.graphics.DrawMap_customDimensions(0, 0, 1                         , core.SETTINGS.VRAM_TILES_V, core.ASSETS.graphics.tilemaps["nums_0_9_bv"], "VRAM2");
-
-	if( vram_str==undefined ){ vram_str='VRAM2'; }
+	// core.FUNCS.graphics.DrawMap_customDimensions(1,1,28,28, vars.tilemaps[ "main_bg_pattern1" ] , "VRAM1");
 
 	let mapWidth  = map[0] ;
 	let mapHeight = map[1] ;
-	let numMapTiles = mapWidth * mapHeight;
 
-	let tilesToDraw = w * h;
-
-	let xpos=0; let ypos=0; let tileid; let reducer; let mults=0;
-	for(let i=0; i<tilesToDraw; i+=1){
-		// Bounds checking.
-		if(x+xpos>=core.SETTINGS.VRAM_TILES_H || x+xpos >= w){ xpos=0; ypos+=1; }
-		if(y+ypos>=core.SETTINGS.VRAM_TILES_V || y+ypos >= h){ return;          }
-
-		// More bounds checking
-		mults = parseInt( i/numMapTiles );
-		let tilecoord = ((ypos * mapWidth) + xpos + 2) - (mults*numMapTiles);
-
-		core.FUNCS.graphics.SetTile(x + xpos, y + ypos, map[ tilecoord ], vram_str);
-
-		xpos+=1;
+	for(let y=0; y<nh; y+=mapHeight){
+		for(let x=0; x<nw; x+=mapWidth){
+			core.FUNCS.graphics.DrawMap2(x+sx, y+sy, map, vram_str);
+		}
 	}
 };
 
