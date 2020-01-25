@@ -1119,13 +1119,15 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 				thisTile = core.GRAPHICS["VRAM1"][i];
 
 				// Is this id one of the tiles with transparencies? Add it to the list.
-				if(core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1){
-					transparentTiles.push(
-						{
-							// "canvas" : core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
-							"tileid" : thisTile ,
-							"x"      : (x*core.SETTINGS.TILE_WIDTH)  << 0,
-							"y"      : (y*core.SETTINGS.TILE_HEIGHT) << 0,
+				if(
+					core.GRAPHICS.trackedTransparentTiles[activeTileset] &&
+					core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1
+				){
+					transparentTiles.push({
+						// "canvas" : core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+						"tileid" : thisTile ,
+						"x"      : (x*core.SETTINGS.TILE_WIDTH)  << 0,
+						"y"      : (y*core.SETTINGS.TILE_HEIGHT) << 0,
 						}
 					);
 				}
@@ -1181,7 +1183,11 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 					previd   = coord.previd ;
 
 					// Is the new tile a tile with transparency? Write the previous tile instead (new tile will be written later. )
-					if(transparentTiles.length && core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1){
+					if(
+						transparentTiles.length &&
+						core.GRAPHICS.trackedTransparentTiles[activeTileset] &&
+						core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1
+					){
 						// Write the previous tile data to the tempCanvas.
 						try{
 							canvasLayer.drawImage(
@@ -1909,7 +1915,7 @@ core.FUNCS.graphics.changeSpriteFlags = function(spriteNum, newFlags){
 	// Redundant.
 	// core.GRAPHICS.flags.SPRITE=true;
 };
-//
+// USED BY: update_layer_SPRITE.
 core.FUNCS.graphics.getSpriteData      = function(thisSprite){
 	// Get local copies of the sprite values and flags.
 	let x           = thisSprite.x         ;
