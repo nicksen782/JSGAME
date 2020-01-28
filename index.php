@@ -254,13 +254,7 @@
 			<button class="hiddenOpacityButtons" id="O_0_025" onclick='opacityAdjust(0.025, this);'>O :: 0.025</button><br>
 			<button class="hiddenOpacityButtons" id="O_0_050" onclick='opacityAdjust(0.050, this);'>O :: 0.050</button><br>
 			<button class="hiddenOpacityButtons" id="O_0_100" onclick='opacityAdjust(0.100, this);'>O :: 0.100</button><br>
-			<br>
-
-			<button class="hiddenOpacityButtons" id="O_0_150" onclick='opacityAdjust(0.150, this);'>O :: 0.150</button><br>
-			<button class="hiddenOpacityButtons" id="O_0_200" onclick='opacityAdjust(0.200, this);'>O :: 0.200</button><br>
 			<button class="hiddenOpacityButtons" id="O_0_250" onclick='opacityAdjust(0.250, this);'>O :: 0.250</button><br>
-			<button class="hiddenOpacityButtons" id="O_0_500" onclick='opacityAdjust(0.500, this);'>O :: 0.500</button><br>
-			<button class="hiddenOpacityButtons" id="O_0_750" onclick='opacityAdjust(0.750, this);'>O :: 0.750</button><br>
 			<br>
 
 			<button class="hiddenOpacityButtons" id="O_1_000" onclick='opacityAdjust(1.000, this);'>O :: 1.000</button><br>

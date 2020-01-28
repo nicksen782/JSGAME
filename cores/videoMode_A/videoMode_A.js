@@ -223,6 +223,9 @@ core.FUNCS.graphics.init = function(){
 				try{
 					if(JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings'] != undefined){
 						JSGAME.PRELOAD.gamesettings_json['BG_alpha']     = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['BG_alpha']     ;
+						if(JSGAME.PRELOAD.PHP_VARS.useBG2){
+							JSGAME.PRELOAD.gamesettings_json['BG2_alpha']    = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['BG2_alpha']    ;
+						}
 						JSGAME.PRELOAD.gamesettings_json['SPRITE_alpha'] = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['SPRITE_alpha'] ;
 						JSGAME.PRELOAD.gamesettings_json['TEXT_alpha']   = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['TEXT_alpha']   ;
 						JSGAME.PRELOAD.gamesettings_json['FADE_alpha']   = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['FADE_alpha']   ;
@@ -236,6 +239,9 @@ core.FUNCS.graphics.init = function(){
 					console.log("WARNING:", e);
 					// Use the default alpha settings.
 					JSGAME.PRELOAD.gamesettings_json['BG_alpha']     = false ;
+					if(JSGAME.PRELOAD.PHP_VARS.useBG2){
+						JSGAME.PRELOAD.gamesettings_json['BG2_alpha']    = true ;
+					}
 					JSGAME.PRELOAD.gamesettings_json['SPRITE_alpha'] = true  ;
 					JSGAME.PRELOAD.gamesettings_json['TEXT_alpha']   = true  ;
 					JSGAME.PRELOAD.gamesettings_json['FADE_alpha']   = false ;
@@ -1126,8 +1132,8 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 				// Write the tile data to the tempCanvas.
 				let rec = tiles[t];
 				let tileid = rec.tileid;
-				let x      = rec.x;
-				let y      = rec.y;
+				let x      = rec.x << 0;
+				let y      = rec.y << 0;
 				canvasLayer.drawImage(core.GRAPHICS.tiles[ activeTileset ][ tileid ], x, y );
 			}
 		};
@@ -1209,8 +1215,8 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 				for(i=0; i<len; i+=1){
 					coord    = core.GRAPHICS["VRAM1_TO_WRITE"][i] ;
 					thisTile = coord.id ;
-					x        = coord.x  ;
-					y        = coord.y  ;
+					x        = coord.x << 0  ;
+					y        = coord.y << 0  ;
 					previd   = coord.previd ;
 
 					// Is the new tile a tile with transparency? Write the previous tile instead (new tile will be written later. )
@@ -1271,66 +1277,117 @@ core.FUNCS.graphics.update_layer_BG     = function(){
 		res();
 	});
 } ;
-// Similar to update_layer_TEXT but with BG tiles. Second layer to BG.
-core.FUNCS.graphics.update_layer_BG2   = function(){
-	return new Promise(function(res,rej){
-		if(!JSGAME.PRELOAD.PHP_VARS.useBG2){ res(); }
+// Read through VRAM3 and update any tiles that have changed.
+core.FUNCS.graphics.update_layer_BG2     = function(){
+	// Very similar to update_layer_BG.
+	// Pre-clears the tile.
+	// Will not draw the transparent tile.
 
+	return new Promise(function(res,rej){
 		let drawStart_BG2;
+		if(JSGAME.FLAGS.debug)       { drawStart_BG2     = performance.now();      core.GRAPHICS.performance.BG2.shift();     }
 
 		let canvasLayer = core.GRAPHICS["ctx"].BG2;
+		let len ;
+		let transparentTiles = [
+			// "tileid" : 0 //
+			// "x"      : 0 //
+			// "y"      : 0 //
+		];
 		let force = core.GRAPHICS.flags.BG2_force;
-		let y = 0 ;
-		let x = 0 ;
+		let y ;
+		let x ;
 		let thisTile;
 		let i;
-		let len;
 		let coord;
-		let id;
+		let previd;
 		let activeTileset = core.GRAPHICS.activeTileset["BG2"];
 		if(!activeTileset){ let str="ERROR: update_layer_BG2: Missing activeTileset!"; rej(str); return; }
 
-		if(JSGAME.FLAGS.debug)       { drawStart_BG2   = performance.now();      core.GRAPHICS.performance.BG2.shift();   }
+		// Draws the tiles that have transparencies. Used AFTER the rest of the tiles have been drawn.
+		let drawTransparentTiles = function(tiles){
+			for(let t=0; t<tiles.length; t+=1){
+				// Write the tile data to the tempCanvas.
+				let rec = tiles[t];
+				let tileid = rec.tileid;
+				let x      = rec.x;
+				let y      = rec.y;
+				canvasLayer.drawImage(core.GRAPHICS.tiles[ activeTileset ][ tileid ], x, y );
+			}
+		};
 
-		if(core.GRAPHICS.flags.BG2 || core.GRAPHICS.flags.BG2_force){
+		// Will this layer have an update?
+		if(core.GRAPHICS.flags.BG2 || core.GRAPHICS.flags.BG2_force) {
+			// Set the OUTPUT flag.
 			core.GRAPHICS.flags.OUTPUT = true;
 
-			// If force then draw EVERYTHING in VRAM2.
+			// STEP 1: Find the transparent tiles in VRAM1.
+			y = 0 ;
+			x = 0 ;
+			len = core.GRAPHICS["VRAM3"].length;
+			for(i=0; i<len; i+=1){
+				// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
+				if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
+				if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
+
+				// Get the tile id at this region of the vram.
+				thisTile = core.GRAPHICS["VRAM3"][i];
+
+				// Is this id one of the tiles with transparencies? Add it to the list.
+				if(
+					core.GRAPHICS.trackedTransparentTiles[activeTileset] &&
+					core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1
+				){
+					transparentTiles.push({
+						// "canvas" : core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+						"tileid" : thisTile ,
+						"x"      : (x*core.SETTINGS.TILE_WIDTH)  << 0,
+						"y"      : (y*core.SETTINGS.TILE_HEIGHT) << 0,
+						}
+					);
+				}
+
+				// Increment x.
+				x+=1;
+			}
+
+			// STEP 2: If force then draw EVERYTHING in VRAM1.
 			if(force){
-				// Go through each vram index.
-				len = core.GRAPHICS["VRAM3"].length;
 				y = 0 ;
 				x = 0 ;
+				len = core.GRAPHICS["VRAM3"].length;
 				for(i=0; i<len; i+=1){
 					// VRAM BOUNDS CHECKING AND ROW INCREMENTING.
 					if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
-					if(y>=core.SETTINGS.VRAM_TILES_V){ return;    }
+					if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
 
 					// Get the tile id at this region of the vram.
-					thisTile      = core.GRAPHICS["VRAM3"][i];
-
-					// Clear the tile destination first.
-					canvasLayer.clearRect(
-						(x*core.SETTINGS.TILE_WIDTH)  << 0,
-						(y*core.SETTINGS.TILE_HEIGHT) << 0,
-						core.SETTINGS.TILE_WIDTH,
-						core.SETTINGS.TILE_HEIGHT
-					);
+					thisTile = core.GRAPHICS["VRAM3"][i];
 
 					// Write the tile data to the tempCanvas.
 					try{
-						canvasLayer.drawImage(
-							core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+						// Clear the tile destination first.
+						canvasLayer.clearRect(
 							(x*core.SETTINGS.TILE_WIDTH)  << 0,
-							(y*core.SETTINGS.TILE_HEIGHT) << 0
+							(y*core.SETTINGS.TILE_HEIGHT) << 0,
+							core.SETTINGS.TILE_WIDTH,
+							core.SETTINGS.TILE_HEIGHT
 						);
+
+						if(thisTile != core.ASSETS.graphics.tilemaps["transparentTile"][2]){
+							canvasLayer.drawImage(
+								core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+								(x*core.SETTINGS.TILE_WIDTH)  << 0,
+								(y*core.SETTINGS.TILE_HEIGHT) << 0
+							);
+						}
 					}
 					catch(e){
 						console.error(
 							e,
 							"\n"+"canvas  :", core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
-							"\n"+"x       :", x << 0,
-							"\n"+"y       :", y << 0,
+							"\n"+"x       :", (x) << 0,
+							"\n"+"y       :", (y) << 0,
 							"\n"+"thisTile:", thisTile
 						);
 					}
@@ -1339,50 +1396,90 @@ core.FUNCS.graphics.update_layer_BG2   = function(){
 					x+=1;
 				}
 			}
-			// Otherwise, draw what needs to be drawn in VRAM2_TO_WRITE.
-			else{
-				len = core.GRAPHICS["VRAM3_TO_WRITE"].length;
+
+			// STEP 3: Now draw what needs to be drawn in VRAM1_TO_WRITE.
+			len = core.GRAPHICS["VRAM3_TO_WRITE"].length;
+			if(len){
 				for(i=0; i<len; i+=1){
-					coord = core.GRAPHICS["VRAM3_TO_WRITE"][i] ;
-					x     = coord.x  ;
-					y     = coord.y  ;
-					id    = coord.id ;
+					coord    = core.GRAPHICS["VRAM3_TO_WRITE"][i] ;
+					thisTile = coord.id ;
+					x        = coord.x << 0  ;
+					y        = coord.y << 0  ;
+					previd   = coord.previd ;
 
-					// Clear the tile destination first.
-					canvasLayer.clearRect(
-						(x*core.SETTINGS.TILE_WIDTH)  << 0,
-						(y*core.SETTINGS.TILE_HEIGHT) << 0,
-						core.SETTINGS.TILE_WIDTH,
-						core.SETTINGS.TILE_HEIGHT
-					);
+					// Is the new tile a tile with transparency? Write the previous tile instead (new tile will be written later. )
+					if(
+						transparentTiles.length &&
+						core.GRAPHICS.trackedTransparentTiles[activeTileset] &&
+						core.GRAPHICS.trackedTransparentTiles[activeTileset].indexOf(thisTile) != -1
+					){
+						// Write the previous tile data to the tempCanvas.
+						try{
+							// Clear the tile destination first.
+							canvasLayer.clearRect(
+								(x*core.SETTINGS.TILE_WIDTH)  << 0,
+								(y*core.SETTINGS.TILE_HEIGHT) << 0,
+								core.SETTINGS.TILE_WIDTH,
+								core.SETTINGS.TILE_HEIGHT
+							);
 
-					// Write the tile data to the tempCanvas.
-					try{
-						canvasLayer.drawImage(
-							core.GRAPHICS.tiles[ activeTileset ][ id ],
-							(x*core.SETTINGS.TILE_WIDTH)  << 0,
-							(y*core.SETTINGS.TILE_HEIGHT) << 0
-						);
+							if(thisTile != core.ASSETS.graphics.tilemaps["transparentTile"][2]){
+								canvasLayer.drawImage(
+									core.GRAPHICS.tiles[ activeTileset ][ previd ],
+									(x*core.SETTINGS.TILE_WIDTH)  << 0,
+									(y*core.SETTINGS.TILE_HEIGHT) << 0
+								);
+							}
+						}
+						catch(e){
+							console.error(
+								e,
+								"\n"+"canvas:", core.GRAPHICS.tiles[ activeTileset ][ previd ],
+								"\n"+"previd:", previd
+							);
+						}
 					}
-					catch(e){
-						console.error(
-							e,
-							"\n"+"canvas:", core.GRAPHICS.tiles[ activeTileset ][ id ],
-							"\n"+"id:", id
-						);
+					// Write the new tile.
+					else{
+						// Write the tile data to the tempCanvas.
+						try{
+							// Clear the tile destination first.
+							canvasLayer.clearRect(
+								(x*core.SETTINGS.TILE_WIDTH)  << 0,
+								(y*core.SETTINGS.TILE_HEIGHT) << 0,
+								core.SETTINGS.TILE_WIDTH,
+								core.SETTINGS.TILE_HEIGHT
+							);
+							if(thisTile != core.ASSETS.graphics.tilemaps["transparentTile"][2]){
+								canvasLayer.drawImage(
+									core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+									(x*core.SETTINGS.TILE_WIDTH)  << 0,
+									(y*core.SETTINGS.TILE_HEIGHT) << 0
+								);
+							}
+						}
+						catch(e){
+							console.error(
+								e,
+								"\n"+"canvas:", core.GRAPHICS.tiles[ activeTileset ][ thisTile ],
+								"\n"+"thisTile:", thisTile
+							);
+						}
 					}
-
 				}
 
 			}
 
-			// Reset VRAM3_TO_WRITE since everything has been written.
+			// STEP 4: Now do the second layer tiles...
+			if(transparentTiles.length){ drawTransparentTiles(transparentTiles); }
+
+			// Reset VRAM1_TO_WRITE since everything has been written.
 			core.GRAPHICS["VRAM3_TO_WRITE"]=[];
 
 			core.GRAPHICS.flags.OUTPUT = true;
 		}
 
-		if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.BG2.push(performance.now()-drawStart_BG2);               }
+		if(JSGAME.FLAGS.debug)       { core.GRAPHICS.performance.BG2.push(performance.now()-drawStart_BG2);                   }
 
 		res();
 	});
@@ -1661,9 +1758,7 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 
 			// Combine the individual layers.
 			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].BG    , 0, 0) ; // BG
-			if(JSGAME.PRELOAD.PHP_VARS.useBG2){
-				tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].BG2   , 0, 0) ; // BG2
-			}
+			if(JSGAME.PRELOAD.PHP_VARS.useBG2){ tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].BG2   , 0, 0) ; } // BG2
 			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].SPRITE, 0, 0) ; // SPRITE
 			tempOutput_ctx.drawImage( core.GRAPHICS["canvas"].TEXT  , 0, 0) ; // TEXT
 
@@ -1780,9 +1875,6 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 		// Indicate that a draw is required for this layer.
 		core.GRAPHICS.flags.BG       = true;
 		core.GRAPHICS.flags.BG_force = true;
-
-		// Force clear the canvas with clearRect.
-		// core.GRAPHICS["ctx"].BG.clearRect(0,0, core.GRAPHICS["canvas"].BG.width, core.GRAPHICS["canvas"].BG.height);
 	}
 	if(vram_str=='VRAM2' || doAll==true){
 		// Clear VRAM2 and VRAM2_TO_WRITE.
@@ -1796,16 +1888,13 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 		// Indicate that a draw is required for this layer.
 		core.GRAPHICS.flags.TEXT       = true;
 		core.GRAPHICS.flags.TEXT_force = true;
-
-		// Force clear the canvas with clearRect.
-		// core.GRAPHICS["ctx"].TEXT.clearRect(0,0, core.GRAPHICS["canvas"].TEXT.width, core.GRAPHICS["canvas"].TEXT.height);
 	}
 	if(vram_str=='VRAM3' || doAll==true){
 		// The transparent tile needs to be defined as a tilemap.
 		let transparentTile;
 		let canContinue=false;
 
-		// Only progress if the transparentTile is defined.
+		// Does the transparentTile map exist?
 		try {
 			transparentTile = core.ASSETS.graphics.tilemaps["transparentTile"][2];
 			canContinue     = true;
@@ -1813,6 +1902,7 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 		}
 		catch { canContinue=false; }
 
+		// Only progress if the transparentTile is defined.
 		if(canContinue){
 			// Clear VRAM3 and VRAM3_TO_WRITE.
 			core.GRAPHICS["VRAM3_TO_WRITE"]=[];
@@ -1825,9 +1915,6 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 			// Indicate that a draw is required for this layer.
 			core.GRAPHICS.flags.BG2       = true;
 			core.GRAPHICS.flags.BG2_force = true;
-
-			// Force clear the canvas with clearRect.
-			// core.GRAPHICS["ctx"].BG2.clearRect(0,0, core.GRAPHICS["canvas"].BG2.width, core.GRAPHICS["canvas"].BG2.height);
 		}
 	}
 

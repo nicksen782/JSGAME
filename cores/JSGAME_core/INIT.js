@@ -119,18 +119,9 @@ JSGAME.INIT={
 		console.log("INIT JS GAME...");
 
 		// Handle errors (centralized.)
-		window.addEventListener('error', function (event) {
-			console.error("GEH: error:", event);
-			event.preventDefault();
-		});
-		window.addEventListener('unhandledrejection', function (event) {
-			console.error("GEH: unhandledrejection:", event);
-			event.preventDefault();
-		});
-		window.addEventListener('rejectionhandled', function (event) {
-			console.error("GEH: rejectionhandled:", event);
-			event.preventDefault();
-		});
+		window.addEventListener('error'             , JSGAME.SHARED.GlobalErrorHandler, false);
+		window.addEventListener('unhandledrejection', JSGAME.SHARED.GlobalErrorHandler, false);
+		window.addEventListener('rejectionhandled'  , JSGAME.SHARED.GlobalErrorHandler, false);
 
 		// Make sure this environment is Little Endian.
 		if(! JSGAME.INIT.endianness.isLittleEndian ){
@@ -141,17 +132,8 @@ JSGAME.INIT={
 		}
 
 		// Prevent certain keys from shifting the window view.
-		window.onkeydown = function(e) {
-			if(e.target==document.body){
-				switch(e.KeyCode){
-					case 32 : { e.preventDefault(); break; } // Space bar.
-					case 37 : { e.preventDefault(); break; } // Left arrow
-					case 38 : { e.preventDefault(); break; } // Up arrow
-					case 39 : { e.preventDefault(); break; } // Right arrow
-					case 40 : { e.preventDefault(); break; } // Down arrow
-				};
-			}
-		};
+		window.onkeydown = JSGAME.SHARED.preventScroll;
+		window.onkeyup   = JSGAME.SHARED.preventScroll;
 
 		// DOM cache.
 		JSGAME.DOM["gameSelector"]          = document.getElementById("gameSelector")         ;

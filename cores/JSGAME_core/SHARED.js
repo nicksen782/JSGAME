@@ -1,6 +1,5 @@
 // These functions can be used by JSGAME, the cores, and the game.
 JSGAME.SHARED={
-
 	// *** PERFORMANCE ***
 
 	// Function for handling time testing.
@@ -334,6 +333,45 @@ JSGAME.SHARED={
 		core.DOM['gameCanvas_DIV'].style.height = new_cont_height + "px" ;
 
 		JSGAME.DOM["canvasScaleSlider"].title=scale;
+	},
+
+	// Global Error Handler
+	GlobalErrorHandler : function(e){
+		let link = event.filename+":"+event.lineno+":"+event.colno;
+		console.error(
+			"GEH:" + event.type,
+			"\n\t -=> message:", event.message,
+			"\n\t -=> link   :", link,
+			"\n\t -=> lineno :", event.lineno,
+			"\n\t -=> colno  :", event.colno,
+			"\n\t -=> syntax :", (e instanceof SyntaxError),
+			// "\n\t EVENT  :", event,
+			""
+		);
+		// Prevent the default actions.
+		event.preventDefault();
+
+		// At this point the game needs to pause so as not to rack up tons of identical errors.
+		JSGAME.FLAGS.paused         = true;
+		JSGAME.FLAGS.manuallyPaused = true;
+		window.cancelAnimationFrame( JSGAME.SHARED.raf_id );
+		JSGAME.SHARED.raf_id=null;
+		JSGAME.DOM["indicator"].classList.add("show");
+		JSGAME.DOM["indicator"].innerText="-- ERROR FOUND--\n-- GAME PAUSED -- ";
+		JSGAME.DOM["indicator"].style["background-color"] = "rgba(255, 69, 0, 0.9)";
+	},
+
+	// Prevent certain keys from shifting the window view.
+	preventScroll : function(e){
+		if(e.target==document.body){
+			switch(e.keyCode){
+				case 32 : { e.preventDefault(); break; } // Space bar.
+				case 37 : { e.preventDefault(); break; } // Left arrow
+				case 38 : { e.preventDefault(); break; } // Up arrow
+				case 39 : { e.preventDefault(); break; } // Right arrow
+				case 40 : { e.preventDefault(); break; } // Down arrow
+			};
+		}
 	},
 
 	// *** INPUT ***
