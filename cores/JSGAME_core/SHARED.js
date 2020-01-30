@@ -336,20 +336,129 @@ JSGAME.SHARED={
 	},
 
 	// Global Error Handler
-	GlobalErrorHandler : function(e){
-		let link = event.filename+":"+event.lineno+":"+event.colno;
-		console.error(
-			"GEH:" + event.type,
-			"\n\t -=> message:", event.message,
-			"\n\t -=> link   :", link,
-			"\n\t -=> lineno :", event.lineno,
-			"\n\t -=> colno  :", event.colno,
-			"\n\t -=> syntax :", (e instanceof SyntaxError),
-			// "\n\t EVENT  :", event,
-			""
-		);
+	// GlobalErrorHandler : function(msg, url, lineNo, columnNo, error){
+	GlobalErrorHandler : function(event, msg, url, lineNo, columnNo, error){
+		// Try to do the normal error output.
+		try{
+			let link = event.filename+":"+event.lineno+":"+event.colno;
+
+			str="";
+			// TOP
+			str+="\n"+"=".repeat(55);
+			str+="\n"+"-".repeat(55);
+			str+="\nGLOBAL ERROR HANDLER: event.type: " + event.type;
+			str+="\n"+"-".repeat(55);
+
+			// ERROR INSTANCEOF
+			if( (event instanceof ErrorEvent    ) ){ str+="\n -=> instanceof : ErrorEvent    "; }
+			if( (event instanceof EvalError     ) ){ str+="\n -=> instanceof : EvalError     "; }
+			if( (event instanceof RangeError    ) ){ str+="\n -=> instanceof : RangeError    "; }
+			if( (event instanceof ReferenceError) ){ str+="\n -=> instanceof : ReferenceError"; }
+			if( (event instanceof SyntaxError   ) ){ str+="\n -=> instanceof : SyntaxError   "; }
+			if( (event instanceof TypeError     ) ){ str+="\n -=> instanceof : TypeError     "; }
+			if( (event instanceof URIError      ) ){ str+="\n -=> instanceof : URIError      "; }
+
+			// MAIN INFO
+			str+="\n -=> message    : " + event.message;
+			str+="\n -=> link       : " + link;
+			str+="\n -=> lineno     : " + event.lineno;
+			str+="\n -=> colno      : " + event.colno;
+
+			// STACK (if available.)
+			if( event.error.stack   ) {
+				str+="\n -=> stack      : ";
+				let arr = event.error.stack.split("\n");
+				let cnt=0;
+				let max_left_len = 0;
+				let stackLines = [];
+
+				// Get the max length for the left part of each line (other than the first.)
+				for(let line of arr){
+					line=line.trim();
+					if(cnt==0){
+						stackLines.push(line);
+					}
+					else{
+						let parts = line.split(" ");
+						if(parts.length==3){
+							// Get max length of left.
+							let left   = parts[0].trim() ; // at
+							let middle = parts[1].trim() ; // function
+							let right  = parts[2].trim() ; // url to fix
+
+							// Remove the "(" and ")" from the right. (first and last chars.)
+							right=right.substring(1, right.length-1);
+
+							let len = left.length + middle.length
+
+							// Update the max length.
+							if(len >= max_left_len){ max_left_len = len; }
+
+							// Recombine the string.
+							stackLines.push(left + " " + middle + "" + "_DELIMITER_"+ right);
+						}
+					}
+					cnt+=1;
+				}
+
+				cnt=0;
+				for(let line of stackLines){
+					line=line.trim();
+					// First line:
+					if(cnt==0){
+						str+="\n\t" + line + "";
+					}
+					// Other lines:
+					else{
+						let parts = line.split("_DELIMITER_");
+						if(parts.length==2){
+							let left  = parts[0];
+							let right = parts[1];
+
+							left = left.padEnd(max_left_len+0, " ");
+
+							str+="\n\t\t" + (left +"\t  "+ right) + "";
+						}
+						else{
+							console.log("parts the wrong length!", parts);
+						}
+					}
+					cnt+=1;
+				}
+
+			}
+			str+="\n\t "+"-".repeat(55-5);
+
+			// BOTTOM
+			str+="\n"+"=".repeat(55);
+			str+="\n";
+
+			console.error( str, event );
+		}
+		// Something above has failed. Provide a generic error output.
+		catch(e){
+			console.error(
+				"\n"+"=".repeat(55),
+				"\n"+"-".repeat(55),
+				"\nGLOBAL ERROR HANDLER: (error in handler)",
+				"\n"+"-".repeat(55),
+				"\n\t -=> EVENT             :", event,
+				"\n\t "+"-".repeat(55-5),
+				"\n\t -=> e                 :", e,
+				"\n\t "+"-".repeat(55-5),
+				"\n"+"=".repeat(55)
+			);
+		}
+
+		// At this point the game needs to pause so as not to rack up tons of identical errors.
+		JSGAME.SHARED.stopGameAndshowErrorNotification();
+
 		// Prevent the default actions.
 		event.preventDefault();
+	},
+
+	stopGameAndshowErrorNotification : function(){
+		console.error("THE GAME WAS STOPPED DUE TO ERROR!");
 
 		// At this point the game needs to pause so as not to rack up tons of identical errors.
 		JSGAME.FLAGS.paused         = true;
@@ -357,8 +466,9 @@ JSGAME.SHARED={
 		window.cancelAnimationFrame( JSGAME.SHARED.raf_id );
 		JSGAME.SHARED.raf_id=null;
 		JSGAME.DOM["indicator"].classList.add("show");
-		JSGAME.DOM["indicator"].innerText="-- ERROR FOUND--\n-- GAME PAUSED -- ";
+		JSGAME.DOM["indicator"].innerText="-- ERROR DETECTED --";
 		JSGAME.DOM["indicator"].style["background-color"] = "rgba(255, 69, 0, 0.9)";
+		// throw "JSGAME.SHARED.stopGameAndshowErrorNotification();";
 	},
 
 	// Prevent certain keys from shifting the window view.

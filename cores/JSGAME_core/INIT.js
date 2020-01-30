@@ -119,9 +119,23 @@ JSGAME.INIT={
 		console.log("INIT JS GAME...");
 
 		// Handle errors (centralized.)
-		window.addEventListener('error'             , JSGAME.SHARED.GlobalErrorHandler, false);
-		window.addEventListener('unhandledrejection', JSGAME.SHARED.GlobalErrorHandler, false);
-		window.addEventListener('rejectionhandled'  , JSGAME.SHARED.GlobalErrorHandler, false);
+		window.addEventListener('error'             , function(event){
+			JSGAME.SHARED.GlobalErrorHandler(event);
+			return false;
+		}, false);
+
+		// window.addEventListener('error'             , JSGAME.SHARED.GlobalErrorHandler, false);
+		// window.addEventListener('unhandledrejection', JSGAME.SHARED.GlobalErrorHandler, false);
+		// window.addEventListener('rejectionhandled'  , JSGAME.SHARED.GlobalErrorHandler, false);
+		// window.onerror = JSGAME.SHARED.GlobalErrorHandler;
+
+		// window.onerror = function (msg, url, lineNo, columnNo, error) {
+		// 	console.log("**********************");
+		// 	JSGAME.SHARED.GlobalErrorHandler({}, msg, url, lineNo, columnNo, error);
+
+		// 	return false;
+		// 	// return true;
+		// }
 
 		// Make sure this environment is Little Endian.
 		if(! JSGAME.INIT.endianness.isLittleEndian ){

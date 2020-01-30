@@ -74,7 +74,12 @@ core.FUNCS.audio.init = function(){
 										res_in();
 
 									},
-									function(err){ console.log("err:", err); rej_in();}
+									function(err){
+										rej_in();
+
+										let str = ["rej_in: ", JSON.stringify(err)];
+										throw Error(str);
+									}
 								)
 							})
 						);
@@ -93,6 +98,9 @@ core.FUNCS.audio.init = function(){
 								console.error("ERROR: Some promises may not have resolved. ", err);
 								JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_soundsSetup_mp3","END");
 								rej_soundsSetup_mp3("REJECTED: soundsSetup_mp3");
+
+								let str = ["rej_soundsSetup_mp3: ", JSON.stringify(err)];
+								throw Error(str);
 							}
 						)
 						.finally(function(){ } )
@@ -239,14 +247,17 @@ core.FUNCS.audio.init = function(){
 								res_load_midi_bin();
 							},
 							function(err){
-								console.log("ERR: parse_midi_bin:", err); rej_load_midi_bin();
+								let str = ["rej_load_midi_bin: ", JSON.stringify(err)];
+								throw Error(str);
 							}
 						)
 						.finally(function(){  });;
 					}
 					,function(err){
-						console.log("ERR: load_midi_bin:", err);
 						rej_load_midi_bin();
+
+						let str = ["rej_load_midi_bin: ", JSON.stringify(err)];
+						throw Error(str);
 					})
 				;
 			});
@@ -349,7 +360,12 @@ core.FUNCS.audio.init = function(){
 						// Resolve the outer Promise.
 						res_setup_tinysynth();
 					}
-					,function(err){ console.log(err); rej_setup_tinysynth(); }
+					,function(err){
+						rej_setup_tinysynth();
+
+						let str = ["rej_setup_tinysynth: ", JSON.stringify(err)];
+						throw Error(str);
+					}
 				);
 			});
 		};
@@ -373,7 +389,10 @@ core.FUNCS.audio.init = function(){
 							function(res){
 								res_soundsSetup_midi("RESOLVED: soundsSetup_midi");
 							},
-							function(err){ }
+							function(err){
+								let str = ["rej_soundsSetup_midi: ", JSON.stringify(err)];
+								throw Error(str);
+							}
 						);
 
 					}
@@ -383,6 +402,9 @@ core.FUNCS.audio.init = function(){
 						console.log("CATCH:", catchErr);
 						rej_soundsSetup_midi("REJECTED: soundsSetup_midi" + ", " + catchErr);
 						JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_soundsSetup_midi_ALL","END");
+
+						let str = ["rej_soundsSetup_midi: ", JSON.stringify(err)];
+						throw Error(str);
 					} )
 					.finally( function(){
 						// console.log("F soundsSetup_midi_ALL");
@@ -407,9 +429,11 @@ core.FUNCS.audio.init = function(){
 			// ,function(err){ console.log("ERROR:", err); audio_init_reject("REJECTED: audio_init"); }
 			)
 			.catch  ( function(catchErr){
-				console.log("CATCH:", catchErr);
 				audio_init_reject("REJECTED: audio_init" + ", " + catchErr);
 				JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_ALL","END");
+
+				let str = ["audio_init_reject: ", JSON.stringify(catchErr)];
+				throw Error(str);
 			} )
 			.finally( function(){
 				// console.log("F SOUND_INIT_ALL");

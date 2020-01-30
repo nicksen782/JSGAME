@@ -107,6 +107,7 @@ core.CONSTS["SPRITE_RAM"]       = 8    ; //             (B 00001000)
 core.CONSTS["SPRITE_BANK0"]     = 0<<6 ; // 0<<6 is 0   (B 00000000)
 core.CONSTS["SPRITE_BANK1"]     = 1<<6 ; // 1<<6 is 64  (B 01000000)
 core.CONSTS["SPRITE_BANK2"]     = 2<<6 ; // 2<<6 is 128 (B 10000000)
+core.CONSTS["SPRITE_BANK3"]     = 3<<6 ; // 3<<6 is 192 (B 11000000)
 
 // Other constants: (
 core.CONSTS["OffscreenCanvas_supported"] ;
@@ -232,7 +233,9 @@ core.FUNCS.graphics.init = function(){
 						JSGAME.PRELOAD.gamesettings_json['OUTPUT_alpha'] = JSGAME.PRELOAD.gamesettings_json['canvas_alphaSettings']['OUTPUT_alpha'] ;
 					}
 					else{
-						throw "canvas_alphaSettings was undefined. Using default values.";
+						let str = ["canvas_alphaSettings was undefined. Using default values. : ", JSON.stringify([])];
+						// console.error(str);
+						throw Error(str);
 					}
 				}
 				catch(e){
@@ -366,7 +369,9 @@ core.FUNCS.graphics.init = function(){
 				}
 				else{
 					// Invalid VRAM size was specified.
-					throw new Error("INVALID VRAM SIZE WAS SPECIFIED.");
+					let str = ["INVALID VRAM SIZE WAS SPECIFIED : ", JSON.stringify([])];
+					// console.error(str);
+					throw Error(str);
 				}
 
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_vramSetup"                        , "END");
@@ -640,7 +645,9 @@ core.FUNCS.graphics.init = function(){
 					// 	return "rgba("+nR+","+nG+","+nB+","+alpha+")";
 					// }
 					else{
-						throw new Error("ERROR: rgb_decode332: UNKNOWN METHOD. " + method);
+						let str = ["ERROR: rgb_decode332: UNKNOWN METHOD. ", JSON.stringify(method)];
+						// console.error(str);
+						throw Error(str);
 					}
 				};
 				// Converts Uzebox tiles to Canvas. Respects transparency if indicated.
@@ -664,9 +671,9 @@ core.FUNCS.graphics.init = function(){
 						len = inputTileset.length / tile_size;
 					}
 					catch(e){
-						console.error( inputTileset, inputTilesetName, newTilesetKey, handleTransparency, outputType  );
-						console.error("ERROR: ", inputTileset, tile_size);
-						throw "ERROR";
+						let str = ["convertUzeboxTilesToCanvasTiles", JSON.stringify([inputTileset]), JSON.stringify([tile_size])];
+						// console.error(str);
+						throw Error(str);
 					}
 					let arr=[];
 					let hasTransparency ;
@@ -814,8 +821,10 @@ core.FUNCS.graphics.init = function(){
 				res_VIDEO_INIT();
 			},
 			function(err){
-				console.error("err:", err);
 				rej_VIDEO_INIT();
+				let str = ["core.FUNCS.graphics.init part 1", JSON.stringify(err)];
+				// console.error(str);
+				throw Error(str);
 			},
 		);
 
@@ -909,7 +918,11 @@ core.FUNCS.graphics.findFlippedTileInCache = function(tilesetname, tileIndex, FL
 	// Check if the cached tile exists. Will throw and exception if it is does exist.
 	try{
 		canvas = core.GRAPHICS.tiles_flipped[tilesetname][tileIndex][flipKey];
-		if(canvas==undefined){ throw ""; }
+		if(canvas==undefined){
+			let str = ["findFlippedTileInCache: Flipped canvas not found.", JSON.stringify([])];
+			// console.error(str);
+			throw Error(str);
+		}
 		// console.log("Cached copy found!", canvas, tilesetname, tileIndex, FLIP_X, FLIP_Y, "flipKey:", flipKey, core.GRAPHICS.tiles_flipped[tilesetname][tileIndex], core.GRAPHICS.tiles_flipped[tilesetname][tileIndex][flipKey]);
 
 		// Return the cached tile.
@@ -1514,11 +1527,6 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 					// Get local copies of the sprite values and flags.
 					thisSprite = core.FUNCS.graphics.getSpriteData( changes.draw[i] );
 
-					// If the tileset name was not available, skip this sprite.
-					if(!thisSprite.tilesetname){
-						continue;
-					}
-
 					// If this sprite is off then clear the sprite's area and skip drawing it.
 					if(thisSprite.SPRITE_OFF){
 						canvasLayer.clearRect(
@@ -1530,62 +1538,84 @@ core.FUNCS.graphics.update_layer_SPRITE = function(){
 						continue;
 					}
 
+					// If the tileset name was not available, skip this sprite.
+					if(!thisSprite.tilesetname){
+						console.log("Missing tileset name (and the sprite was ON.)", thisSprite);
+						continue;
+					}
+
 					// Get the canvas for this tile.
 					spriteTileData = core.GRAPHICS.tiles[ thisSprite.tilesetname ][ thisSprite.tileIndex ];
 
-					// Does the 'spriteTileData' need to be flipped?
-					if(thisSprite.SPRITE_FLIP_X || thisSprite.SPRITE_FLIP_Y){
-						let cachedCanvas = false;
-
-						// Check for a cached copy of this flipped tile.
-						cachedCanvas = core.FUNCS.graphics.findFlippedTileInCache(
-							thisSprite.tilesetname   ,
-							thisSprite.tileIndex     ,
-							thisSprite.SPRITE_FLIP_X ,
-							thisSprite.SPRITE_FLIP_Y
+					// Does the indicated tileIndex exist in the indicated tileset?
+					if(!spriteTileData){
+						console.error(
+							"update_layer_SPRITE: spriteTileData false.",
+							"\n\t"+"spriteTileData:", spriteTileData,
+							"\n\t"+"thisSprite    :", thisSprite,
+							"\n\t"+"c/p           :", "core.GRAPHICS.tiles['"+thisSprite.tilesetname+"']["+thisSprite.tileIndex+"]" ,
+							""
 						);
+						continue;
+					}
+					// The tile is good.
+					else{
+						// Does the 'spriteTileData' need to be flipped?
+						if(thisSprite.SPRITE_FLIP_X || thisSprite.SPRITE_FLIP_Y){
+							let cachedCanvas = false;
 
-						// We got a cache hit? Good, use that instead of flipping the tile again.
-						if(cachedCanvas !== false){
-							spriteTileData=cachedCanvas;
-						}
-						// No cache hit. Flip the tile and then add it to the cache.
-						else{
-							// Flip the tile
-							spriteTileData = core.FUNCS.graphics.flipImage_canvas(
-								spriteTileData                     , // Flip this imageData.
-								(thisSprite.SPRITE_FLIP_X) ? 1 : 0 , // Flip on X?
-								(thisSprite.SPRITE_FLIP_Y) ? 1 : 0   // Flip on Y?
-								);
-
-							// Cache the tile.
-							core.FUNCS.graphics.AddFlippedTileToCache(
+							// Check for a cached copy of this flipped tile.
+							cachedCanvas = core.FUNCS.graphics.findFlippedTileInCache(
 								thisSprite.tilesetname   ,
 								thisSprite.tileIndex     ,
 								thisSprite.SPRITE_FLIP_X ,
-								thisSprite.SPRITE_FLIP_Y ,
-								spriteTileData
+								thisSprite.SPRITE_FLIP_Y
 							);
 
+							// We got a cache hit? Good, use that instead of flipping the tile again.
+							if(cachedCanvas !== false){
+								spriteTileData=cachedCanvas;
+							}
+							// No cache hit. Flip the tile and then add it to the cache.
+							else{
+								// Flip the tile
+								spriteTileData = core.FUNCS.graphics.flipImage_canvas(
+									spriteTileData                     , // Flip this imageData.
+									(thisSprite.SPRITE_FLIP_X) ? 1 : 0 , // Flip on X?
+									(thisSprite.SPRITE_FLIP_Y) ? 1 : 0   // Flip on Y?
+									);
+
+								// Cache the tile.
+								core.FUNCS.graphics.AddFlippedTileToCache(
+									thisSprite.tilesetname   ,
+									thisSprite.tileIndex     ,
+									thisSprite.SPRITE_FLIP_X ,
+									thisSprite.SPRITE_FLIP_Y ,
+									spriteTileData
+								);
+
+							}
 						}
-					}
 
-					// Is this a real tile?
-					if(!spriteTileData){
-						console.error(
-							""  +"canvas:", spriteTileData,
-							"\n"+"x     :", (thisSprite.x) << 0,
-							"\n"+"y     :", (thisSprite.y) << 0
-						);
-					}
+						// Is this a real tile?
+						if(!spriteTileData){
+							console.error(
+								"update_layer_SPRITE: spriteTileData false. (AFTER FLIP)",
+								"\n\t"+"spriteTileData:", spriteTileData,
+								"\n\t"+"thisSprite    :", thisSprite,
+								"\n\t"+"c/p           :", "core.GRAPHICS.tiles['"+thisSprite.tilesetname+"']["+thisSprite.tileIndex+"]" ,
+								""
+							);
+						}
+						else{
+							// Draw the tile.
+							canvasLayer.drawImage(
+								spriteTileData,
+								(thisSprite.x) << 0,
+								(thisSprite.y) << 0
+							);
+						}
 
-					// Draw the tile.
-					else{
-						canvasLayer.drawImage(
-							spriteTileData,
-							(thisSprite.x) << 0,
-							(thisSprite.y) << 0
-						);
 					}
 				}
 
@@ -1784,11 +1814,11 @@ core.FUNCS.graphics.update_layer_OUTPUT = function(){
 					core.GRAPHICS["ctx"].OUTPUT.drawImage(tempOutput,0,0); // OUTPUT
 					COMPLETED();
 				},
-				function(err){ console.error("ERR:", err); }
+				function(err){
+					let str = ["update_layer_OUTPUT: ", JSON.stringify(err)];
+					throw Error(str);
+				}
 			)
-			.catch(function(c1){ console.error("ERROR:", c1); })
-			;
-
 		}
 		else{
 			COMPLETED();
@@ -1821,17 +1851,31 @@ core.FUNCS.graphics.update_allLayers    = function(){
 		proms.push(core.FUNCS.graphics.update_layer_BG2() );    // BG layer 2
 	}
 
+	// Wait for the promises to resolve and then...
 	Promise.all(proms).then(
+		// Success? Write the OUTPUT layer.
 		function(){
 			core.FUNCS.graphics.update_layer_OUTPUT().then(
+				// Success? Clear INLAYERUPDATE.
 				function(){
 					// Allowing another game loop.
 					core.GRAPHICS.flags.INLAYERUPDATE=false;
 				},
-				function(err){ console.error("ERR:", err);  }
+				// Failure? Throw error.
+				function(err){
+					let str = ["ERR: update_allLayers: failed in update_layer_OUTPUT: ", JSON.stringify(err)];
+					// console.error(str);
+					throw Error(str);
+				}
 			);
 		},
-		function(err){ console.error("ERR:", err); },
+		// Failure of at least one promise in the array? Throw error.
+		function(err){
+			let str = ["ERR: update_allLayers: failed promise in layer draws: ", JSON.stringify(err)];
+			// console.error(str);
+			throw Error(str);
+
+		},
 	);
 
 };
@@ -1850,7 +1894,11 @@ core.FUNCS.graphics.SetTileTable = function(tileset, layer){
 		// Indicate that a background draw is needed for that layer.
 		core.GRAPHICS.flags[layer]         = true;
 	}
-	else                                                        { throw new Error('INVALID TILE TABLE NAME! '  + tileset); }
+	else                                                        {
+		let str = ["INVALID TILE TABLE NAME! : ", JSON.stringify(tileset)];
+		// console.error(str);
+		throw Error(str);
+	}
 
 };
 // Sets all values in the specified VRAM to 0.
@@ -1898,7 +1946,11 @@ core.FUNCS.graphics.ClearVram    = function(vram_str){
 		try {
 			transparentTile = core.ASSETS.graphics.tilemaps["transparentTile"][2];
 			canContinue     = true;
-			if(!JSGAME.PRELOAD.PHP_VARS.useBG2){ throw "useBG2 was false."; }
+			if(!JSGAME.PRELOAD.PHP_VARS.useBG2){
+				let str = ["useBG2 was false : ", JSON.stringify([])];
+				// console.error(str);
+				throw Error(str);
+			}
 		}
 		catch { canContinue=false; }
 
@@ -2068,7 +2120,9 @@ core.FUNCS.graphics.SetSpritesTileBank = function(bank, tileset){
 		core.GRAPHICS.spritebanks[bank] = tileset;
 	}
 	else{
-		throw new Error('INVALID TILE TABLE NAME! ' + tileset);
+		let str = ["INVALID TILE TABLE NAME! : ", JSON.stringify(tileset)];
+		// console.error(str);
+		throw Error(str);
 	}
 
 	// Indicate that a sprite draw is needed.
@@ -2219,36 +2273,67 @@ core.FUNCS.graphics.getSpriteData      = function(thisSprite){
 
 	// Determine what the sprite flags have been set to.
 	let SPRITE_RAM        = (core.CONSTS["SPRITE_RAM"]   & flags) == core.CONSTS["SPRITE_RAM"]   ? 1 : 0 ;
-	let SPRITE_BANK0      = (core.CONSTS["SPRITE_BANK0"] & flags) == core.CONSTS["SPRITE_BANK0"] ? 1 : 0 ;
-	let SPRITE_BANK1      = (core.CONSTS["SPRITE_BANK1"] & flags) == core.CONSTS["SPRITE_BANK1"] ? 1 : 0 ;
-	let SPRITE_BANK2      = (core.CONSTS["SPRITE_BANK2"] & flags) == core.CONSTS["SPRITE_BANK2"] ? 1 : 0 ;
-	let SPRITE_BANK3      = (core.CONSTS["SPRITE_BANK3"] & flags) == core.CONSTS["SPRITE_BANK3"] ? 1 : 0 ;
 
-	// Determine the sprite bank in use for this sprite.
-	let tilesetname;
+	// Determine the sprite bank in use for this sprite. (Start with the highest value first.)
+	let tilesetname="";
+
+	// Get the flags for the active sprite bank.
+	let SPRITE_BANK0 = ( (0b11000000 & flags) ) == core.CONSTS["SPRITE_BANK0"] ; // 0b11000000 is the bitmask for the bank bits.
+	let SPRITE_BANK1 = ( (0b11000000 & flags) ) == core.CONSTS["SPRITE_BANK1"] ; // 0b11000000 is the bitmask for the bank bits.
+	let SPRITE_BANK2 = ( (0b11000000 & flags) ) == core.CONSTS["SPRITE_BANK2"] ; // 0b11000000 is the bitmask for the bank bits.
+	let SPRITE_BANK3 = ( (0b11000000 & flags) ) == core.CONSTS["SPRITE_BANK3"] ; // 0b11000000 is the bitmask for the bank bits.
+
+	// Based on which sprite bank was true, set the tileset name for this sprite.
 	if     ( SPRITE_BANK0 ){ tilesetname = core.GRAPHICS.spritebanks[0] ; }
 	else if( SPRITE_BANK1 ){ tilesetname = core.GRAPHICS.spritebanks[1] ; }
 	else if( SPRITE_BANK2 ){ tilesetname = core.GRAPHICS.spritebanks[2] ; }
 	else if( SPRITE_BANK3 ){ tilesetname = core.GRAPHICS.spritebanks[3] ; }
-	else                   { tilesetname = ""; }
 
 	// Return the data as an object.
-	return {
-		tilesetname   : tilesetname   ,
-		SPRITE_RAM    : SPRITE_RAM    ,
-		SPRITE_OFF    : SPRITE_OFF    ,
-		SPRITE_FLIP_X : SPRITE_FLIP_X ,
-		SPRITE_FLIP_Y : SPRITE_FLIP_Y ,
-		x             : x             ,
-		y             : y             ,
-		tileIndex     : tileIndex     ,
-		flags         : flags         ,
+	let output = {
+		"tilesetname"   : tilesetname   ,
+		"x"             : x             ,
+		"y"             : y             ,
+		"tileIndex"     : tileIndex     ,
+		"flags"         : flags         ,
+
+		"SPRITE_RAM"    : SPRITE_RAM    ,
+		"SPRITE_OFF"    : SPRITE_OFF    ,
+		"SPRITE_FLIP_X" : SPRITE_FLIP_X ,
+		"SPRITE_FLIP_Y" : SPRITE_FLIP_Y ,
+
+		// "_DEBUG_fullFlags" : {
+		// 	"_FLAGS_BINARY" : flags.toString(2).padStart(8, "0"),
+		// 	"_tilesetname"   : tilesetname   ,
+		// 	"_x"             : x             ,
+		// 	"_y"             : y             ,
+		// 	"_tileIndex"     : tileIndex     ,
+		// 	"_flags"         : flags         ,
+		// 	"SPRITE_OFF"    : SPRITE_OFF    ,
+		// 	"SPRITE_FLIP_X" : SPRITE_FLIP_X ,
+		// 	"SPRITE_FLIP_Y" : SPRITE_FLIP_Y ,
+		// 	"SPRITE_RAM"    : SPRITE_RAM    ,
+		// 	"SPRITE_BANK3"  : SPRITE_BANK3  ,
+		// 	"SPRITE_BANK2"  : SPRITE_BANK2  ,
+		// 	"SPRITE_BANK1"  : SPRITE_BANK1  ,
+		// 	"SPRITE_BANK0"  : SPRITE_BANK0  ,
+		// },
 	};
+
+	// console.log(output.tilesetname, output.tileIndex, output._DEBUG_fullFlags);
+
+	return output;
 };
 // Flips a canvas on X and/or Y.
 core.FUNCS.graphics.flipImage_canvas   = function (srcCanvas, flipH, flipV) {
 	// Accepts a canvas, creates a new temp canvas to do the flip then returns the new canvas.
 	// Originally based on work from: yong: http://jsfiddle.net/yong/ZJQX5/
+
+	// Test to make sure a srcCanvas is there.
+	if(undefined == srcCanvas){
+		console.log("srcCanvas was undefined.", srcCanvas);
+		return srcCanvas;
+	}
 
 	// Create temporary canvas to match the srcCanvas.
 	let destCanvas = document.createElement("canvas");
