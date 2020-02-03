@@ -433,7 +433,20 @@ JSGAME.SHARED={
 			str+="\n"+"=".repeat(55);
 			str+="\n";
 
-			console.error( str, event );
+			// MAIN ERROR
+			console.error(
+				"\nPARSED ERROR:\n", str,
+				"\nevent       :\n", event
+			);
+
+			// Additional information that may have been added by the game.
+			if(game && game.extraDataForGlobalErrorHandler){
+				console.error(
+					"EXTRA DATA FROM THE GAME:\n",
+					game.extraDataForGlobalErrorHandler()
+				);
+			}
+
 		}
 		// Something above has failed. Provide a generic error output.
 		catch(e){
@@ -458,7 +471,7 @@ JSGAME.SHARED={
 	},
 
 	stopGameAndshowErrorNotification : function(){
-		console.error("THE GAME WAS STOPPED DUE TO ERROR!");
+		console.error("\nTHE GAME WAS STOPPED DUE TO ERROR!");
 
 		// At this point the game needs to pause so as not to rack up tons of identical errors.
 		JSGAME.FLAGS.paused         = true;

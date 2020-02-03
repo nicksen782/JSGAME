@@ -2084,18 +2084,34 @@ core.FUNCS.graphics.vramRegionToTilemap   = function(startx, starty, w, h, vram_
 // *** SPRITE update functions. ***
 
 // Clears the core.GRAPHICS.sprites array.
+core.FUNCS.graphics.clearSprite        = function(spriteNum){
+	// NOTE: This does NOT remove the sprite tile from the canvas.
+
+	// Set the sprite to defaults and SPRITE_OFF.
+	core.GRAPHICS.sprites[spriteNum] = {
+		"x"         : 0                         ,
+		"y"         : 0                         ,
+		"tileIndex" : 0                         ,
+		"flags"     : core.CONSTS["SPRITE_OFF"] ,
+		"hash"      : "CLEARED"
+	}
+
+	// Set the force draw flag on the sprites.
+	core.GRAPHICS.flags.SPRITE = true ;
+	// core.GRAPHICS.flags.SPRITE_force = true ;
+
+	// Clear the canvas layer for sprites.
+	// if(core.GRAPHICS["ctx"].SPRITE){
+	// 	core.GRAPHICS["ctx"].SPRITE.clearRect(0, 0, core.GRAPHICS["ctx"].SPRITE.canvas.width, core.GRAPHICS["ctx"].SPRITE.canvas.height);
+	// }
+};
+// Clears the core.GRAPHICS.sprites array.
 core.FUNCS.graphics.clearSprites       = function(){
 	// Set all existing sprites to be SPRITE_OFF.
 	// core.GRAPHICS.sprites=[];
 	let len = core.GRAPHICS.sprites.length;
 	for(let i=0; i<len; i+=1){
-		core.GRAPHICS.sprites[i] = {
-			"x"         : 0                         ,
-			"y"         : 0                         ,
-			"tileIndex" : 0                         ,
-			"flags"     : core.CONSTS["SPRITE_OFF"] ,
-			"hash"      : ""
-		}
+		core.FUNCS.graphics.clearSprite(i);
 	}
 
 	// Blank out sprites_prev.
@@ -2197,7 +2213,7 @@ core.FUNCS.graphics.MapSprite2         = function(startSprite, map, spriteFlags)
 			"y"         : 0 ,
 			"tileIndex" : 0 ,
 			"flags"     : 0 ,
-			"hash"      : "",
+			"hash"      : "INIT",
 		};
 	}
 
@@ -2301,24 +2317,26 @@ core.FUNCS.graphics.getSpriteData      = function(thisSprite){
 		"SPRITE_OFF"    : SPRITE_OFF    ,
 		"SPRITE_FLIP_X" : SPRITE_FLIP_X ,
 		"SPRITE_FLIP_Y" : SPRITE_FLIP_Y ,
-
-		// "_DEBUG_fullFlags" : {
-		// 	"_FLAGS_BINARY" : flags.toString(2).padStart(8, "0"),
-		// 	"_tilesetname"   : tilesetname   ,
-		// 	"_x"             : x             ,
-		// 	"_y"             : y             ,
-		// 	"_tileIndex"     : tileIndex     ,
-		// 	"_flags"         : flags         ,
-		// 	"SPRITE_OFF"    : SPRITE_OFF    ,
-		// 	"SPRITE_FLIP_X" : SPRITE_FLIP_X ,
-		// 	"SPRITE_FLIP_Y" : SPRITE_FLIP_Y ,
-		// 	"SPRITE_RAM"    : SPRITE_RAM    ,
-		// 	"SPRITE_BANK3"  : SPRITE_BANK3  ,
-		// 	"SPRITE_BANK2"  : SPRITE_BANK2  ,
-		// 	"SPRITE_BANK1"  : SPRITE_BANK1  ,
-		// 	"SPRITE_BANK0"  : SPRITE_BANK0  ,
-		// },
 	};
+
+	if(JSGAME.FLAGS.debug){
+		output["_DEBUG_fullFlags"] = {
+			"_FLAGS_BINARY" : flags.toString(2).padStart(8, "0"),
+			"_tilesetname"   : tilesetname   ,
+			"_x"             : x             ,
+			"_y"             : y             ,
+			"_tileIndex"     : tileIndex     ,
+			"_flags"         : flags         ,
+			"SPRITE_OFF"    : SPRITE_OFF    ,
+			"SPRITE_FLIP_X" : SPRITE_FLIP_X ,
+			"SPRITE_FLIP_Y" : SPRITE_FLIP_Y ,
+			"SPRITE_RAM"    : SPRITE_RAM    ,
+			"SPRITE_BANK0"  : SPRITE_BANK0  ,
+			"SPRITE_BANK1"  : SPRITE_BANK1  ,
+			"SPRITE_BANK2"  : SPRITE_BANK2  ,
+			"SPRITE_BANK3"  : SPRITE_BANK3  ,
+		};
+	}
 
 	// console.log(output.tilesetname, output.tileIndex, output._DEBUG_fullFlags);
 
