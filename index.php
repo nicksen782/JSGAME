@@ -323,6 +323,8 @@
 			FUNCS      : {} , // Populated by video/audio kernels.
 			EXTERNAL   : {} , // The game can add to this. The cores determine the default contents.
 		};
+		core.FUNCS.graphics = {};
+
 		var game={};
 
 		JSGAME.PRELOAD.PHP_VARS = {

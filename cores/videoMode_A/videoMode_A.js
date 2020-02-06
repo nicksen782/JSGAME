@@ -960,6 +960,7 @@ core.FUNCS.graphics.update_sprites_prev    = function(){
 			"tileIndex" : tileIndex ,
 			"x"         : x         ,
 			"y"         : y         ,
+			"spriteNum" : i         ,
 		}
 	}
 };
@@ -989,8 +990,8 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 	// Any sprite set to clear will have any sprites that may have overlapped the same region drawn again.
 
 	// Detect a change in curr vs prev.
-	let curr_hashes = core.GRAPHICS.sprites     .map((d) => {return d.hash; });
-	let prev_hashes = core.GRAPHICS.sprites_prev.map((d) => {return d.hash; });
+	let curr_hashes = core.GRAPHICS.sprites     .map( (d) => { return d.hash; } );
+	let prev_hashes = core.GRAPHICS.sprites_prev.map( (d) => { return d.hash; } );
 
 	// Add data to this. Will be returned at function end.
 	let retval = {
@@ -1010,6 +1011,7 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 				"tileIndex" : core.GRAPHICS.sprites_prev[i].tileIndex ,
 				"x"         : core.GRAPHICS.sprites_prev[i].x << 0    ,
 				"y"         : core.GRAPHICS.sprites_prev[i].y << 0    ,
+				"spriteNum" : core.GRAPHICS.sprites_prev[i].spriteNum ,
 			} );
 		}
 
@@ -1024,7 +1026,8 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 					"y"         : 0                         ,
 					"tileIndex" : 0                         ,
 					"flags"     : core.CONSTS["SPRITE_OFF"] ,
-					"hash"      : ""
+					"hash"      : "",
+					"spriteNum" : i ,
 				}
 				// console.error("value was null at:", i);
 			}
@@ -1035,6 +1038,7 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 				"tileIndex" : core.GRAPHICS.sprites[i].tileIndex ,
 				"x"         : core.GRAPHICS.sprites[i].x << 0    ,
 				"y"         : core.GRAPHICS.sprites[i].y << 0    ,
+				"spriteNum" : core.GRAPHICS.sprites[i].spriteNum ,
 			} );
 		}
 
@@ -1056,6 +1060,7 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 					"tileIndex" : core.GRAPHICS.sprites_prev[i].tileIndex ,
 					"x"         : core.GRAPHICS.sprites_prev[i].x << 0    ,
 					"y"         : core.GRAPHICS.sprites_prev[i].y << 0    ,
+					"spriteNum" : core.GRAPHICS.sprites_prev[i].spriteNum ,
 				} );
 
 				// Check if this previous sprite was at least partially overlapping a current sprite.
@@ -1082,6 +1087,7 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 							"tileIndex" : core.GRAPHICS.sprites[ii].tileIndex ,
 							"x"         : core.GRAPHICS.sprites[ii].x << 0    ,
 							"y"         : core.GRAPHICS.sprites[ii].y << 0    ,
+							"spriteNum" : core.GRAPHICS.sprites[ii].spriteNum ,
 						} );
 
 						// Add to the overlapped array. Make sure not to draw this one twice.
@@ -1098,6 +1104,7 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 						"tileIndex" : core.GRAPHICS.sprites[i].tileIndex ,
 						"x"         : core.GRAPHICS.sprites[i].x << 0    ,
 						"y"         : core.GRAPHICS.sprites[i].y << 0    ,
+						"spriteNum" : core.GRAPHICS.sprites[i].spriteNum ,
 					} );
 				}
 			}
@@ -1107,9 +1114,11 @@ core.FUNCS.graphics.getSpriteChanges       = function(){
 
 			retval.changeDetected = true;
 		}
-		// let s=peformance.now();
-		// console.log(performance.now()-s);
 	}
+
+	// Re-order the retval.draw. Lower spriteNums first.
+	retval.clear.sort((a, b) => a.spriteNum - b.spriteNum);
+	retval.draw .sort((a, b) => a.spriteNum - b.spriteNum);
 
 	return retval;
 }
@@ -2093,7 +2102,8 @@ core.FUNCS.graphics.clearSprite        = function(spriteNum){
 		"y"         : 0                         ,
 		"tileIndex" : 0                         ,
 		"flags"     : core.CONSTS["SPRITE_OFF"] ,
-		"hash"      : "CLEARED"
+		"hash"      : "CLEARED",
+		"spriteNum" : spriteNum
 	}
 
 	// Set the force draw flag on the sprites.
@@ -2155,17 +2165,20 @@ core.FUNCS.graphics.hashSprite         = function(obj){
 		toReturn =  "X:"         + (obj.x         .toString()) + "_" +
 					"Y:"         + (obj.y         .toString()) + "_" +
 					"TILEINDEX:" + (obj.tileIndex .toString()) + "_" +
-					"FLAGS:"     + (obj.flags     .toString())
+					"FLAGS:"     + (obj.flags     .toString()) + "_" +
+					"SPRITENUM:" + (obj.spriteNum .toString())
 		;
 	}
+
 	// Error somewhere.
 	catch(e){
-		console.error("ERROR: hashSprite: ", e, obj);
 		toReturn =  "X:"         + (obj.x         + '') + "_" +
 					"Y:"         + (obj.y         + '') + "_" +
 					"TILEINDEX:" + (obj.tileIndex + '') + "_" +
-					"FLAGS:"     + (obj.flags     + '')
+					"FLAGS:"     + (obj.flags     + '') + "_" +
+					"SPRITENUM:" + (obj.spriteNum + '')
 		;
+		console.error("ERROR: hashSprite: ", e, obj);
 	}
 
 	return toReturn ;
@@ -2214,6 +2227,7 @@ core.FUNCS.graphics.MapSprite2         = function(startSprite, map, spriteFlags)
 			"tileIndex" : 0 ,
 			"flags"     : 0 ,
 			"hash"      : "INIT",
+			"spriteNum" : startSprite+i
 		};
 	}
 

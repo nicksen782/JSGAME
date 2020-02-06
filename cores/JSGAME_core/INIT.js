@@ -244,7 +244,7 @@ JSGAME.INIT={
 		// *** DOM init (event listeners, etc.) ***
 
 		// If the volume change function is available then show the volume controls.
-		if(core.FUNCS.audio.changeMasterVolume){
+		if(core.FUNCS.audio && core.FUNCS.audio.changeMasterVolume){
 			JSGAME.DOM["masterVolumeSlider_td1"].classList.remove("hide");
 			JSGAME.DOM["masterVolumeSlider_td2"].classList.remove("hide");
 
