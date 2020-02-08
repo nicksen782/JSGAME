@@ -108,6 +108,7 @@
 				<div id="gameCanvas_DIV">
 					<!-- INDICATOR -->
 					<div id="indicator"></div>
+					<div id="indicator_extraText"></div>
 				</div>
 
 			</div>

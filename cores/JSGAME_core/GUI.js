@@ -223,6 +223,7 @@ JSGAME.GUI={
 					JSGAME.FLAGS.windowIsFocused = true;
 					JSGAME.FLAGS.paused=false;
 					JSGAME.DOM["indicator"].classList.remove("show");
+					JSGAME.DOM["indicator_extraText"].classList.remove("show");
 					JSGAME.DOM["indicator"].innerText="";
 					game.gameloop();
 				}, 500);
@@ -238,6 +239,7 @@ JSGAME.GUI={
 				JSGAME.FLAGS.windowIsFocused = false;
 				JSGAME.FLAGS.paused=true;
 				JSGAME.DOM["indicator"].classList.add("show");
+				JSGAME.DOM["indicator_extraText"].classList.remove("show");
 				JSGAME.DOM["indicator"].innerText="PAUSED";
 				let title = document.title.replace(/\(P\) /g, "");
 				document.title = "(P) " + title;
@@ -260,6 +262,7 @@ JSGAME.GUI={
 			JSGAME.SHARED.raf_id=null;
 
 			JSGAME.DOM["indicator"].classList.add("show");
+			JSGAME.DOM["indicator_extraText"].classList.remove("show");
 			JSGAME.DOM["indicator"].innerText="PAUSED";
 
 			// if( app.GUI.settings.debug ){
@@ -273,6 +276,7 @@ JSGAME.GUI={
 			JSGAME.FLAGS.manuallyPaused = false;
 
 			JSGAME.DOM["indicator"].classList.remove("show");
+			JSGAME.DOM["indicator_extraText"].classList.remove("show");
 			JSGAME.DOM["indicator"].innerText="";
 
 			// Run the normal gameloop.

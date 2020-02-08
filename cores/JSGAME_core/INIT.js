@@ -236,6 +236,7 @@ JSGAME.INIT={
 
 		JSGAME.DOM["gameCanvas_DIV"]         = document.getElementById  ("gameCanvas_DIV");
 		JSGAME.DOM["indicator"]              = document.getElementById  ("indicator");
+		JSGAME.DOM["indicator_extraText"]    = document.getElementById  ("indicator_extraText");
 
 		JSGAME.DOM["btn_toggleGamepads"]     = document.getElementById  ("btn_toggleGamepads");
 		JSGAME.DOM["btn_togglePause"]        = document.getElementById  ("btn_togglePause");

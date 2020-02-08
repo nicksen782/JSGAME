@@ -338,6 +338,8 @@ JSGAME.SHARED={
 	// Global Error Handler
 	// GlobalErrorHandler : function(msg, url, lineNo, columnNo, error){
 	GlobalErrorHandler : function(event, msg, url, lineNo, columnNo, error){
+		let extraText="NOTE: View the dev console for more detail.";
+
 		// Try to do the normal error output.
 		try{
 			let link = event.filename+":"+event.lineno+":"+event.colno;
@@ -426,6 +428,16 @@ JSGAME.SHARED={
 					cnt+=1;
 				}
 
+				// Add text to display on the screen?
+				if(stackLines[0]){
+					// Get the first line.
+					try     { extraText=stackLines[0].split("=E=")[1].trim(); }
+					catch(e){ extraText=stackLines[0].trim(); }
+
+					// Shorten the first line.
+					let maxLen=450;
+					if(extraText.length>maxLen){ extraText = extraText.substring(0, maxLen-16) + " ... (truncated)"; }
+				}
 			}
 			str+="\n\t "+"-".repeat(55-5);
 
@@ -446,7 +458,6 @@ JSGAME.SHARED={
 					game.extraDataForGlobalErrorHandler()
 				);
 			}
-
 		}
 		// Something above has failed. Provide a generic error output.
 		catch(e){
@@ -461,16 +472,17 @@ JSGAME.SHARED={
 				"\n\t "+"-".repeat(55-5),
 				"\n"+"=".repeat(55)
 			);
+			// extraText="";
 		}
 
 		// At this point the game needs to pause so as not to rack up tons of identical errors.
-		JSGAME.SHARED.stopGameAndshowErrorNotification();
+		JSGAME.SHARED.stopGameAndshowErrorNotification(extraText);
 
 		// Prevent the default actions.
 		event.preventDefault();
 	},
 
-	stopGameAndshowErrorNotification : function(){
+	stopGameAndshowErrorNotification : function(extraText){
 		console.error("\nTHE GAME WAS STOPPED DUE TO ERROR!");
 
 		// At this point the game needs to pause so as not to rack up tons of identical errors.
@@ -480,8 +492,11 @@ JSGAME.SHARED={
 		JSGAME.SHARED.raf_id=null;
 		JSGAME.DOM["indicator"].classList.add("show");
 		JSGAME.DOM["indicator"].innerText="-- ERROR DETECTED --";
+		if(extraText){
+			JSGAME.DOM["indicator_extraText"].classList.add("show");
+			JSGAME.DOM["indicator_extraText"].innerText=""+""+extraText;
+		}
 		JSGAME.DOM["indicator"].style["background-color"] = "rgba(255, 69, 0, 0.9)";
-		// throw "JSGAME.SHARED.stopGameAndshowErrorNotification();";
 	},
 
 	// Prevent certain keys from shifting the window view.

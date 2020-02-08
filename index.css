@@ -213,6 +213,21 @@ div#siteContainerDiv {
 	display: block;
 }
 
+#indicator_extraText{
+	display: none;
+	background-color: rgba(227, 230, 0, 0.75);
+	border: 2px dashed black;
+	padding: 5px;
+	position: absolute;
+	bottom: 0%;
+	left: 50%;
+	transform: translate(-50%, 0%);
+	z-index: 106;
+	width: 95%;
+	font-size: 18px;
+}
+#indicator_extraText.show{ display: block; }
+
 .oneLineVH_center {
 	background-color: rgba(255, 69, 0, 0.75);
 	border: 4px dotted black;
