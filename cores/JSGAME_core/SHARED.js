@@ -1,3 +1,7 @@
+// ===============================
+// ==== FILE START: SHARED.js ====
+// ===============================
+
 // These functions can be used by JSGAME, the cores, and the game.
 JSGAME.SHARED={
 	// *** PERFORMANCE ***
@@ -323,26 +327,137 @@ JSGAME.SHARED={
 
 	// Changes the dimensions of the containing DIV for the game canvas (Canvas has CSS dims at 100%.)
 	canvasResize : function(scale){
+		// Get the dimensions of the canvas.
 		let canvas_width  = core.GRAPHICS.canvas.OUTPUT.width  ;
 		let canvas_height = core.GRAPHICS.canvas.OUTPUT.height ;
 
-		let new_cont_width  = canvas_width  * scale ;
-		let new_cont_height = canvas_height * scale ;
+		// Scale those dimensions.
+		let new_cont_width  = (canvas_width  * scale) << 0 ;
+		let new_cont_height = (canvas_height * scale) << 0 ;
 
+		// Set the new dimensions to the container.
 		core.DOM['gameCanvas_DIV'].style.width  = new_cont_width  + "px" ;
 		core.DOM['gameCanvas_DIV'].style.height = new_cont_height + "px" ;
 
+		// Set the new dimensions to the container.
+		// JSGAME.DOM["mainCenter"].style.width  = new_cont_width  + "px" ;
+		// JSGAME.DOM["mainCenter"].style.height = new_cont_height + "px" ;
+
+		// Adjust the hover title on the scale slider.
 		JSGAME.DOM["canvasScaleSlider"].title=scale;
 	},
 
+	// Uses the canvas to establish aspect ratio, resizes the gameCanvas_DIV to fit mainCenter.
+	canvasResize_autofit : function(){
+		let dims1 = {
+			"siteContainerDiv" : JSGAME.DOM["siteContainerDiv"].getBoundingClientRect() ,
+			"topBar"           : JSGAME.DOM["topBar"]          .getBoundingClientRect() ,
+			"mainCenter"       : JSGAME.DOM["mainCenter"]      .getBoundingClientRect() ,
+			"botBar"           : JSGAME.DOM["botBar"]          .getBoundingClientRect() ,
+		};
+
+		let dimsA = window.getComputedStyle(JSGAME.DOM["siteContainerDiv"], null) ;
+		let dimsB = window.getComputedStyle(JSGAME.DOM["topBar"]          , null) ;
+		let dimsC = window.getComputedStyle(JSGAME.DOM["mainCenter"]      , null) ;
+		let dimsD = window.getComputedStyle(JSGAME.DOM["botBar"]          , null) ;
+
+		let test = {
+			"siteContainerDiv" : { width:parseInt(dimsA.width,10), height:parseInt(dimsA.height,10) } ,
+			"topBar"           : { width:parseInt(dimsB.width,10), height:parseInt(dimsB.height,10) } ,
+			"mainCenter"       : { width:parseInt(dimsC.width,10), height:parseInt(dimsC.height,10) } ,
+			"botBar"           : { width:parseInt(dimsD.width,10), height:parseInt(dimsD.height,10) } ,
+
+		};
+
+		let total_w = (dims1.siteContainerDiv.width) << 0;
+
+		let total_h = (dims1.siteContainerDiv.height) << 0;
+		total_h -= (dims1.topBar.height) << 0;
+		total_h -= (dims1.botBar.height) << 0;
+
+		let size = Math.min(total_w, total_h);
+
+		// Get the dimensions of the canvas.
+		let canvas_width  = core.GRAPHICS.canvas.OUTPUT.width  ;
+		let canvas_height = core.GRAPHICS.canvas.OUTPUT.height ;
+
+		// Scale those dimensions.
+		let new_cont_width  = ((canvas_width * size) / canvas_height ) << 0;
+		let new_cont_height = (size )                                  << 0;
+
+		let reduced_new_cont_width  = ( (new_cont_width)  - (new_cont_width *0.05) ) << 0;
+		let reduced_new_cont_height = ( (new_cont_height) - (new_cont_height*0.05) ) << 0;
+
+		// Set the new dimensions to the container.
+		core.DOM['gameCanvas_DIV'].style.width  = reduced_new_cont_width  + "px" ;
+		core.DOM['gameCanvas_DIV'].style.height = reduced_new_cont_height + "px" ;
+	},
+
+	//
+	autoAdjustVerticalCenter : function(){
+		if(!JSGAME.FLAGS.autoAdjustVerticalCenter_throttled){
+			// Set the "throttled" flag.
+			JSGAME.FLAGS.autoAdjustVerticalCenter_throttled = true;
+
+			// Set a timeout to clear the "throttled" flag.
+			setTimeout(function() { JSGAME.FLAGS.autoAdjustVerticalCenter_throttled = false; }, 500);
+
+			// Is there a vertical scroll bar?
+			let hasVScroll=window.innerHeight < document.body.clientHeight;
+
+			// Remove vertical centering.
+			if(hasVScroll){
+				document.body.classList.remove("verticalCenter");
+			}
+			// Add vertical centering.
+			else{
+				document.body.classList.add("verticalCenter");
+			}
+		}
+	},
+
+	// Shows or hides the document based on mouseenter/mouseleave and the hidden setting.
+	toggleDocumentHidden : function(e){
+		// Get the event type.
+		let type = e.type;
+
+		// Get a DOM handle to the hidden_mode checkbox.
+		let hidden_mode = JSGAME.DOM["hidden_mode"];
+
+		// Act only if the checkbox is checked.
+		if(hidden_mode.checked){
+			if     (type=="mouseleave"){ document.body.style.visibility="hidden"; }
+			else if(type=="mouseenter"){ document.body.style.visibility="visible"; }
+		}
+	},
+
+	// Global Error Handler - listener function.
+	listenerFunction(event){
+		console.log("event.type:", event.type);
+		if(!JSGAME.FLAGS.errorThrown_stopReporting){
+			JSGAME.SHARED.GlobalErrorHandler(event);
+			JSGAME.FLAGS.errorThrown_stopReporting=true;
+		}
+		return false;
+	},
+
 	// Global Error Handler
-	// GlobalErrorHandler : function(msg, url, lineNo, columnNo, error){
 	GlobalErrorHandler : function(event, msg, url, lineNo, columnNo, error){
+		// console.log(
+		// 	"\n event   :", event    ,
+		// 	"\n msg     :", msg      ,
+		// 	"\n url     :", url      ,
+		// 	"\n lineNo  :", lineNo   ,
+		// 	"\n columnNo:", columnNo ,
+		// 	"\n error   :", error    ,
+		// 	""
+		// );
+
 		let extraText="NOTE: View the dev console for more detail.";
 
 		// Try to do the normal error output.
 		try{
-			let link = event.filename+":"+event.lineno+":"+event.colno;
+			let link = (event.filename || "")+":"+(event.lineno || "")+":"+(event.colno || "");
 
 			str="";
 			// TOP
@@ -361,15 +476,20 @@ JSGAME.SHARED={
 			if( (event instanceof URIError      ) ){ str+="\n -=> instanceof : URIError      "; }
 
 			// MAIN INFO
-			str+="\n -=> message    : " + event.message;
-			str+="\n -=> link       : " + link;
-			str+="\n -=> lineno     : " + event.lineno;
-			str+="\n -=> colno      : " + event.colno;
+			if(event.message){ str+="\n -=> message    : " + event.message; } else { str+="\n -=> message    : " + "<UNAVAILABLE>"; }
+			if(link.length>5){ str+="\n -=> link       : " + link;          } else { str+="\n -=> link       : " + "<UNAVAILABLE>"; }
+			if(event.lineno) { str+="\n -=> lineno     : " + event.lineno;  } else { str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }
+			if(event.colno)  { str+="\n -=> colno      : " + event.colno;   } else { str+="\n -=> colno      : " + "<UNAVAILABLE>"; }
 
 			// STACK (if available.)
-			if( event.error.stack   ) {
+			let stack;
+			if     ( event && event.error && event.error.stack ) { stack = event.error.stack; }
+			else if( event && event.reason && event.reason.stack ) { stack = event.reason.stack;  }
+			else{ console.error(".stack was not available."); }
+
+			if( stack ) {
 				str+="\n -=> stack      : ";
-				let arr = event.error.stack.split("\n");
+				let arr = stack.split("\n");
 				let cnt=0;
 				let max_left_len = 0;
 				let stackLines = [];
@@ -525,9 +645,9 @@ JSGAME.SHARED={
 		if(arrayRef==undefined){ console.log("ERROR: getUserInputs: arrayRef was not defined."); return; }
 
 		// Output the button state to the DOM if the gamepad config panel is open.
-		if(JSGAME.DOM["panel_config_gamepads"].classList.contains("show")){
+		// if(JSGAME.DOM["panel_config_gamepads"].classList.contains("show")){
 			//
-		}
+		// }
 
 		// Gamepads?
 		JSGAME.GAMEPADS.handleInputs();
@@ -611,3 +731,7 @@ JSGAME.SHARED={
 	// This is the highest volume allowed.
 	masterVolume : 75 ,
 };
+
+// =============================
+// ==== FILE END: SHARED.js ====
+// =============================

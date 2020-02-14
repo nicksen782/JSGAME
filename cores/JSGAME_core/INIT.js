@@ -1,6 +1,6 @@
-var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-							window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
-var cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+// =============================
+// ==== FILE START: INIT.js ====
+// =============================
 
 //
 JSGAME.INIT={
@@ -119,15 +119,9 @@ JSGAME.INIT={
 		console.log("INIT JS GAME...");
 
 		// Handle errors (centralized.)
-		window.addEventListener('error'             , function(event){
-			JSGAME.SHARED.GlobalErrorHandler(event);
-			return false;
-		}, false);
-
-		// window.addEventListener('error'             , JSGAME.SHARED.GlobalErrorHandler, false);
-		// window.addEventListener('unhandledrejection', JSGAME.SHARED.GlobalErrorHandler, false);
-		// window.addEventListener('rejectionhandled'  , JSGAME.SHARED.GlobalErrorHandler, false);
-		// window.onerror = JSGAME.SHARED.GlobalErrorHandler;
+		window.addEventListener('error'              , JSGAME.SHARED.listenerFunction, false);
+		window.addEventListener('unhandledrejection' , JSGAME.SHARED.listenerFunction, false);
+		// window.addEventListener('rejectionhandled'   , JSGAME.SHARED.listenerFunction, false);
 
 		// window.onerror = function (msg, url, lineNo, columnNo, error) {
 		// 	console.log("**********************");
@@ -149,18 +143,55 @@ JSGAME.INIT={
 		window.onkeydown = JSGAME.SHARED.preventScroll;
 		window.onkeyup   = JSGAME.SHARED.preventScroll;
 
+		// Handle window resizing.
+		window.onresize  = JSGAME.SHARED.autoAdjustVerticalCenter() ;
+		JSGAME.SHARED.autoAdjustVerticalCenter();
+
+		// Handle hidden mode.
+		document.onmouseleave=JSGAME.SHARED.toggleDocumentHidden;
+		document.onmouseenter=JSGAME.SHARED.toggleDocumentHidden;
+
 		// DOM cache.
 		JSGAME.DOM["gameSelector"]          = document.getElementById("gameSelector")         ;
 		JSGAME.DOM["gameControls"]          = document.getElementById("gameControls")         ;
 		JSGAME.DOM["gameControls_br"]       = document.getElementById("gameControls_br")      ;
-		JSGAME.DOM["siteContainerDiv"]      = document.getElementById("siteContainerDiv")     ;
+
+		JSGAME.DOM["siteContainerDiv"]      = document.getElementById("siteContainerDiv1")    ;
+		JSGAME.DOM["mainCenter"]            = document.getElementById("mainCenter")           ;
+		JSGAME.DOM["topBar"]            = document.getElementById("topBar")           ;
+		JSGAME.DOM["botBar"]            = document.getElementById("botBar")           ;
+
 		JSGAME.DOM["sideDiv"]               = document.getElementById("sideDiv")              ;
 		JSGAME.DOM["debug_mode"]            = document.getElementById("debug_mode")           ;
+		JSGAME.DOM["hidden_mode"]           = document.getElementById("hidden_mode")          ;
 		JSGAME.DOM["panel_config_gamepads"] = document.getElementById("panel_config_gamepads");
 
+		// DOM cache.
+		JSGAME.DOM["gamepads"]               = document.querySelectorAll("#gameControls .gamepad");
+		JSGAME.DOM["gamepads_svg"]           = document.querySelectorAll("#gameControls .gamepad svg");
+
+		JSGAME.DOM["masterVolumeSlider_row"] = document.getElementById  ("masterVolumeSlider_row");
+		JSGAME.DOM["masterVolumeSlider"]     = document.getElementById  ("masterVolumeSlider");
+
+		JSGAME.DOM["canvasScaleSlider_row"]  = document.getElementById  ("canvasScaleSlider_row");
+		JSGAME.DOM["canvasScaleSlider"]      = document.getElementById  ("canvasScaleSlider");
+
+		JSGAME.DOM["gameCanvas_DIV"]         = document.getElementById  ("gameCanvas_DIV");
+		JSGAME.DOM["indicator"]              = document.getElementById  ("indicator");
+		JSGAME.DOM["indicator_extraText"]    = document.getElementById  ("indicator_extraText");
+
+		JSGAME.DOM["btn_toggleGamepads"]     = document.getElementById  ("btn_toggleGamepads");
+		JSGAME.DOM["btn_togglePause"]        = document.getElementById  ("btn_togglePause");
+		JSGAME.DOM["btn_toggleFullscreen"]   = document.getElementById  ("btn_toggleFullscreen");
+
 		if(JSGAME.DOM["debug_mode"].checked){
-			let debug_navButtons = document.getElementById("debug_navButtons");
-			debug_navButtons.classList.remove("hidden");
+			// try{
+			// 	let debug_navButtons = document.getElementById("debug_navButtons");
+			// 	debug_navButtons.classList.remove("hidden");
+			// }
+			// catch(e){
+			// 	console.log( "debug_navButtons not found!" );
+			// }
 		}
 
 		// Set the available buttons/keys.
@@ -224,30 +255,11 @@ JSGAME.INIT={
 		JSGAME.consts["BTN_SL"]        = 1024 ; // BTN_SL     decimal: 1024, binary: 0000010000000000, HEX: 0x0400, bitWise:  1 << 10
 		JSGAME.consts["BTN_SR"]        = 2048 ; // BTN_SR     decimal: 2048, binary: 0000100000000000, HEX: 0x0800, bitWise:  1 << 11
 
-		// DOM cache.
-		JSGAME.DOM["gamepads"]               = document.querySelectorAll("#gameControls .gamepad");
-		JSGAME.DOM["gamepads_svg"]           = document.querySelectorAll("#gameControls .gamepad svg");
-
-		JSGAME.DOM["masterVolumeSlider_td1"] = document.getElementById  ("masterVolumeSlider_td1");
-		JSGAME.DOM["masterVolumeSlider_td2"] = document.getElementById  ("masterVolumeSlider_td2");
-
-		JSGAME.DOM["masterVolumeSlider"]     = document.getElementById  ("masterVolumeSlider");
-		JSGAME.DOM["canvasScaleSlider"]      = document.getElementById  ("canvasScaleSlider");
-
-		JSGAME.DOM["gameCanvas_DIV"]         = document.getElementById  ("gameCanvas_DIV");
-		JSGAME.DOM["indicator"]              = document.getElementById  ("indicator");
-		JSGAME.DOM["indicator_extraText"]    = document.getElementById  ("indicator_extraText");
-
-		JSGAME.DOM["btn_toggleGamepads"]     = document.getElementById  ("btn_toggleGamepads");
-		JSGAME.DOM["btn_togglePause"]        = document.getElementById  ("btn_togglePause");
-		JSGAME.DOM["btn_toggleFullscreen"]   = document.getElementById  ("btn_toggleFullscreen");
-
 		// *** DOM init (event listeners, etc.) ***
 
 		// If the volume change function is available then show the volume controls.
 		if(core.FUNCS.audio && core.FUNCS.audio.changeMasterVolume){
-			JSGAME.DOM["masterVolumeSlider_td1"].classList.remove("hide");
-			JSGAME.DOM["masterVolumeSlider_td2"].classList.remove("hide");
+			JSGAME.DOM["masterVolumeSlider_row"].classList.remove("hide");
 
 			JSGAME.DOM["masterVolumeSlider"].addEventListener("input", function(){
 				core.FUNCS.audio.changeMasterVolume(this.value);
@@ -255,8 +267,7 @@ JSGAME.INIT={
 		}
 		// Otherwise hide the volume controls.
 		else{
-			JSGAME.DOM["masterVolumeSlider_td1"].classList.add("hide");
-			JSGAME.DOM["masterVolumeSlider_td2"].classList.add("hide");
+			JSGAME.DOM["masterVolumeSlider_row"].classList.add("hide");
 		}
 
 		// Configure the canvas resize slider.
@@ -372,3 +383,7 @@ JSGAME.INIT={
 	},
 
 };
+
+// ===========================
+// ==== FILE END: INIT.js ====
+// ===========================

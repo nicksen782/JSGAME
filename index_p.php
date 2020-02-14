@@ -113,6 +113,7 @@ function combineFiles_typeByKey($keys){
 
 	// Add JSGAME core files.
 	if($get_jsgame){
+		// array_push($filesToGet, $_appdir . "/cores/JSGAME_core/PRESETUP.js"   );
 		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/FLAGS.js"   );
 		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/SHARED.js"  );
 		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/DOM.js"     );
@@ -231,6 +232,10 @@ function init(){
 	if($qs['debug']=="true"){ $debug=true;  }
 	else                    { $debug=false; }
 
+	// Was the hidden key set? (Hidden is off by default.)
+	if($qs['hidden']=="true"){ $hidden=true;  }
+	else                     { $hidden=false; }
+
 	// Was the gamepads key set? (Gamepads are off by default.)
 	if( isset($qs['gamepads']) ){ $gamepads = $qs['gamepads']=="true" ? true : false; }
 	else                        { $gamepads=false; }
@@ -250,6 +255,7 @@ function init(){
 			$combine['a']   = $qs['combine']['a']   ? 1 : 0; $qs['combine']['a']   = $combine['a']   ;
 			$combine['gjs'] = $qs['combine']['gjs'] ? 1 : 0; $qs['combine']['gjs'] = $combine['gjs'] ;
 			$outputText .= ""."JSGAME.PRELOAD_PRE_COMBINE_TYPE0 = 'DEBUG, COMBINE USED IF/AS INDICATED.';\n";
+
 		}
 		else{
 			// Set combine. Set qs.
@@ -286,7 +292,8 @@ function init(){
 	// These values will be copied to JavaScript. (There will be more.)
 	$PHP_VARS["queryString"]  = $qs                   ; // The query string provided.
 	$PHP_VARS['gamename']     = $qs['game']           ;
-	$PHP_VARS['debug']        = $debug ? true : false ;
+	$PHP_VARS['debug']        = $debug  ? true : false ;
+	$PHP_VARS['hidden']       = $hidden ? true : false ;
 	$PHP_VARS['combine']      = $combine              ;
 
 	// ***************************************
@@ -316,6 +323,7 @@ function init(){
 
 	// Was the gamelist.json file found? Get it and json_decode it.
 	if( file_exists ($gamelistjson_file) )   {
+
 		// Set the flag indicating the gamelist.json file was found.
 		$PHP_VARS['gamelist_json']=true;
 
@@ -612,7 +620,15 @@ function init(){
 	$outputText .= "\n";
 
 	// Include the PRESETUP.JS
-	$outputText .= file_get_contents("cores/JSGAME_core/PRESETUP.js");
+	$PRESETUP = file_get_contents("cores/JSGAME_core/PRESETUP.js");
+
+	// Include the PRE_INIT.JS
+	$PRE_INIT = file_get_contents("cores/JSGAME_core/PRE_INIT.js");
+
+	$outputText = $PRE_INIT . $PRESETUP . $outputText;
+
+	// $outputText = file_get_contents("cores/JSGAME_core/PRESETUP.js") . $outputText;
+	// $outputText = file_get_contents("cores/JSGAME_core/PRE_INIT.js") . $outputText;
 
 	//
 	$outputText .= "\n";
@@ -621,7 +637,7 @@ function init(){
 	if($outputText_errors != ""){
 		$outputText .= "\n\n// ERRORS: \n";
 		$outputText .= "/*\n";
-		$outputText .= ($outputText_errors);
+		$outputText .= trim($outputText_errors);
 		$outputText .= "\n*/\n\n";
 		$outputText .= 'console.log("ERRORS:");' . "\n";
 		$outputText .= 'console.log('.json_encode(($outputText_errors)) . ')';

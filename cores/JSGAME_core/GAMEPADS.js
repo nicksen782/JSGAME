@@ -1,3 +1,7 @@
+// =================================
+// ==== FILE START: GAMEPADS.js ====
+// =================================
+
 JSGAME.GAMEPADS = {
 	// *** CONFIG MENU FUNCTIONS ***
 
@@ -421,25 +425,27 @@ JSGAME.GAMEPADS = {
 			if(JSGAME.GAMEPADS.CONFIG.initDone){ return ; }
 
 			// Init the DOM CACHE.
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status = document.getElementById("gp_blinker1_status");
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status = document.getElementById("gp_blinker2_status");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status       = document.getElementById("gp_blinker1_status");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status       = document.getElementById("gp_blinker2_status");
 
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.panel_config_gamepads = document.getElementById("panel_config_gamepads");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.panel_config_gamepads    = document.getElementById("panel_config_gamepads");
 
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.askForConnection = document.getElementById("gamepad_askForConnection");
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.ConnectionFound  = document.getElementById("gamepad_ConnectionFound");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.askForConnection         = document.getElementById("gamepad_askForConnection");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.ConnectionFound          = document.getElementById("gamepad_ConnectionFound");
 
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepad_buttonStatus1  = document.getElementById("gamepad_buttonStatus1");
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepad_buttonStatus2  = document.getElementById("gamepad_buttonStatus2");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepad_buttonStatus1    = document.getElementById("gamepad_buttonStatus1");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepad_buttonStatus2    = document.getElementById("gamepad_buttonStatus2");
 
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_buttonConfig1  = document.getElementById("gamepads_buttonConfig1");
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_buttonConfig2  = document.getElementById("gamepads_buttonConfig2");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_buttonConfig1   = document.getElementById("gamepads_buttonConfig1");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_buttonConfig2   = document.getElementById("gamepads_buttonConfig2");
 
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepadIcon_container_p1  = document.getElementById("gamepadIcon_container_p1");
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepadIcon_container_p2  = document.getElementById("gamepadIcon_container_p2");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepadIcon_container_p1 = document.getElementById("gamepadIcon_container_p1");
+			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepadIcon_container_p2 = document.getElementById("gamepadIcon_container_p2");
 
 			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_gp1_all  = document.getElementById("gamepads_gp1_all");
 			JSGAME.GAMEPADS.CONFIG.DOM_elems.gamepads_gp2_all  = document.getElementById("gamepads_gp2_all");
+
+			// console.log( "JSGAME.GAMEPADS.CONFIG.DOM_elems:", JSGAME.GAMEPADS.CONFIG.DOM_elems);
 
 			function createTable(padNum){
 				let btn_strings = [
@@ -663,6 +669,7 @@ JSGAME.GAMEPADS = {
 		// INIT: USE JUST ONCE AND DESTROY.
 		// JSGAME.GAMEPADS.init
 		init          : function(){
+			// return;
 			// Bail if there is not gamepad support.
 			if(!JSGAME.FLAGS.support_gamepadAPI){ return; }
 
@@ -1339,3 +1346,7 @@ JSGAME.GAMEPADS = {
 	},
 
 };
+
+// ===============================
+// ==== FILE END: GAMEPADS.js ====
+// ===============================

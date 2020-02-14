@@ -655,7 +655,7 @@ core.FUNCS.graphics.init = function(){
 					let curTileId;
 					let vramdata_rgb_332;
 					let tile_width = core.SETTINGS['TILE_WIDTH'];
-					let tile_height = core.SETTINGS['TILE_WIDTH'];
+					let tile_height = core.SETTINGS['TILE_HEIGHT'];
 					let tile_size = tile_width * tile_height;
 					let buf8;
 					let buf32;

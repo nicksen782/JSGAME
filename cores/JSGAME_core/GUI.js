@@ -1,3 +1,7 @@
+// ============================
+// ==== FILE START: GUI.js ====
+// ============================
+
 JSGAME.GUI={
 	// *** GUI NAV ***
 
@@ -32,8 +36,19 @@ JSGAME.GUI={
 		for(let i=0; i<debug_navButtons.length; i+=1){
 			if(debug_navButtons[i].getAttribute("panel")==panel_id){
 				JSGAME.GUI.showPanel(panel_id, debug_navButtons[i]);
+				// return;
+				// break;
 			}
 		}
+
+		// let debug_navButtons = document.querySelectorAll('.panels');
+		// for(let i=0; i<debug_navButtons.length; i+=1){
+		// 	if(debug_navButtons[i].getAttribute("panel")==panel_id){
+		// 		JSGAME.GUI.showPanel(panel_id, debug_navButtons[i]);
+		// 		return;
+		// 		// break;
+		// 	}
+		// }
 	},
 	// Hide all panels and deselect the debug buttons.
 	hidePanels : function(){
@@ -103,6 +118,9 @@ JSGAME.GUI={
 			// Make sure the inline_block class is applied to the site container.
 			JSGAME.DOM["siteContainerDiv"].classList.add("inline_block");
 
+			// Remove the vertical alignment of the body.
+			// document.body.classList.remove("verticalCenter");
+
 			// Show the game controls.
 			JSGAME.DOM["gameControls"].classList.remove("hide");
 
@@ -114,6 +132,9 @@ JSGAME.GUI={
 		else         {
 			// Do we remove the inline_block class from the site container?
 			if(!DEBUG_DIV){ JSGAME.DOM["siteContainerDiv"].classList.remove("inline_block"); }
+
+			// Add the vertical alignment of the body.
+			// document.body.classList.add("verticalCenter");
 
 			// Hide the game controls.
 			JSGAME.DOM["gameControls"].classList.add("hide");
@@ -288,38 +309,68 @@ JSGAME.GUI={
 
 	// Toggles full screen.
 	togglefullscreen    : function(){
-		let canvas;
+		let elem;
 
 		// Choose the output canvas to display fullscreen. If it is not available then use the gameCanvas_DIV.
 		try{
-			canvas = core.GRAPHICS.canvas.OUTPUT;
-			if(!canvas){ canvas = core.DOM['gameCanvas_DIV']; }
+			elem = JSGAME.DOM["siteContainerDiv"];
+			// elem = core.DOM['gameCanvas_DIV'];
+			// elem = core.GRAPHICS.canvas.OUTPUT;
+			if(!elem){ elem = core.DOM['gameCanvas_DIV']; }
 		}
-		catch(e){ canvas = core.DOM['gameCanvas_DIV']; }
+		catch(e){ elem = core.DOM['gameCanvas_DIV']; }
 
 		// Go to fullscreen.
 		if(!(
 			   document.fullscreen              // Chrome
 			|| document.fullscreenElement       // Chrome
 			|| document.webkitFullscreenElement // Chrome
-			|| window  .fullScreen              // Firefox
-			|| document.mozFullScreenElement    // Firefox
 			|| document.msFullscreenElement     // Edge/IE
+			|| document.mozFullScreenElement    // Firefox
+			|| window  .fullScreen              // Firefox
 		))
 		{
-			if      (canvas.requestFullscreen      ) { canvas.requestFullscreen();       } // Standard
-			else if (canvas.webkitRequestFullscreen) { canvas.webkitRequestFullscreen(); } // Chrome
-			else if (canvas.mozRequestFullScreen   ) { canvas.mozRequestFullScreen();    } // Firefox
-			else if (canvas.msRequestFullscreen    ) { canvas.msRequestFullscreen();     } // IE11
+			let prom_res=function(res){
+				setTimeout(function(){
+					console.log("full screen complete. Now running autofit.")
+					JSGAME.SHARED.canvasResize_autofit();
+				},500);
+			};
+			let prom_err=function(err){
+				let str = ["=E= togglefullscreen: (to full).", JSON.stringify(err)];
+				console.error("str:", str, "\n err:", err);
+				throw Error(str);
+			};
+
+			if      (elem.requestFullscreen      ) { elem.requestFullscreen()      .then( prom_res, prom_err );       ; } // Standard
+			else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen().then( prom_res, prom_err ); ; } // Chrome
+			else if (elem.mozRequestFullScreen   ) { elem.mozRequestFullScreen()   .then( prom_res, prom_err );    ; } // Firefox
+			else if (elem.msRequestFullscreen    ) { elem.msRequestFullscreen()    .then( prom_res, prom_err );     ; } // IE11
 		}
 
 		// Exit fullscreen.
 		else{
-			if     (document.exitFullscreen     )  {document.exitFullscreen();       } // Standard
-			else if(document.webkitExitFullscreen) {document.webkitExitFullscreen(); } // Chrome
-			else if(document.mozCancelFullScreen)  {document.mozCancelFullScreen();  } // Firefox
-			else if(document.msExitFullscreen)     {document.msExitFullscreen();     } // IE11
+			let prom_res=function(res){
+				setTimeout(function(){
+					console.log("full screen complete. Now returning canvas scale.")
+					JSGAME.SHARED.canvasResize( JSGAME.DOM["canvasScaleSlider"].value );
+				},500);
+			};
+			let prom_err=function(err){
+				let str = ["=E= togglefullscreen: (from full).", JSON.stringify(err)];
+				console.error("str:", str, "\n err:", err);
+				throw Error(str);
+			};
+
+			if     (document.exitFullscreen     )  { document.exitFullscreen()      .then( prom_res, prom_err ); } // Standard
+			else if(document.webkitExitFullscreen) { document.webkitExitFullscreen().then( prom_res, prom_err ); } // Chrome
+			else if(document.mozCancelFullScreen)  { document.mozCancelFullScreen() .then( prom_res, prom_err ); } // Firefox
+			else if(document.msExitFullscreen)     { document.msExitFullscreen()    .then( prom_res, prom_err ); } // IE11
 		}
 	},
 
 };
+
+// ==========================
+// ==== FILE END: GUI.js ====
+// ==========================

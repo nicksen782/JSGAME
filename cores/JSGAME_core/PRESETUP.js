@@ -1,3 +1,7 @@
+// =================================
+// ==== FILE START: PRESETUP.js ====
+// =================================
+
 window.onload=function(){
 	window.onload=null;
 
@@ -66,12 +70,31 @@ window.onload=function(){
 	let jsgamefiles      = JSGAME.PRELOAD.PHP_VARS.jsgamefiles      ;
 	let gamename         = JSGAME.PRELOAD.PHP_VARS.gamename         ;
 	let debug            = JSGAME.PRELOAD.PHP_VARS.debug            ;
+	let hidden           = JSGAME.PRELOAD.PHP_VARS.hidden           ;
 	let gamepads         = JSGAME.PRELOAD.PHP_VARS.gamepads         ;
 
 	let proms = [];
 	let presetup_div = document.getElementById("presetup_div");
-	let debug_mode = document.getElementById("debug_mode");
-	debug_mode.checked= debug ? true : false;
+
+	let debug_mode   = document.getElementById("debug_mode");
+	debug_mode.checked  = debug  ? true : false;
+
+	// Handle the default hidden mode state if applicable.
+	let hidden_mode  = document.getElementById("hidden_mode");
+	hidden_mode.checked = hidden ? true : false;
+	if(hidden_mode.checked){ document.body.style.visibility="hidden"; }
+	else                   { document.body.style.visibility="visible"; }
+
+	// Listener on the debug_mode checkbox row.
+	debug_mode.closest(".navrow").addEventListener("click", function(){
+		debug_mode.checked = !debug_mode.checked;
+		debug_mode.dispatchEvent( new Event('change') );
+	}, false);
+
+	// Listener on the hidden_mode checkbox row.
+	hidden_mode.closest(".navrow").addEventListener("click", function(){
+		hidden_mode.checked = !hidden_mode.checked;
+	}, false);
 
 	// Add games to the game select menu.
 	let gameSelector     = document.getElementById("gameSelector");
@@ -92,7 +115,13 @@ window.onload=function(){
 		option.setAttribute("gamedesc",rec.gamedesc         );
 
 		// Does this option match the game?
-		if( rec.header_gameChoice == gamename){ option.selected = true; }
+		if( rec.header_gameChoice == gamename){
+			option.selected = true;
+
+			let topBar_line1_gamename = document.getElementById("topBar_line1_gamename") ;
+			topBar_line1_gamename.innerText=rec.gamename;
+			topBar_line1_gamename.setAttribute("author", "Author: "+rec.author);
+		}
 
 		frag.appendChild(option);
 	}
@@ -100,29 +129,58 @@ window.onload=function(){
 
 	// Add links.
 	if(gamename){
-		let gameinfolinks    = document.getElementById("gameinfolinks");
+		let gameinfolinks    = document.getElementById("gamelinks");
 		frag = document.createDocumentFragment();
 		for(let i=0; i<JSGAME.PRELOAD.PHP_VARS.links.length; i+=1){
+			// Get a handle to this record.
 			let rec = JSGAME.PRELOAD.PHP_VARS.links[i];
-			let link = document.createElement("a");
-			let span = document.createElement("span");
-			span.innerText   = " "            ;
-			link.innerText   = "["+rec.text+"]"            ;
-			link.setAttribute("target",rec.target)     ;
 
-			// Relative path to the game dir?
+			// Set the description text.
+			let targetText;
+			if(rec.target == "_blank"){ targetText = "(Opens in new tab)" ; }
+			else                      { targetText = "(Opens in "+rec.target+" tab)" ; }
+
+			// Create the row.
+			let navrow_div       = document.createElement("div");
+			navrow_div.classList.add("navrow");
+			navrow_div.setAttribute("target",rec.target) ;
+			navrow_div.setAttribute("href",rec.href)     ;
+			// navrow_div.setAttribute("text",rec.text)     ;
+			navrow_div.onclick=function(){
+				let href   = this.getAttribute("href");
+				let target = this.getAttribute("target");
+				console.log(href, target);
+				window.open(href, target);
+			}
+
+			// Create the left column (title)
+			let navrow_left_div  = document.createElement("div");
+			navrow_left_div.classList.add("navrow_left");
+			navrow_left_div.innerText=rec.text;
+
+			// Create the right column (description)
+			let navrow_right_div = document.createElement("div");
+			navrow_right_div.classList.add("navrow_right");
+
+			// Edit "href" link. Relative path to the game dir?
 			if(rec.href.indexOf("://") == -1){
-				link.setAttribute("href",(relative_gamedir +"/"+ rec.href)) ;
+				navrow_div.setAttribute("href",(relative_gamedir +"/"+ rec.href)) ;
+				navrow_right_div.innerText=targetText;
 			}
-			// Absolute path?
-			else{
-				link.setAttribute("href",rec.href) ;
+			// Edit "href" link. Absolute path?
+			else                             {
+				navrow_div.setAttribute("href",rec.href) ;
+				navrow_right_div.innerText=targetText;
 			}
 
-			frag.appendChild(link);
-			frag.appendChild(span);
+			// Add the left and right to the row and then the row to the frag.
+			navrow_div.appendChild(navrow_left_div);
+			navrow_div.appendChild(navrow_right_div);
+			frag.appendChild(navrow_div);
 
 		}
+
+		// Add the completed frag to the game links.
 		gameinfolinks.appendChild(frag);
 	}
 
@@ -257,6 +315,7 @@ window.onload=function(){
 			})
 		);
 	}
+
 	// Add debug panel.
 	if(debug && gamename ){
 		let debug_container  = document.getElementById("debug_container");
@@ -287,7 +346,7 @@ window.onload=function(){
 	// Wait for all promises to complete before running the JSGAME __PRE_INIT.
 	Promise.all(proms).then(
 		function(res){
-			changeHTML("READY !", presetup_div);
+			// changeHTML("READY !", presetup_div);
 			// DEBUG AND GAMEPAD FLAGS
 
 			// DEBUG
@@ -306,3 +365,7 @@ window.onload=function(){
 		function(err){ console.log("ERR:", err); }
 	);
 };
+
+// ===============================
+// ==== FILE END: PRESETUP.js ====
+// ===============================

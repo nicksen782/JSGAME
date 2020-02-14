@@ -1,3 +1,4 @@
+/* CORE AND SHARED */
 * {
     box-sizing: border-box;
     -webkit-box-sizing: border-box;
@@ -12,13 +13,14 @@
     user-select: none;
     pointer-events: none;
 }
+
 .noSelect2 {
-	-webkit-user-select: none;
+    -webkit-user-select: none;
     -khtml-user-select: none;
     -moz-user-select: none;
     -o-user-select: none;
     user-select: none;
-	pointer-events: auto;
+    pointer-events: auto;
 }
 
 canvas {
@@ -46,153 +48,170 @@ canvas {
     -ms-interpolation-mode: nearest-neighbor;
 }
 
-html{
-	margin: 0 auto;
-	/*scroll-behavior: smooth;*/
-	font-family: "Times New Roman, Helvetica, serif";
-	/* font-family: Arial, Helvetica, Sans-Serif; */
-	font-size: 12px;
+.inline_block{
+	display:inline-block;
+	vertical-align: top;
+}
+
+.verticalCenter{
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+html {
+    margin: 0 auto;
+    font-family: Arial, Helvetica, Sans-Serif;
+    font-size: 12px;
+    background-color: black;
 }
 
 body {
-    background-color: #101115;
-    min-height: 1em;
-    position: relative;
-    text-align: center;
-}
-
-#titleBar {
-    padding: 5px;
-    position: relative;
-}
-
-#mainCenter {
-    background-color: #1c253c;
-    min-height: 445px;
-    position: relative;
-    text-align: center;
-}
-
-#bottomBar {
-    min-height: 3em;
-    padding: 5px;
-}
-
-#gameCanvas_DIV {
-    width: 192px;
-    height: 192px;
-    border: 5px solid #000000;
-    margin: auto;
-    border-radius: 5px;
-    display: inline-block;
-    vertical-align: text-top;
-    position: relative;
     background-color: black;
-    margin-top: 5px;
-    margin-bottom: 5px;
-}
-
-#canvas_OUTPUT {
-    width: 100%;
-    height: 100%;
-    /* background-color: black; */
-}
-
-#gameControls {
-	padding: 0px;
-	padding-left: 5px;
-	position: relative;
-	touch-action: manipulation;
-}
-#gameControls.hide {
-	display:none;
-}
-#gameControls.top    {
-	top: 0px;
-}
-
-/* If one gamepad then make it wide and block*/
-/* If two gamepads then make it narrow and inline-block */
-
-#gameControls .gamepad_nes  svg { width: 240px; margin-right: 5px; }
-#gameControls .gamepad_snes svg { width: 240px; height: 100%; background-color: rgba(255, 255, 255, 0.25); }
-
-#gameControls .gamepad_nes.oneGamepad      { display:block; vertical-align: top; }
-#gameControls .gamepad_nes.oneGamepad svg  { width:480px;margin:0px; }
-#gameControls .gamepad_nes.twoGamepads     { display:inline-block; vertical-align: top; }
-#gameControls .gamepad_nes.twoGamepads svg { width:240px; margin:0px; }
-
-#gameControls .gamepad_snes.oneGamepad     { display:block; vertical-align: top; }
-#gameControls .gamepad_snes.oneGamepad svg { width:480px; margin:0px; }
-#gameControls .gamepad_snes.twoGamepads    { display:inline-block; vertical-align: top; }
-#gameControls .gamepad_snes.twoGamepads svg{ width:240px; margin:0px; }
-
-
-div#titleBar_logo_div {
-    display: inline-block;
-    vertical-align: top;
-    width: 250px;
-    text-align: left;
-}
-
-div#titleBar_logo_div {}
-
-.titleBar_logo_div_title {
-    font-size: 52px;
+    position: relative;
     text-align: center;
-    font-weight: bold;
+    /* min-width: 570px; */
+    /* width: 570px; */
+    margin: auto;
+}
+
+input#masterVolumeSlider {
+    width: 250px;
+}
+
+input#canvasScaleSlider {
+    width: 250px;
+}
+
+/* NAVIGATION BAR */
+.navbar{
+	text-align: left;
+	background-color: #333;
+	position: relative;
+}
+.navcol:hover{
+	background-color: rgb(216, 216, 216);
+}
+.navcol:hover .navbutton_label{
+	color:black;
+}
+.navcol{
+    display: inline-block;
+    text-align: center;
+    overflow: hidden;
+    vertical-align: middle;
+    width: 150px;
+    background-color: #5d5c5c;
+    padding: 10px;
+}
+.navrow{
+    display: inline-block;
+    text-align: left;
+    color: black;
+    text-decoration: none;
+    display: block;
+    text-align: left;
+    min-height: 1.5em;
+    position: relative;
+    font-size: 16px;
+	border-bottom: 1px solid #bbb;
+	cursor: pointer;
+}
+.navrow_left {display:inline-block;position: relative;left: 0px;overflow: hidden;white-space: nowrap;text-align: left;width: 40%;/* background-color: rosybrown; */font-size: 1.0em;line-height: 1.25em;}
+.navrow_right{display:inline-block;position: absolute;left: 250px;overflow: hidden;white-space: nowrap;text-align: left;/* width: 60%; */font-size: 0.75em;line-height: 1.75em;/* background-color: cadetblue; */}
+.navbutton{
+	/* padding: 10px; */
+	border: none;
+	outline: none;
+	margin: 0;
+}
+.navbutton_label{
+	font-size: 16px;
+	text-decoration: underline;
+	font-weight: bold;
+	color:white;
+}
+.navrow:hover{
+	background-color: #bfbfbf;
+}
+.navcol:hover .navbutton_content {
+	display: block;
+}
+.navbutton_caret_down{
+	display: inline-block;
+    width: 16px;
+    height: 8px;
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAIBAMAAAACWGKkAAAAKlBMVEUAAAD///9Sf7/Sn2YzMzk/MzPl//////Ll+PKy6///+Mw5Pz8zOWyFRjMzS1fVAAAAAXRSTlMAQObYZgAAADZJREFUCNdjODlREAik1jI4qYEYxaYIBotTmqBguWkAAwOLUqK4cQADELhoNIcyoDAYuDcACQDMFgs8ZSUAQwAAAABJRU5ErkJggg==);
+}
+.navbutton_content{
+	display: none;
+	position: absolute;
+	background-color: rgba(216, 216, 216, 0.9);
+	/* background-color: rgba(135, 206, 235, 0.75); */
+	min-width: 446px;
+	width: 98%;
+	box-shadow: 5px 5px 0px 5px #666666;
+	z-index: 1;
+	padding: 10px;
+	position: absolute;
+	left: 0px;
+	top: 35px;
+	/* bottom: -60px; */
+	white-space: nowrap;
+	overflow: hidden;
+}
+/* NAVIGATION BAR */
+
+#siteContainerDiv1 {
+	/* border: 5px solid #333333; */
+	/* background-color: #101115; */
+	min-width: 570px;
+	/* height: 100%; */
+	/* width: 100%; */
+	/* margin-top: 55px; */
+}
+#siteContainerDiv2 {
+	border: 5px solid #464646;
+	margin: 5px;
+}
+
+#topBar #topBar_line1 {
+    background-color: #333333;
+    color: white;
+    font-size: 32px;
+    position: relative;
+}
+
+#topBar #topBar_line1 #topBar_line1_jsgame {
     text-decoration: underline;
 }
 
-.panels {
-    display: none;
+#topBar #topBar_line1 #topBar_line1_gamename {
+    text-decoration: underline;
 }
 
-.panels.show {
+#mainCenter {
+    min-height: 230px;
+    background-color: black;
+    /* height: 100%; */
+    /* width: 100%; */
+    min-width: 256px;
+    min-height: 256px;
     display: block;
-}
-
-.debug_navButtons {
-	text-decoration:underline;
-}
-
-.debug_navButtons.active {
-    background-color: orange;
-    font-weight: bold;
-}
-#debug_navButtons.hidden {
-    display:none;
-}
-
-#titleBar .titleBar_table {
-    display: inline-block;
-    vertical-align: top;
-    text-align: left;
-    position: relative;
-    /* right: 10px; */
-}
-
-#titleBar .titleBar_table button {
-    width: 100px;
-}
-
-#gameSelector {
-    font-size: 14px;
-    width: 100%;
-    margin-top: 1em;
-}
-
-#titleBar_logo_div table {
-    width: 100%;
-}
-
-div#siteContainerDiv {
-    width: 700px;
-    min-width: 700px;
+    /* position: absolute; */
+    /* top: 0px; */
+    /* left: 0px; */
+    /* padding: 230px; */
     margin: auto;
-    text-align: left;
-    border: 5px solid skyblue;
-    background-color: #6ba9c1;
+    border: 5px solid #333333;
+}
+
+#gameCanvas_DIV {
+	width: 440px;
+	height: 440px;
+	margin: auto;
+	/* border: 1px solid #333333; */
+	/* position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%); */
 }
 
 #indicator {
@@ -219,7 +238,7 @@ div#siteContainerDiv {
 	border: 2px dashed black;
 	padding: 5px;
 	position: absolute;
-	bottom: 0%;
+	top: 0%;
 	left: 50%;
 	transform: translate(-50%, 0%);
 	z-index: 106;
@@ -241,38 +260,114 @@ div#siteContainerDiv {
 	font-size: 36px;
 }
 
-/* #btn_config.hide{
-	pointer-events: none;
-	opacity: 0.50;
-	background-color: rgba(0, 0, 0, 0.2);
-} */
 
-#masterVolumeSlider_td1.hide{ visibility: hidden;}
-#masterVolumeSlider_td2.hide{ visibility: hidden;}
+#topBar_line3 bottomDiv {
+    background-color: #333;
+    color: white;
+    text-align: left;
+    padding: 5px;
+}
 
-div#panel_game {
+span#topBar_line1_buttons {
+    position: absolute;
+    right: 20px;
+}
+
+div#btn_togglePause {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: #5d5c5c;
+    transform: scale(2);
+    transform-origin: left;
+}
+
+div#btn_reload {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-color: #5d5c5c;
+    transform: scale(2);
+    transform-origin: right;
+}
+
+.pause { background: url("spritemap.png") -0px  -0px no-repeat; }
+.play  { background: url("spritemap.png") -16px -0px no-repeat; }
+.caret { background: url("spritemap.png") -32px -0px no-repeat; }
+.reload{ background: url("spritemap.png") -48px -0px no-repeat; }
+
+.pause:hover  { background: url("spritemap.png") -0px  -16px no-repeat; }
+.play:hover   { background: url("spritemap.png") -16px -16px no-repeat; }
+.caret:hover  { background: url("spritemap.png") -32px -16px no-repeat; }
+.reload:hover { background: url("spritemap.png") -48px -16px no-repeat; }
+
+div#topBar_line1_buttons {
+    position: absolute;
+    right: 20px;
+    top: 0px;
+}
+
+canvas#canvas_OUTPUT {
+    /* border: 1px solid #333333; */
+    /* background-color: aquamarine; */
+    width: 100%;
+    height: 100%;
+    /* visibility: hidden; */
+}
+
+/* ================================ */
+
+select#gameSelector {
+    /* font-size: 14px; */
+    /* width: 220PX; */
+    width: 250px;
+    /* margin-top: 1em; */
 }
 
 div#sideDiv {
 	vertical-align: top;
 	display: inline-block;
 	position: relative;
-	border: 5px solid skyblue;
-	background-color: rgb(107, 169, 193);
-	max-width: 700px;
+	/* border: 5px solid skyblue; */
+	border: 5px solid #333333;
+	/* background-color: rgb(107, 169, 193); */
+	background-color: #5d5c5c;
+	background-color: rgba(216, 216, 216, 0.9);
+	/* max-width: 700px; */
+	margin-top: 5px;
 }
 div#sideDiv.hide {
 	display: none;
 }
 
-/* ************************* */
-/* Affects the framework DOM */
-/* ************************* */
-
-#siteContainerDiv.inline_block{
-	display:inline-block;
-	vertical-align: top;
+#gameControls {
+	padding: 0px;
+	padding-left: 5px;
+	position: relative;
+	touch-action: manipulation;
 }
+#gameControls.hide {
+	display:none;
+}
+#gameControls.top    {
+	top: 0px;
+}
+
+/* If one gamepad then make it wide and block*/
+/* If two gamepads then make it narrow and inline-block */
+
+#gameControls .gamepad_nes  svg { width: 240px; margin-right: 5px; }
+#gameControls .gamepad_snes svg { width: 240px; height: 100%; background-color: rgba(255, 255, 255, 0.25); }
+
+#gameControls .gamepad_nes.oneGamepad      { display:block; /*vertical-align: top;*/ }
+#gameControls .gamepad_nes.oneGamepad svg  { width:480px;margin:0px; }
+#gameControls .gamepad_nes.twoGamepads     { display:inline-block; vertical-align: top; }
+#gameControls .gamepad_nes.twoGamepads svg { width:240px; margin:0px; }
+
+#gameControls .gamepad_snes.oneGamepad     { display:block; /*vertical-align: top;*/ }
+#gameControls .gamepad_snes.oneGamepad svg { width:480px; margin:0px; }
+#gameControls .gamepad_snes.twoGamepads    { display:inline-block; vertical-align: top; }
+#gameControls .gamepad_snes.twoGamepads svg{ width:240px; margin:0px; }
 
 #gamepad_keyboardKeys_div{ background-color:rgba(224, 225, 226, 0.5); border:1px solid black; margin-bottom:5px; }
 #gamepad_keyboardKeys_div table{ width:100%; }
@@ -280,22 +375,44 @@ div#sideDiv.hide {
 #gamepad_keyboardKeys_div table td{ text-align:left; border: 1px solid black; }
 #gamepad_keyboardKeys_div table th{ text-align:left; border: 1px solid black; background-color: gray; }
 
+/* REAL GAMEPADS */
+#gp_blinker1_status{ width:1em; height:1em; background-color:yellow; display:inline-block;visibility:hidden; }
+#gp_blinker2_status{ width:1em; height:1em; display:inline-block;visibility:hidden; background-image: url('data:image/gif;base64,R0lGODlhEAAQAPAAAJYcHAAAACH5BAwUAAAAIf8LTkVUU0NBUEUyLjADAQAAACwAAAAAEAAQAAACDoSPqcvtD6OctNqLsz4FACH5BA0UAAAAIf8LSW1hZ2VNYWdpY2sOZ2FtbWE9MC40NTQ1NDUALAAAAAAQABAAgAAAAAAAAAIOhI+py+0Po5y02ouzPgUAOw==')    }
+/* REAL GAMEPADS */
 
-
-
-
+/* MODALS */
+#entireBodyDiv {
+	position: fixed;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.6);
+	z-index: 5000;
+	display: none;
+}
+#entireBodyDiv.show { display: block; }
+.modals {
+	display: none;
+	z-index: 5001;
+	background-color: goldenrod;
+	min-width: 700px;
+	min-height: 400px;
+	padding: 5px;
+	border-radius: 10px;
+	border: 4px double black;
+}
+.modals.show { display: block; }
+/* MODALS */
 
 
 
 .panels_config{
-	/* background-color:blue; */
-	/* height: 445px; */
+	background-color: #7eaec3;
+	height: 500px;
 }
 .panels_config .hide{
 	display:none;
-}
-#panel_config_main{}
-#panel_config_gamepads{
 }
 #panel_config_gamepads #gamepad_askForConnection{
 	position: absolute;
@@ -306,7 +423,7 @@ div#sideDiv.hide {
 	/* background-color:blue; */
 }
 
-#gamepads_gp1_all{background-color: rgb(107, 169, 193);width: 330px;height: 425px;position: absolute;top: 10px;left: 10px;}
+#gamepads_gp1_all{background-color: rgb(107, 169, 193);width: 330px;height: 425px;position: absolute;top: 50px;left: 10px;}
 #panel_config_gamepads #gamepad_buttonStatus1{
 	position: absolute;
 	width: 80px;
@@ -342,7 +459,7 @@ div#sideDiv.hide {
 	z-index:1;
 }
 
-#gamepads_gp2_all{background-color: rgb(107, 169, 193);width: 330px;height: 425px;position: absolute;top: 10px;left: 350px;}
+#gamepads_gp2_all{background-color: rgb(107, 169, 193);width: 330px;height: 425px;position: absolute;top: 50px;left: 350px;}
 #panel_config_gamepads #gamepad_buttonStatus2{
 	position: absolute;
 	width: 80px;
@@ -397,7 +514,6 @@ button.yellowHighlight {
 #panel_config_gamepads td { text-align:left;  }
 #panel_config_gamepads button{min-width: 60px;text-align:center;}
 #panel_config_gamepads select{width: 100%;font-family: monospace;}
-#panel_config_settings{}
 
 /*
 #gamepadIcon_container_p1
@@ -505,4 +621,29 @@ button.yellowHighlight {
 	left: 1px;
 	top: 1px;
 	display: inline-block;
+}
+
+.gui_hidePanels{width: 64px;height: 48px;line-height: 48px;font-size: 32px;font-weight: bold;background-color: red;position: absolute;right: 0px;top: 0px;border-radius: 15px;border: 1px solid #c3c3c3;cursor: pointer;}
+#gamepad_outerControls_title{text-decoration: underline;font-weight: bold;font-size: 32px;}
+
+
+div#botBar {
+    color: white;
+    background-color: #333333;
+    height: 1.5em;
+    font-size: 1.5em;
+    line-height: 1.5em;
+    text-align: left;
+    /* position: absolute; */
+    /* bottom: 0px; */
+    /* left: 0px; */
+    width: 100%;
+}
+
+div#topBar {
+    margin-top: 5px;
+}
+
+span#topBar_line1_gamename {
+    font-size: 0.75em;
 }
