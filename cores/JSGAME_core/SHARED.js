@@ -393,7 +393,7 @@ JSGAME.SHARED={
 		core.DOM['gameCanvas_DIV'].style.height = reduced_new_cont_height + "px" ;
 	},
 
-	//
+	// (unused)
 	autoAdjustVerticalCenter : function(){
 		if(!JSGAME.FLAGS.autoAdjustVerticalCenter_throttled){
 			// Set the "throttled" flag.
@@ -412,6 +412,34 @@ JSGAME.SHARED={
 			// Add vertical centering.
 			else{
 				document.body.classList.add("verticalCenter");
+			}
+
+		}
+	},
+	canvasResize_autofit_onFullscreenResize : function(){
+		if(!JSGAME.FLAGS.autoAdjustVerticalCenter_throttled){
+			let timeout = 250;
+
+			// Only do this if currently in full screen mode.
+			if((
+				document.fullscreen              // Chrome
+			 || document.fullscreenElement       // Chrome
+			 || document.webkitFullscreenElement // Chrome
+			 || document.msFullscreenElement     // Edge/IE
+			 || document.mozFullScreenElement    // Firefox
+			 || window  .fullScreen              // Firefox
+			))
+			{
+				// Add a delay for doing the change.
+				setTimeout(function(){
+					// Set the "throttled" flag.
+					JSGAME.FLAGS.autoAdjustVerticalCenter_throttled = true;
+
+					// Set a timeout to clear the "throttled" flag.
+					setTimeout(function() { JSGAME.FLAGS.autoAdjustVerticalCenter_throttled = false; }, timeout);
+
+					JSGAME.SHARED.canvasResize_autofit();
+				},timeout/2);
 			}
 		}
 	},
@@ -610,13 +638,19 @@ JSGAME.SHARED={
 		JSGAME.FLAGS.manuallyPaused = true;
 		window.cancelAnimationFrame( JSGAME.SHARED.raf_id );
 		JSGAME.SHARED.raf_id=null;
+
+		// Show the error indicator.
 		JSGAME.DOM["indicator"].classList.add("show");
 		JSGAME.DOM["indicator"].innerText="-- ERROR DETECTED --";
+
+		// Show the extra error text if it has been set.
 		if(extraText){
 			JSGAME.DOM["indicator_extraText"].classList.add("show");
 			JSGAME.DOM["indicator_extraText"].innerText=""+""+extraText;
 		}
-		JSGAME.DOM["indicator"].style["background-color"] = "rgba(255, 69, 0, 0.9)";
+
+		// Turn the preGame indicator off in case it is on since it overlaps the error indicator.
+		JSGAME.GUI.preGame_indicator("", "OFF");
 	},
 
 	// Prevent certain keys from shifting the window view.

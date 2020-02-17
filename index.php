@@ -19,26 +19,23 @@
 
 </head>
 
-<body class="verticalCenter">
+<body class="">
 
 	<div style="display:inline-block">
 
 	<!-- Holds the main container and the side div. -->
 	<div id="siteContainerDiv1">
 		<!-- MODALS - HIDDEN BY DEFAULT -->
-		<div id="entireBodyDiv" class="modals"></div>
-		<div class="modals verticalCenter panels panels_config" id="panel_config_gamepads">
-
+		<div id="entireBodyDiv" class="modals" onclick=""></div>
+		<div class="modals verticalCenter" id="panel_config_gamepads">
 			<div id="gamepad_outerControls" class="">
-				<!-- <button onclick='JSGAME.GUI.showPanel("panel_config_gamepads", null);'>SKIP</button> -->
+				<!-- <button onclick='JSGAME.GUI.showModal("panel_config_gamepads", null);'>SKIP</button> -->
 				<div id="gamepad_outerControls_title">GAMEPAD CONFIGURATION</div>
-				<div class="gui_hidePanels" onclick='JSGAME.GUI.hidePanels();'>X</div>
-				<div class="gui_hidePanels" onclick='JSGAME.GUI.hidePanels();'>X</div>
-
+				<div class="gui_hidePanels" onclick='JSGAME.GUI.hideModals();'>X</div>
 			</div>
 
 			<!-- Remove this screen -->
-			<div id="gamepad_askForConnection" class="oneLineVH_center hide">
+			<div id="gamepad_askForConnection" class="oneLineVH_center">
 				<div>To use your gamepad, connect it and then press a button.</div>
 			</div>
 
@@ -84,6 +81,7 @@
 			</div>
 
 		</div>
+		<!-- MODALS - HIDDEN BY DEFAULT -->
 
 		<!-- BAR AT THE TOP -->
 		<div id="topBar">
@@ -130,7 +128,7 @@
 								<div class="navrow_left">SIZE</div>
 								<div class="navrow_right">
 									<input id="canvasScaleSlider" title="3" step="0.1" type="range" min="1"
-										max="3.0" value="1">
+										max="3.2" value="1">
 								</div>
 							</div>
 							<!-- ON-SCREEN GAMEPADS -->
@@ -142,7 +140,7 @@
 							</div>
 
 							<!-- GAMEPAD CONFIG -->
-							<div class="navrow" onclick='JSGAME.GUI.showPanel("panel_config_gamepads", null);'>
+							<div class="navrow" onclick='JSGAME.GUI.showModal("panel_config_gamepads", null); JSGAME.GAMEPADS.CONFIG.scan();'>
 								<div class="navrow_left">Gamepads (real)</div>
 								<div class="navrow_right">
 									Displays the Gamepad Configuration menu.
@@ -177,7 +175,7 @@
 					<!-- Links -->
 					<div class="navcol">
 						<div class="navbutton">
-							<span class="navbutton_label">Game Links</span>
+							<span class="navbutton_label">Game Info</span>
 							<span class="navbutton_caret_down"></span>
 						</div>
 						<div class="navbutton_content" id="gamelinks">
@@ -218,6 +216,18 @@
 								</div>
 							</div>
 
+							<!-- BLINKERS -->
+							<!-- <div class="navrow"> -->
+								<!-- <div class="navrow_left"> -->
+									<!-- BLINKERS -->
+									<!-- <span id="gp_blinker1_status">&nbsp;</span> -->
+									<!-- <span id="gp_blinker2_status">&nbsp;</span> -->
+								<!-- </div> -->
+								<!-- <div class="navrow_right"> -->
+									<!-- Indicators for real gamepads. -->
+								<!-- </div> -->
+							<!-- </div> -->
+
 						</div>
 					</div>
 
@@ -234,14 +244,17 @@
 		<!-- MAIN DISPLAY -->
 		<div id="mainCenter">
 			<!-- GAME -->
-			<div id="gameCanvas_DIV" class="XXXXverticalCenter">
+			<div id="gameCanvas_DIV" class="">
 
 				<!-- Main game canvas output.  -->
 				<!-- <canvas width="256" height="256" id="canvas_OUTPUT"></canvas> -->
 
-				<!-- INDICATOR -->
+				<!-- INDICATOR (for errors) -->
 				<div id="indicator"></div>
 				<div id="indicator_extraText"></div>
+
+				<!-- INDICATOR (for pre-game statuses) -->
+				<div id="indicator_preGame">Starting JS GAME</div>
 
 			</div>
 
@@ -249,10 +262,27 @@
 
 		<!-- BAR AT THE BOTTOM -->
 		<div id="botBar">
-			(c) 2019 Nickolas Andersen (nicksen782)<br>
-			<!--  -->
-			<span id="gp_blinker1_status">&nbsp;</span>
-			<span id="gp_blinker2_status">&nbsp;</span>
+
+			<div id="bot_authors">
+				<table>
+					<tr>
+						<td>JSGAME:</td>
+						<td>(c) 2019 Nickolas Andersen</td>
+						<td>(nicksen782)</td>
+						<td></td>
+					</tr>
+					<!-- Additional rows will be added by the PRESETUP.js -->
+					<!-- <tr> <td>GAME:</td>  <td>(c) 2019 Nickolas Andersen (nicksen782)</td> </tr> -->
+				</table>
+			</div>
+
+			<div
+				title="Gamepads found! Click here to configure."
+				id="bottom_bar_gamepadDetected"
+				onclick='JSGAME.GUI.showModal("panel_config_gamepads", null); JSGAME.GAMEPADS.CONFIG.scan();'
+			>
+			</div>
+
 		</div>
 
 	</div>
@@ -271,7 +301,69 @@
 
 	<!-- Init via PHP : gameslist.json, gamesettings.json -->
 	<!-- Also includes the window.onload function. -->
-	<script src='index_p.php/?o=init&qs=<?php echo htmlentities(json_encode(($_GET))); ?>'></script>
+	<script>
+		(function(){
+			let indicator_preGame = document.getElementById("indicator_preGame");
+			indicator_preGame.classList.add("show");
+			indicator_preGame.innerText="... STARTING ...";
+
+			// Parses the queryString in the url and returns the data as an object of key:value pairs.
+			let getQueryStringAsObj              = function() {
+				// Nickolas Andersen (nicksen782)
+				// NOTE: May fail for values that are JSON encoded and/or also include "=" or "&" in the value.
+
+				let str = window.location.search ;
+				let obj = {} ;
+				let key ;
+				let val ;
+				let i ;
+
+				// Work with the string if there was one.
+				if(str=="" || str==null || str==undefined){ return {}; }
+
+				// Take off the "?".
+				str = str.slice(1);
+
+				// Split on "&".
+				str = str.split("&");
+
+				// Go through all the key=value and split them on "=".
+				for(i=0; i<str.length; i+=1){
+					// Split on "=" to get the key and the value.
+					key = str[i].split("=")[0];
+					val = str[i].replace(key+"=", "");
+
+					// Add this to the return object.
+					obj[key] = decodeURIComponent(val);
+				}
+
+				// Finally, return the object.
+				return obj;
+			};
+
+			let addScript = function(src){
+				return new Promise(function(res,rej){
+					let script = document.createElement("script");
+					script.onload=function(){
+						script.onload=null;
+						res();
+					};
+					script.src = src;
+					document.body.appendChild(script);
+				});
+			};
+
+			let qs = getQueryStringAsObj();
+			let url = "index_p.php/?o=init&qs="+JSON.stringify(qs);
+
+			addScript( url );
+		})();
+	</script>
+
+	<!-- INLINE PHP VERSION -->
+	<!-- Init via PHP : gameslist.json, gamesettings.json -->
+	<!-- Also includes the window.onload function. -->
+	<!-- <script src='index_p.php/?o=init&qs=<?php // echo htmlentities(json_encode(($_GET))); ?>'></script> -->
 
 </body>
 

@@ -35,7 +35,8 @@ JSGAME.INIT={
 	},
 	// Add wait until user gesture restriction is removed.
 	addUserInteractionRestriction : function(){
-		JSGAME.GUI.showPanel_internal("panel_gestureNeeded");
+		// JSGAME.GUI.showPanel_internal("panel_gestureNeeded");
+		JSGAME.GUI.preGame_indicator("gestureNeeded", "ON");
 		JSGAME.FLAGS.hasUserInteractionRestriction=true;
 		console.log("USER MUST INTERACT WITH THE WINDOW...");
 
@@ -91,6 +92,7 @@ JSGAME.INIT={
 				// Remove the listener and load js game.
 				else{
 					console.log("Removing user interaction restriction...", "\n\t(TYPE DETECTED: ", e.type, ")");
+					JSGAME.GUI.preGame_indicator("gestureNeeded_done", "ON");
 					JSGAME.FLAGS.hasUserInteractionRestriction=false;
 
 					document.removeEventListener('keydown'    , JSGAME.INIT.removeUserInteractionRestriction);
@@ -144,22 +146,26 @@ JSGAME.INIT={
 		window.onkeyup   = JSGAME.SHARED.preventScroll;
 
 		// Handle window resizing.
-		window.onresize  = JSGAME.SHARED.autoAdjustVerticalCenter() ;
-		JSGAME.SHARED.autoAdjustVerticalCenter();
+		window.onresize  = JSGAME.SHARED.canvasResize_autofit_onFullscreenResize ;
+		// JSGAME.SHARED.canvasResize_autofit_onFullscreenResize();
 
 		// Handle hidden mode.
 		document.onmouseleave=JSGAME.SHARED.toggleDocumentHidden;
 		document.onmouseenter=JSGAME.SHARED.toggleDocumentHidden;
 
 		// DOM cache.
+		JSGAME.DOM["entireBodyDiv"]          = document.getElementById("entireBodyDiv")         ;
+
+		JSGAME.DOM["bottom_bar_gamepadDetected"]          = document.getElementById("bottom_bar_gamepadDetected")         ;
+
 		JSGAME.DOM["gameSelector"]          = document.getElementById("gameSelector")         ;
 		JSGAME.DOM["gameControls"]          = document.getElementById("gameControls")         ;
 		JSGAME.DOM["gameControls_br"]       = document.getElementById("gameControls_br")      ;
 
 		JSGAME.DOM["siteContainerDiv"]      = document.getElementById("siteContainerDiv1")    ;
 		JSGAME.DOM["mainCenter"]            = document.getElementById("mainCenter")           ;
-		JSGAME.DOM["topBar"]            = document.getElementById("topBar")           ;
-		JSGAME.DOM["botBar"]            = document.getElementById("botBar")           ;
+		JSGAME.DOM["topBar"]                = document.getElementById("topBar")           ;
+		JSGAME.DOM["botBar"]                = document.getElementById("botBar")           ;
 
 		JSGAME.DOM["sideDiv"]               = document.getElementById("sideDiv")              ;
 		JSGAME.DOM["debug_mode"]            = document.getElementById("debug_mode")           ;
@@ -177,6 +183,7 @@ JSGAME.INIT={
 		JSGAME.DOM["canvasScaleSlider"]      = document.getElementById  ("canvasScaleSlider");
 
 		JSGAME.DOM["gameCanvas_DIV"]         = document.getElementById  ("gameCanvas_DIV");
+		JSGAME.DOM["indicator_preGame"]      = document.getElementById  ("indicator_preGame");
 		JSGAME.DOM["indicator"]              = document.getElementById  ("indicator");
 		JSGAME.DOM["indicator_extraText"]    = document.getElementById  ("indicator_extraText");
 
@@ -225,12 +232,14 @@ JSGAME.INIT={
 
 			// Are there entries in the game selector drop-down?
 			if(!numGames){
-				JSGAME.GUI.showPanel_internal("panel_gamelistEmpty");
+				// JSGAME.GUI.showPanel_internal("panel_gamelistEmpty");
+				JSGAME.GUI.preGame_indicator("gamelistEmpty", "ON");
 				console.log("The gamelist file was empty.");
 			}
 			// Yes, but a game was not selected?
 			else{
-				JSGAME.GUI.showPanel_internal("panel_nogame");
+				// JSGAME.GUI.showPanel_internal("panel_nogame");
+				JSGAME.GUI.preGame_indicator("nogame", "ON");
 				console.log("NO GAME SELECTED");
 			}
 		}
@@ -239,6 +248,7 @@ JSGAME.INIT={
 	__LOADJSGAME : function() {
 		console.log("LOADING JSGAME...");
 		// JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
+		// JSGAME.GUI.preGame_indicator("loadingGame", "ON");
 
 		// Gamepad buttons
 		JSGAME.consts["BTN_NOBUTTONS"] = 0    ; // NOBUTTONS  decimal: 0   , binary: 0000000000000000, HEX: 0x0000, bitWise:  0 << 0
@@ -347,13 +357,16 @@ JSGAME.INIT={
 	// Start the game.
 	__GAMESTART : function(){
 		console.log("LOADING GAME...");
-		JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
+		// JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
+		JSGAME.GUI.preGame_indicator("loadingGame", "ON");
 
 		// Run the game's runOnce function.
 		game.runOnce().then(
 			function(){
 				// Game ready to start.
-				JSGAME.GUI.showPanel_internal("panel_game"         );
+				// JSGAME.GUI.showPanel_internal("panel_game"         );
+				JSGAME.GUI.preGame_indicator("", "OFF");
+				//
 
 				// Run the first game loop. (Inits the video, sound, and game code.)
 				game.firstLoop().then(

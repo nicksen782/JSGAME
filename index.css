@@ -70,8 +70,6 @@ body {
     background-color: black;
     position: relative;
     text-align: center;
-    /* min-width: 570px; */
-    /* width: 570px; */
     margin: auto;
 }
 
@@ -88,6 +86,7 @@ input#canvasScaleSlider {
 	text-align: left;
 	background-color: #333;
 	position: relative;
+	z-index: 999;
 }
 .navcol:hover{
 	background-color: rgb(216, 216, 216);
@@ -120,7 +119,6 @@ input#canvasScaleSlider {
 .navrow_left {display:inline-block;position: relative;left: 0px;overflow: hidden;white-space: nowrap;text-align: left;width: 40%;/* background-color: rosybrown; */font-size: 1.0em;line-height: 1.25em;}
 .navrow_right{display:inline-block;position: absolute;left: 250px;overflow: hidden;white-space: nowrap;text-align: left;/* width: 60%; */font-size: 0.75em;line-height: 1.75em;/* background-color: cadetblue; */}
 .navbutton{
-	/* padding: 10px; */
 	border: none;
 	outline: none;
 	margin: 0;
@@ -147,32 +145,21 @@ input#canvasScaleSlider {
 	display: none;
 	position: absolute;
 	background-color: rgba(216, 216, 216, 0.9);
-	/* background-color: rgba(135, 206, 235, 0.75); */
 	min-width: 446px;
 	width: 98%;
-	box-shadow: 5px 5px 0px 5px #666666;
+	box-shadow: 3px 3px 3px 3px #666666;
 	z-index: 1;
 	padding: 10px;
 	position: absolute;
 	left: 0px;
 	top: 35px;
-	/* bottom: -60px; */
 	white-space: nowrap;
 	overflow: hidden;
 }
 /* NAVIGATION BAR */
 
 #siteContainerDiv1 {
-	/* border: 5px solid #333333; */
-	/* background-color: #101115; */
-	min-width: 570px;
-	/* height: 100%; */
-	/* width: 100%; */
-	/* margin-top: 55px; */
-}
-#siteContainerDiv2 {
-	border: 5px solid #464646;
-	margin: 5px;
+	min-width: 600px;
 }
 
 #topBar #topBar_line1 {
@@ -193,15 +180,10 @@ input#canvasScaleSlider {
 #mainCenter {
     min-height: 230px;
     background-color: black;
-    /* height: 100%; */
-    /* width: 100%; */
     min-width: 256px;
     min-height: 256px;
     display: block;
-    /* position: absolute; */
-    /* top: 0px; */
-    /* left: 0px; */
-    /* padding: 230px; */
+    position: relative;
     margin: auto;
     border: 5px solid #333333;
 }
@@ -210,8 +192,26 @@ input#canvasScaleSlider {
 	width: 440px;
 	height: 440px;
 	margin: auto;
-	/* border: 1px solid #333333; */
-	/* position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%); */
+}
+
+#indicator_preGame {
+    display: none;
+    background-color: rgba(0, 220, 230, 0.75);
+    border: 2px dashed black;
+    padding: 5px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 106;
+    width: 95%;
+    font-size: 18px;
+    min-height: 2em;
+    padding: 1em;
+}
+
+#indicator_preGame.show {
+	display: block;
 }
 
 #indicator {
@@ -226,6 +226,7 @@ input#canvasScaleSlider {
     z-index: 106;
     width: 90%;
     font-size: 36px;
+    min-height: 2em;
 }
 
 #indicator.show {
@@ -244,6 +245,7 @@ input#canvasScaleSlider {
 	z-index: 106;
 	width: 95%;
 	font-size: 18px;
+	min-height: 2em;
 }
 #indicator_extraText.show{ display: block; }
 
@@ -291,15 +293,15 @@ div#btn_reload {
     transform-origin: right;
 }
 
-.pause { background: url("spritemap.png") -0px  -0px no-repeat; }
-.play  { background: url("spritemap.png") -16px -0px no-repeat; }
-.caret { background: url("spritemap.png") -32px -0px no-repeat; }
-.reload{ background: url("spritemap.png") -48px -0px no-repeat; }
+.pause { background: url("img/spritemap.png") -0px  -0px no-repeat; }
+.play  { background: url("img/spritemap.png") -16px -0px no-repeat; }
+.caret { background: url("img/spritemap.png") -32px -0px no-repeat; }
+.reload{ background: url("img/spritemap.png") -48px -0px no-repeat; }
 
-.pause:hover  { background: url("spritemap.png") -0px  -16px no-repeat; }
-.play:hover   { background: url("spritemap.png") -16px -16px no-repeat; }
-.caret:hover  { background: url("spritemap.png") -32px -16px no-repeat; }
-.reload:hover { background: url("spritemap.png") -48px -16px no-repeat; }
+.pause:hover  { background: url("img/spritemap.png") -0px  -16px no-repeat; }
+.play:hover   { background: url("img/spritemap.png") -16px -16px no-repeat; }
+.caret:hover  { background: url("img/spritemap.png") -32px -16px no-repeat; }
+.reload:hover { background: url("img/spritemap.png") -48px -16px no-repeat; }
 
 div#topBar_line1_buttons {
     position: absolute;
@@ -308,32 +310,23 @@ div#topBar_line1_buttons {
 }
 
 canvas#canvas_OUTPUT {
-    /* border: 1px solid #333333; */
-    /* background-color: aquamarine; */
     width: 100%;
     height: 100%;
-    /* visibility: hidden; */
 }
 
 /* ================================ */
 
 select#gameSelector {
-    /* font-size: 14px; */
-    /* width: 220PX; */
     width: 250px;
-    /* margin-top: 1em; */
 }
 
 div#sideDiv {
 	vertical-align: top;
 	display: inline-block;
 	position: relative;
-	/* border: 5px solid skyblue; */
 	border: 5px solid #333333;
-	/* background-color: rgb(107, 169, 193); */
 	background-color: #5d5c5c;
 	background-color: rgba(216, 216, 216, 0.9);
-	/* max-width: 700px; */
 	margin-top: 5px;
 }
 div#sideDiv.hide {
@@ -359,12 +352,12 @@ div#sideDiv.hide {
 #gameControls .gamepad_nes  svg { width: 240px; margin-right: 5px; }
 #gameControls .gamepad_snes svg { width: 240px; height: 100%; background-color: rgba(255, 255, 255, 0.25); }
 
-#gameControls .gamepad_nes.oneGamepad      { display:block; /*vertical-align: top;*/ }
+#gameControls .gamepad_nes.oneGamepad      { display:block; }
 #gameControls .gamepad_nes.oneGamepad svg  { width:480px;margin:0px; }
 #gameControls .gamepad_nes.twoGamepads     { display:inline-block; vertical-align: top; }
 #gameControls .gamepad_nes.twoGamepads svg { width:240px; margin:0px; }
 
-#gameControls .gamepad_snes.oneGamepad     { display:block; /*vertical-align: top;*/ }
+#gameControls .gamepad_snes.oneGamepad     { display:block; }
 #gameControls .gamepad_snes.oneGamepad svg { width:480px; margin:0px; }
 #gameControls .gamepad_snes.twoGamepads    { display:inline-block; vertical-align: top; }
 #gameControls .gamepad_snes.twoGamepads svg{ width:240px; margin:0px; }
@@ -403,6 +396,8 @@ div#sideDiv.hide {
 	border: 4px double black;
 }
 .modals.show { display: block; }
+.modals.hide { display: none; } /* NEEDED? */
+.modals .hide { display: none; } /* NEEDED? */
 /* MODALS */
 
 
@@ -418,9 +413,6 @@ div#sideDiv.hide {
 	position: absolute;
 	width: 600px;
 	height: 120px;
-	/* left:0px; */
-	/* top:0px; */
-	/* background-color:blue; */
 }
 
 #gamepads_gp1_all{background-color: rgb(107, 169, 193);width: 330px;height: 425px;position: absolute;top: 50px;left: 10px;}
@@ -428,9 +420,8 @@ div#sideDiv.hide {
 	position: absolute;
 	width: 80px;
 	min-height: 290px;
-	right: 5px;
+	left: 245px;
 	top: 35px;
-	/* background-color:blue; */
 	text-align: left;
 	z-index:1;
 	border: 1px dotted black;
@@ -455,7 +446,6 @@ div#sideDiv.hide {
 	height: 365px;
 	left: 0px;
 	top: 30px;
-	/* background-color: yellow; */
 	z-index:1;
 }
 
@@ -466,7 +456,6 @@ div#sideDiv.hide {
 	min-height: 290px;
 	right: 5px;
 	top: 35px;
-	/* background-color:blue; */
 	text-align: left;
 	z-index:1;
 	border: 1px dotted black;
@@ -475,7 +464,6 @@ div#sideDiv.hide {
 	position: absolute;
 	width: 250px;
 	padding-left: 5px;
-	/* 	background-color:blue; */
 	left: 0px;
 	top: 0px;
 	z-index:1;
@@ -486,7 +474,6 @@ div#sideDiv.hide {
 	height: 365px;
 	left: 0px;
 	top: 30px;
-	/* background-color: yellow; */
 	z-index:1;
 }
 .gamepads_buttonControls{
@@ -494,14 +481,11 @@ div#sideDiv.hide {
 	width: 96%;
 	position: absolute;
 	bottom: 5px;
-	/* margin: auto; */
 	margin: 2%;
-	/* text-align: center; */
 }
 .gamepads_buttonControls button{
 	width: 80px;
 	margin: 5px;
-	/* margin: auto; */
 }
 
 button.yellowHighlight {
@@ -541,7 +525,6 @@ button.yellowHighlight {
 /* GAMEPAD STATUS  */
 
 .p_gamepad_status {
-	/* font-size: 8px; */
 	font-weight: bold;
 	font-size: 14px;
 	text-decoration: underline;
@@ -630,14 +613,10 @@ button.yellowHighlight {
 div#botBar {
     color: white;
     background-color: #333333;
-    height: 1.5em;
-    font-size: 1.5em;
-    line-height: 1.5em;
     text-align: left;
-    /* position: absolute; */
-    /* bottom: 0px; */
-    /* left: 0px; */
     width: 100%;
+    padding: 5px;
+    position: relative;
 }
 
 div#topBar {
@@ -646,4 +625,34 @@ div#topBar {
 
 span#topBar_line1_gamename {
     font-size: 0.75em;
+}
+
+#bot_authors table {width: 90%;}
+#bot_authors table td:nth-child(1) { width:10%; }
+#bot_authors table td:nth-child(2) {width: 30%;}
+#bot_authors table td:nth-child(3) {width: 20%;}
+#bot_authors table td:nth-child(4) {width: 40%;}
+
+#bottom_bar_gamepadDetected{
+	background-color:#5d5c5c;
+	/* background-color:#333; */
+	/* background-image: url(img/CUzeBox_controls_modified.png); */
+	background-image: url(img/nesController.png);
+	background-repeat: no-repeat;
+	background-size: 100% 100%;
+	cursor: pointer;
+	width: 50px;
+	height: 20px;
+	position: absolute;
+	right: 5px;
+	top: 3px;
+	display:none;
+}
+
+#bottom_bar_gamepadDetected.show{
+	display:block;
+}
+
+div#gamepad_ConnectionFound {
+    height: 440px;
 }

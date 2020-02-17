@@ -6,8 +6,8 @@ JSGAME.GAMEPADS = {
 	// *** CONFIG MENU FUNCTIONS ***
 
 	CONFIG : {
-		gp_blinker1_status : false,
-		gp_blinker2_status : false,
+		// gp_blinker1_status : false,
+		// gp_blinker2_status : false,
 
 		// Keeps the requestAnimationFrame id of the currently requested animation frame. Used for gamepad setup when there is no game.
 		raf_id_noGame : null,
@@ -374,13 +374,29 @@ JSGAME.GAMEPADS = {
 
 				// If gamepads were connected, hide the askForConnection and show the ConnectionFound.
 				if( JSGAME.GAMEPADS.getSrcGamepads().length ){
-					JSGAME.GAMEPADS.CONFIG.DOM_elems.askForConnection.classList.add("hide");
-					JSGAME.GAMEPADS.CONFIG.DOM_elems.ConnectionFound .classList.remove("hide");
+					// If the connection found is not already showing (meaning: doesn't contain "hide".)
+					if( JSGAME.GAMEPADS.CONFIG.DOM_elems.ConnectionFound.classList.contains("hide")){
+						console.log("showing config screen.");
+
+						// Hide the "ask for connection".
+						JSGAME.GAMEPADS.CONFIG.DOM_elems.askForConnection.classList.add("hide");
+
+						// Show the "Connection found".
+						JSGAME.GAMEPADS.CONFIG.DOM_elems.ConnectionFound .classList.remove("hide");
+					}
 				}
 				// Otherwise, show the askForConnection and hide the ConnectionFound.
 				else{
-					JSGAME.GAMEPADS.CONFIG.DOM_elems.ConnectionFound .classList.add("hide");
-					JSGAME.GAMEPADS.CONFIG.DOM_elems.askForConnection.classList.remove("hide");
+					// If the connection found is already showing (meaning: contains "hide".)
+					if( !JSGAME.GAMEPADS.CONFIG.DOM_elems.ConnectionFound.classList.contains("hide")){
+						console.log("hiding config screen.");
+
+						// Show the "ask for connection".
+						JSGAME.GAMEPADS.CONFIG.DOM_elems.askForConnection.classList.remove("hide");
+
+						// Hide the "Connection found".
+						JSGAME.GAMEPADS.CONFIG.DOM_elems.ConnectionFound .classList.add("hide");
+					}
 				}
 
 				// Look for new gamepads and adjust input.
@@ -388,14 +404,7 @@ JSGAME.GAMEPADS = {
 
 				// Request another animation frame only if the gamepad config screen is open.
 				if(JSGAME.GAMEPADS.CONFIG.DOM_elems.panel_config_gamepads.classList.contains("show")){
-					// if(JSGAME.FLAGS.debug)       {
-					// 	if(JSGAME.GAMEPADS.CONFIG.gp_blinker1_status){
-					// 		JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status.style.visibility="visible";
-					// 	}
-					// 	else                                        { JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status.style.visibility="hidden"; }
-					// 	JSGAME.GAMEPADS.CONFIG.gp_blinker1_status = !JSGAME.GAMEPADS.CONFIG.gp_blinker1_status;
-					// }
-
+					//
 					JSGAME.GAMEPADS.CONFIG.updateButtonStatus();
 
 					// let buttons = document.querySelectorAll(".gamepad_buttonStatus[padNum='1'].active");
@@ -417,6 +426,7 @@ JSGAME.GAMEPADS = {
 					}, 100);
 				}
 			});
+
 			// JSGAME.GAMEPADS.CONFIG.raf_id_noGame = requestAnimationFrame( JSGAME.GAMEPADS.CONFIG.scan );
 			// cancelAnimationFrame( JSGAME.GAMEPADS.CONFIG.raf_id_noGame );
 		},
@@ -425,8 +435,8 @@ JSGAME.GAMEPADS = {
 			if(JSGAME.GAMEPADS.CONFIG.initDone){ return ; }
 
 			// Init the DOM CACHE.
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status       = document.getElementById("gp_blinker1_status");
-			JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status       = document.getElementById("gp_blinker2_status");
+			// JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker1_status       = document.getElementById("gp_blinker1_status");
+			// JSGAME.GAMEPADS.CONFIG.DOM_elems.gp_blinker2_status       = document.getElementById("gp_blinker2_status");
 
 			JSGAME.GAMEPADS.CONFIG.DOM_elems.panel_config_gamepads    = document.getElementById("panel_config_gamepads");
 
@@ -693,6 +703,7 @@ JSGAME.GAMEPADS = {
 				delete JSGAME.GAMEPADS.CONFIG.init ;
 				delete JSGAME.GAMEPADS.CONFIG.DOM_init ;
 
+				// console.log("running first gamepad scan...");
 				JSGAME.GAMEPADS.CONFIG.raf_id_noGame = requestAnimationFrame( JSGAME.GAMEPADS.CONFIG.scan );
 
 				// console.log("GAMEPAD INIT DONE. 1");
@@ -714,7 +725,6 @@ JSGAME.GAMEPADS = {
 	gamepad_p2_isSet      : false , //
 	totalNumGamepadsReady : 0     , //
 
-	// NEEDED????
 	// * Used in translation of Uzebox buttons to their bit position and the key the browser needs to send to get that button pressed in CUzeBox.
 	uzeBox_gamepad_mapping : {
                                                             // NOBUTTONS  decimal: 0   , binary: 0000000000000000, HEX: 0x0000, bitWise:  0 << 0
@@ -1301,6 +1311,23 @@ JSGAME.GAMEPADS = {
 
 		// Read the source gamepad data, add to local cache if defined and not null and found button mapping.
 		JSGAME.GAMEPADS.getNewGamepadStates();
+
+		// Control the visible gamepad indicator.
+		let srcGamepads = JSGAME.GAMEPADS.getSrcGamepads();
+
+		// Show/hide the gamepad config button based on the presence of a real gamepad.
+		if(srcGamepads.length){
+			if(! JSGAME.DOM["bottom_bar_gamepadDetected"].classList.contains("show")){
+				// console.log("system sees a gamepad!");
+				JSGAME.DOM["bottom_bar_gamepadDetected"].classList.add("show");
+			}
+		}
+		else{
+			if(JSGAME.DOM["bottom_bar_gamepadDetected"].classList.contains("show")){
+				// console.log("system does not see a gamepad!");
+				JSGAME.DOM["bottom_bar_gamepadDetected"].classList.remove("show");
+			}
+		}
 
 		// Go through the gamepad list.
 		for(let i=0; i<JSGAME.GAMEPADS.gamepads.length; i+=1){

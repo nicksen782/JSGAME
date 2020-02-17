@@ -6,21 +6,20 @@ JSGAME.GUI={
 	// *** GUI NAV ***
 
 	// Show the indicated panel and select the indicated debug button.
-	showPanel : function(panel_id, elem){
-		// Get list of panel ids.
-		let panels = document.querySelectorAll('.panels');
-		let found  = false;
-
+	showModal : function(panel_id, elem){
 		// Attempt to get a DOM handle to the specified panel.
 		let specifiedPanel = document.getElementById(panel_id);
 
 		// Was it found? Show it.
 		if(specifiedPanel){
 			// Hide all first.
-			JSGAME.GUI.hidePanels();
+			JSGAME.GUI.hideModals();
 
 			// Show this panel.
 			specifiedPanel.classList.add("show");
+
+			// Dim the background.
+			JSGAME.DOM["entireBodyDiv"].classList.add("show");
 
 			// Set the clicked button as active.
 			if(elem){ elem.classList.add("active"); }
@@ -30,39 +29,22 @@ JSGAME.GUI={
 			console.log("panel not found!");
 		}
 	},
-	// Show the indicated panel by panel_id only.
-	showPanel_internal : function(panel_id){
-		let debug_navButtons = document.querySelectorAll('.debug_navButtons');
-		for(let i=0; i<debug_navButtons.length; i+=1){
-			if(debug_navButtons[i].getAttribute("panel")==panel_id){
-				JSGAME.GUI.showPanel(panel_id, debug_navButtons[i]);
-				// return;
-				// break;
-			}
-		}
-
-		// let debug_navButtons = document.querySelectorAll('.panels');
-		// for(let i=0; i<debug_navButtons.length; i+=1){
-		// 	if(debug_navButtons[i].getAttribute("panel")==panel_id){
-		// 		JSGAME.GUI.showPanel(panel_id, debug_navButtons[i]);
-		// 		return;
-		// 		// break;
-		// 	}
-		// }
-	},
 	// Hide all panels and deselect the debug buttons.
-	hidePanels : function(){
+	hideModals : function(){
+		// Undim the background.
+		JSGAME.DOM["entireBodyDiv"].classList.remove("show");
+
 		// Hide panels.
-		let panels = document.querySelectorAll('.panels');
-		for(let i=0; i<panels.length; i+=1){
-			panels[i].classList.remove("show");
+		let modals = document.querySelectorAll('.modals');
+		for(let i=0; i<modals.length; i+=1){
+			modals[i].classList.remove("show");
 		}
 
-		// Remove the active class from the buttons.
-		let debug_navButtons = document.querySelectorAll('.debug_navButtons');
-		for(let i=0; i<debug_navButtons.length; i+=1){
-			debug_navButtons[i].classList.remove("active");
-		}
+		// // Remove the active class from the buttons.
+		// let debug_navButtons = document.querySelectorAll('.debug_navButtons');
+		// for(let i=0; i<debug_navButtons.length; i+=1){
+		// 	debug_navButtons[i].classList.remove("active");
+		// }
 	},
 	// Change the game.
 	changeGame : function(gamestring){
@@ -269,8 +251,36 @@ JSGAME.GUI={
 				JSGAME.SHARED.raf_id=null;
 			}
 		}
+	},
+
+	preGame_indicator : function(msgKey, newState){
+		// JSGAME.GUI.preGame_indicator("jsgamesetup"  , "ON");
+		// JSGAME.GUI.preGame_indicator("nogame"       , "ON");
+		// JSGAME.GUI.preGame_indicator("loadingGame"  , "ON");
+		// JSGAME.GUI.preGame_indicator("gestureNeeded", "ON");
+		// JSGAME.GUI.preGame_indicator("gamelistEmpty", "ON");
+
+		let textObj = {
+			"jsgamesetup"        : "Starting JS GAME" ,
+			"nogame"             : "A game has not been selected.\nPlease select a game." ,
+			"loadingGame"        : "Loading game." ,
+			"gestureNeeded"      : "Please click/touch anywhere\nin this window to continue." ,
+			"gestureNeeded_done" : "Gesture detected." ,
+			"gamelistEmpty"      : "No games are installed.\n\nYou will need to install games and\nupdate the gamelist.json file.\n" ,
+		};
+
+		if(newState=="OFF"){
+			JSGAME.DOM["indicator_preGame"].classList.remove("show");
+			JSGAME.DOM["indicator_preGame"].innerText="";
+
+		}
+		if(newState=="ON"){
+			JSGAME.DOM["indicator_preGame"].classList.add("show");
+			JSGAME.DOM["indicator_preGame"].innerText=textObj[msgKey];
+		}
 
 	},
+
 	// Sets the app.GUI.settings.manuallyPaused flag and cancels the requestAnimationFrame... or it restarts the game loop.
 	togglePause         : function(){
 		// Pause if unpaused.
@@ -332,9 +342,9 @@ JSGAME.GUI={
 		{
 			let prom_res=function(res){
 				setTimeout(function(){
-					console.log("full screen complete. Now running autofit.")
+					// console.log("full screen complete. Now running autofit.");
 					JSGAME.SHARED.canvasResize_autofit();
-				},500);
+				},75);
 			};
 			let prom_err=function(err){
 				let str = ["=E= togglefullscreen: (to full).", JSON.stringify(err)];
@@ -354,7 +364,7 @@ JSGAME.GUI={
 				setTimeout(function(){
 					console.log("full screen complete. Now returning canvas scale.")
 					JSGAME.SHARED.canvasResize( JSGAME.DOM["canvasScaleSlider"].value );
-				},500);
+				},75);
 			};
 			let prom_err=function(err){
 				let str = ["=E= togglefullscreen: (from full).", JSON.stringify(err)];
