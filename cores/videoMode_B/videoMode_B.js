@@ -1,8 +1,9 @@
 // core.GRAPHICS = {};
-core.GRAPHICS.DATA        = {} ;
-core.GRAPHICS.DATA.FLAGS  = {} ;
-core.GRAPHICS.DATA.VRAM   = {} ;
-core.GRAPHICS.FUNCS       = {} ;
+core.GRAPHICS.DATA         = {} ;
+core.GRAPHICS.DATA.FLAGS   = {} ;
+core.GRAPHICS.DATA.VRAM    = {} ;
+core.GRAPHICS.DATA.SPRITES = {} ;
+core.GRAPHICS.FUNCS        = {} ;
 // Holds tile and tilemap assets.
 core.GRAPHICS.ASSETS      = {
 	"tileObjs"        : {} , // All tile graphics separated by their tileset.
@@ -15,6 +16,7 @@ core.GRAPHICS.performance = {
 		// BG : [ 0, 0, 0, 0, 0 ] , //
 	},
 };
+core.GRAPHICS.performance.LAYERS["update_layers_type1"]=[ 0, 0, 0, 0, 0 ];
 // Holds the canvas elements.
 core.GRAPHICS.canvas      = {} ;
 // Holds the canvas contexts.
@@ -85,6 +87,7 @@ core.GRAPHICS.init = function(){
 				// Get settings for this layer.
 				let alpha           = core.SETTINGS['layers'][layer].alpha ;
 				let clearBeforeDraw = core.SETTINGS['layers'][layer].clearBeforeDraw ;
+				let clearWith       = core.SETTINGS['layers'][layer].clearWith ;
 
 				// Create canvas.
 				let newCanvas = document.createElement('canvas'); //
@@ -98,9 +101,11 @@ core.GRAPHICS.init = function(){
 
 				// Set the pre-clear and layer update flags.
 				core.GRAPHICS.DATA.FLAGS[layer] = {};
+				core.GRAPHICS.DATA.FLAGS[layer].clearWith       = clearWith ;
 				core.GRAPHICS.DATA.FLAGS[layer].clearBeforeDraw = clearBeforeDraw ;
 				core.GRAPHICS.DATA.FLAGS[layer].UPDATE          = false ; // Indicates that an update is needed.
 				core.GRAPHICS.DATA.FLAGS[layer].REDRAW          = false ; // Draw all of VRAM even if already drawn.
+				core.GRAPHICS.DATA.FLAGS[layer].lastUpdate      = performance.now() ; //
 
 				// Save the canvas.
 				core.GRAPHICS.canvas[layer] = newCanvas;
@@ -114,11 +119,19 @@ core.GRAPHICS.init = function(){
 
 			// Create the OUTPUT canvas.
 			core.GRAPHICS.canvas.OUTPUT        = document.createElement('canvas'); //
-			core.GRAPHICS.ctx.OUTPUT           = core.GRAPHICS.canvas.OUTPUT.getContext("2d", { alpha : false } ); //
+			core.GRAPHICS.ctx.OUTPUT           = core.GRAPHICS.canvas.OUTPUT.getContext("2d", { alpha : true } ); //
 			core.GRAPHICS.canvas.OUTPUT.width  = ( core.SETTINGS['VRAM_TILES_H'] * core.SETTINGS['TILE_WIDTH']  ) ;
 			core.GRAPHICS.canvas.OUTPUT.height = ( core.SETTINGS['VRAM_TILES_V'] * core.SETTINGS['TILE_HEIGHT'] ) ;
 			core.GRAPHICS.canvas.OUTPUT.id     = "canvas_OUTPUT";
 			JSGAME.SHARED.setpixelated(core.GRAPHICS.canvas.OUTPUT);
+
+			// Create the pre-OUTPUT canvas.
+			core.GRAPHICS.canvas.pre_OUTPUT        = document.createElement('canvas'); //
+			core.GRAPHICS.ctx.pre_OUTPUT           = core.GRAPHICS.canvas.pre_OUTPUT.getContext("2d", { alpha : true } ); //
+			core.GRAPHICS.canvas.pre_OUTPUT.width  = ( core.SETTINGS['VRAM_TILES_H'] * core.SETTINGS['TILE_WIDTH']  ) ;
+			core.GRAPHICS.canvas.pre_OUTPUT.height = ( core.SETTINGS['VRAM_TILES_V'] * core.SETTINGS['TILE_HEIGHT'] ) ;
+			// core.GRAPHICS.canvas.pre_OUTPUT.id     = "canvas_pre_OUTPUT";
+			JSGAME.SHARED.setpixelated(core.GRAPHICS.canvas.pre_OUTPUT);
 
 			// Attach the canvas_OUTPUT to gameCanvas_DIV.
 			core.DOM['gameCanvas_DIV'].appendChild(core.GRAPHICS.canvas.OUTPUT);
@@ -133,14 +146,75 @@ core.GRAPHICS.init = function(){
 		let vram_setup = function(){ return new Promise(function(res1, rej1){
 			JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_vram_setup" , "START");
 
+			// Create the default tileset ("default_tileset"), "black" and "transparent" tiles.
+			let canvas;
+			let ctx;
+			let imgData;
+
+			// Create default tileset.
+			core.GRAPHICS.ASSETS.tileObjs["default_tileset"]=[];
+
+			// Create black tile and add to the default tileset.
+			canvas=document.createElement("canvas");
+			canvas.width  = core.SETTINGS.TILE_WIDTH;
+			canvas.height = core.SETTINGS.TILE_HEIGHT;
+			ctx=canvas.getContext("2d");
+			// ctx.fillStyle = "rgba(255, 0, 0, 1.0)";    // Red
+			ctx.fillStyle = "rgba(0, 0, 0, 1.0)";      // Black
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
+			core.GRAPHICS.ASSETS.tileObjs["default_tileset"].push({
+				"canvas"  : canvas ,
+				"imgData" : imgData ,
+				"numUsed" : 0 ,
+			});
+
+			// Create transparent tile and add to the default tileset.
+			canvas=document.createElement("canvas");
+			canvas.width  = core.SETTINGS.TILE_WIDTH;
+			canvas.height = core.SETTINGS.TILE_HEIGHT;
+			ctx=canvas.getContext("2d");
+			// ctx.fillStyle = "rgba(0, 0, 255, 1.0)";          // Blue
+			// ctx.fillRect(0, 0, canvas.width, canvas.height); // Blue
+			ctx.clearRect(0,0,canvas.width,canvas.height); // Full transparent.
+			imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
+			core.GRAPHICS.ASSETS.tileObjs["default_tileset"].push({
+				"canvas"  : canvas ,
+				"imgData" : imgData ,
+				"numUsed" : 0 ,
+			});
+
 			// Get the number of tiles for VRAM.
 			let screen_wh   = (core.SETTINGS['VRAM_TILES_H'] * core.SETTINGS['VRAM_TILES_V']);
-
 			// Create the VRAMs for each layer.
 			for(let layer in core.SETTINGS['layers']){
-				core.GRAPHICS.DATA.VRAM[layer] = [];
-				for(let i=0; i<screen_wh; i+=1){
-					core.GRAPHICS.DATA.VRAM[layer][i]=core.GRAPHICS.FUNCS.returnNewTile_obj();
+				let clearWith  = core.GRAPHICS.DATA.FLAGS[layer].clearWith;
+
+				// Sprite layers.
+				if(core.SETTINGS.layers[layer].sprite){
+					core.GRAPHICS.DATA.SPRITES[layer] = [];
+					let numSprites = core.GRAPHICS.DATA.SPRITES[layer].numSprites;
+
+					// Set all sprites with the default tile object.
+					for(let i=0; i<numSprites; i+=1){
+						core.GRAPHICS.DATA.SPRITES[layer][i] = core.GRAPHICS.FUNCS.returnNewTile_obj();
+						core.GRAPHICS.DATA.SPRITES[layer][i].flags.SPRITE=true;
+						core.GRAPHICS.DATA.SPRITES[layer][i].flags.OFF=true;
+						core.GRAPHICS.DATA.SPRITES[layer][i].clearThis=false;
+						core.GRAPHICS.DATA.SPRITES[layer][i].tileset="default_tileset";
+						core.GRAPHICS.DATA.SPRITES[layer][i].tileindex=1; // Transparent
+					}
+
+				}
+				// Non-sprite layers.
+				else{
+					core.GRAPHICS.DATA.VRAM[layer] = [];
+					for(let i=0; i<screen_wh; i+=1){
+						core.GRAPHICS.DATA.VRAM[layer][i]=core.GRAPHICS.FUNCS.returnNewTile_obj();
+						core.GRAPHICS.DATA.VRAM[layer][i].tileset="default_tileset";
+						core.GRAPHICS.DATA.VRAM[layer][i].tileindex=0; // Black
+						core.GRAPHICS.DATA.VRAM[layer][i].drawThis=true;
+					}
 				}
 			}
 
@@ -398,7 +472,7 @@ core.GRAPHICS.init = function(){
 					let curTileId;
 					let vramdata_rgb_332;
 					let tile_width  = core.SETTINGS['TILE_WIDTH'];
-					let tile_height = core.SETTINGS['TILE_WIDTH'];
+					let tile_height = core.SETTINGS['TILE_HEIGHT'];
 					let tile_size   = tile_width * tile_height;
 					let buf8;
 					let buf32;
@@ -493,6 +567,7 @@ core.GRAPHICS.init = function(){
 					// Get the number of tilesets.
 					let len = core.SETTINGS['tilesets'].length;
 
+					// Convert all tilesets from the Uzebox format.
 					for(let i=0; i<len; i+=1){
 						// Get the data for this tileset.
 						let record = core.SETTINGS['tilesets'][i];
@@ -559,10 +634,77 @@ core.GRAPHICS.init = function(){
 					}
 				};
 
+				// tilemapsToCanvas conversions.
+				post_graphicsConversion2        = function(){
+					// Get the number of tilesets.
+					let len = core.SETTINGS['tilesets'].length;
+
+					// Convert all tilesets from the Uzebox format.
+					for(let i=0; i<len; i+=1){
+						// Get the data for this tileset.
+						let record = core.SETTINGS['tilesets'][i];
+						let tilemapsToCanvas = record.tilemapsToCanvas ;
+						let tilesetName      = record.tileset          ;
+						let tileset          = core.GRAPHICS.ASSETS.tileObjs[tilesetName] ;
+						let tilemaps         = core.GRAPHICS.ASSETS.tilemaps[tilesetName] ;
+
+						// Add the missing tilemaps_canvas key.
+						if(core.GRAPHICS.ASSETS.tilemaps_canvas==undefined){
+							core.GRAPHICS.ASSETS.tilemaps_canvas={};
+						}
+
+						if(tilemapsToCanvas){
+							core.GRAPHICS.ASSETS.tilemaps_canvas[tilesetName]={};
+
+							// Convert each tilemap to a new canvas (leave existing tilemap.)
+							let tilemap_keys = Object.keys(tilemaps);
+							for(let m = 0; m<tilemap_keys.length; m+=1){
+								let tilemap_name = tilemap_keys[m];
+
+								let tilemap = tilemaps[ tilemap_keys[m] ];
+								let mapWidth  = tilemap[0];
+								let mapHeight = tilemap[1];
+
+								let tile_w = core.SETTINGS['TILE_WIDTH'];
+								let tile_h = core.SETTINGS['TILE_HEIGHT'];
+
+								// Create the canvas container.
+								let canvas    = document.createElement("canvas");
+								canvas.width  = mapWidth  * tile_w ;
+								canvas.height = mapHeight * tile_h ;
+								let ctx       = canvas.getContext("2d");
+
+								// Draw the tiles (which are canvases) onto this canvas.
+								for(let y=0; y<mapHeight; y+=1){
+									for(let x=0; x<mapWidth; x+=1){
+										let tileIndex = tilemap[ (y * mapWidth) + x + 2 ];
+										let tile = tileset[tileIndex];
+
+										ctx.drawImage(tile.canvas, x*tile_w, y*tile_h);
+									}
+								}
+
+								// Save the new object.
+								core.GRAPHICS.ASSETS.tilemaps_canvas[tilesetName][tilemap_name]={
+									"canvas":canvas,
+									"imgData":ctx.getImageData(0, 0, canvas.width, canvas.height),
+									"numUsed":0,
+								}
+
+							}
+						}
+					}
+				};
+
 				// Convert core.ASSETS.graphics.tiles to an array of canvases.
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_post_graphicsConversion" , "START");
 				post_graphicsConversion();
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_post_graphicsConversion" , "END");
+
+				//
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_post_graphicsConversion2" , "START");
+				post_graphicsConversion2();
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_post_graphicsConversion2" , "END");
 
 				// Make sure all canvases are cleared.
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_clearAllCanvases"        , "START");
@@ -594,7 +736,7 @@ core.GRAPHICS.FUNCS.returnNewTile_obj = function(){
 		"drawThis"  : false     , // New draw status.  true: tile will be drawn., false: tile will not be drawn (assumes already drawn.)
 		"x"         : 0         , // Pixel-aligned x position.
 		"y"         : 0         , // Pixel-aligned y position.
-		"tileindex" : 0         , // Tile index. Index into core.GRAPHICS.tiles .
+		"tileindex" : 0         , // Tile index. Index into core.GRAPHICS.ASSETS.tileObjs.
 		"tileset"   : ""        , // Name of tileset.
 		"flags"     : {
 			"ROT"     : 0     , // Rotation. (degrees, -360 through +360. Default: 0.)
@@ -602,6 +744,8 @@ core.GRAPHICS.FUNCS.returnNewTile_obj = function(){
 			"FLIP_Y"  : false , // true: Tile canvas flipped vertically., false: Tile is not flipped vertically
 			"OFF"     : true  , // true: tile is ignored. false, tile is drawn.
 			"SPRITE"  : false , // true: x and y are used as is., false, x=x*TILE_WIDTH y=y*TILE_HEIGHT.
+			"CLEAR"   : false , // true: cleared before draw., false: not cleared before draw (overrides the layer clearThis setting.)
+			"CANVAS"  : false , // true: draw as whole canvas., false: draw as individual tiles.
 		},
 	};
 
@@ -650,7 +794,18 @@ core.GRAPHICS.FUNCS.ClearVram           = function(layer){
 	let layersToClear=[];
 
 	// If a layer was not specifed then clear all layers.
-	if(!layer){ for(let c=0; c<core.GRAPHICS.DATA.DRAWORDER.length; c+=1){ layersToClear.push(core.GRAPHICS.DATA.DRAWORDER[c]); } }
+	if(layer==undefined){
+		for(let c=0; c<core.GRAPHICS.DATA.DRAWORDER.length; c+=1){
+			let l = core.GRAPHICS.DATA.DRAWORDER[c];
+			if(!core.SETTINGS.layers[l].sprite){
+				layersToClear.push(core.GRAPHICS.DATA.DRAWORDER[c]);
+			}
+			else{
+				// core.GRAPHICS.FUNCS.clearSprites(l);
+			}
+		}
+	}
+
 	// If a specific layer was specified then only clear that layer.
 	else{ layersToClear.push(layer); }
 
@@ -660,14 +815,34 @@ core.GRAPHICS.FUNCS.ClearVram           = function(layer){
 	// Clear the specified VRAM(s).
 	for(let l=0; l<layersToClear.length; l+=1){
 		layer=layersToClear[l];
+
+		// Determine which tile to clear with.
+		let clearWith = core.GRAPHICS.DATA.FLAGS[layer].clearWith;
+		let clearTileset="default_tileset";
+		let clearIndex;
+		if     (clearWith=="black")      { clearIndex=0; }
+		else if(clearWith=="transparent"){ clearIndex=1; }
+		else{
+			let str = ["=E= ClearVram: clearWith is invalid.", layer, clearWith,clearTileset,clearIndex];
+			console.error(str);
+			throw Error(str);
+		}
+
 		for(let i=0; i<screen_wh; i+=1){
 			core.GRAPHICS.DATA.VRAM[layer][i]=core.GRAPHICS.FUNCS.returnNewTile_obj();
-
-			// Set clear and OFF for this tile.
-			// core.GRAPHICS.DATA.VRAM[layer][i].drawThis=true;
-			core.GRAPHICS.DATA.VRAM[layer][i].clearThis=true;
-			core.GRAPHICS.DATA.VRAM[layer][i].flags.OFF=true;
+			//
+			// core.GRAPHICS.DATA.VRAM[layer][i].drawThis     = true;
+			core.GRAPHICS.DATA.VRAM[layer][i].clearThis    = true;
+			// core.GRAPHICS.DATA.VRAM[layer][i].tileset      = clearTileset;
+			// core.GRAPHICS.DATA.VRAM[layer][i].tileindex    = clearIndex;
+			core.GRAPHICS.DATA.VRAM[layer][i].flags.SPRITE = false;
+			core.GRAPHICS.DATA.VRAM[layer][i].flags.OFF    = false;
+			// core.GRAPHICS.DATA.VRAM[layer][i].flags.CLEAR  = true;
 		}
+
+		// Set this layer to update.
+		core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
+		core.GRAPHICS.DATA.FLAGS[layer].REDRAW=true;
 	}
 };
 // Clears all canvases and sets the OUTPUT canvas to all black;
@@ -676,30 +851,36 @@ core.GRAPHICS.FUNCS.clearAllCanvases    = function(){
 	for(let c=0; c<core.GRAPHICS.DATA.DRAWORDER.length; c+=1){
 		// Clear the canvas.
 		let layerName = core.GRAPHICS.DATA.DRAWORDER[c];
-		let canvas = core.GRAPHICS.canvas[layerName];
-		let ctx = core.GRAPHICS.ctx[layerName];
+		let canvas    = core.GRAPHICS.canvas[layerName];
+		let ctx       = core.GRAPHICS.ctx[layerName];
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-		// Clear the related VRAM.
-		for(let layer in core.SETTINGS['layers']){
-			core.GRAPHICS.FUNCS.ClearVram(layer);
-		}
 	}
+
+	// Clear the VRAM and SPRITES.
+
+	// For grid-locked VRAM-type layers.
+	core.GRAPHICS.FUNCS.ClearVram();
+	// For non-grid-locked SPRITE-type layers.
+	core.GRAPHICS.FUNCS.clearSprites();
 
 	// Clear the OUTPUT canvas.
 	let canvas = core.GRAPHICS.canvas["OUTPUT"];
 	let ctx    = core.GRAPHICS.ctx["OUTPUT"];
-	ctx.fillStyle = "rgba(0, 0, 0, 1.0)";       // Black
+	// ctx.fillStyle = "rgba(0, 0, 0, 1.0)";       // Black
 	// ctx.fillStyle = "rgba(255, 255, 255, 1.0)"; // White
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	// ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctx.clearRect( 0,0, canvas.width, canvas.height );
 };
-// Can draw any map from any tileset to any layer.
+// Can draw any map from any tileset to any layer. (Draws tile-based BG, TEXT, and SPRITE.)
 core.GRAPHICS.FUNCS.update_layers_type1 = function(){
 	return new Promise(function(res,rej){
+		try{
 		// PER LAYER:
 			// Force "clearThis" on a tile if tindicated or specified by gamesettings.json.
 			// Draw only the tiles that have the "drawThis" flag set.
 			// Clear only the tiles that have the "clearThis" flag set.
+
+		let updateOUTPUT = false;
 
 		if(!core.GRAPHICS.performance.LAYERS["update_layers_type1"]){
 			core.GRAPHICS.performance.LAYERS["update_layers_type1"]=[ 0, 0, 0, 0, 0 ];
@@ -711,50 +892,106 @@ core.GRAPHICS.FUNCS.update_layers_type1 = function(){
 		// Determine the output canvas.
 		for(let c=0; c<core.GRAPHICS.DATA.DRAWORDER.length; c+=1){
 			let layerName = core.GRAPHICS.DATA.DRAWORDER[c]    ;
-			let canvas    = core.GRAPHICS.canvas[layerName]    ;
+
+			// let canvas    = core.GRAPHICS.canvas[layerName]    ;
 			let ctx       = core.GRAPHICS.ctx[layerName]       ;
-			let VRAM      = core.GRAPHICS.DATA.VRAM[layerName] ;
+
+			// Sprites.
+			let data ;
+			if(core.SETTINGS.layers[layerName].sprite){
+				data = core.GRAPHICS.DATA.SPRITES[layerName] ;
+			}
+			// Non-sprites
+			else{
+				data = core.GRAPHICS.DATA.VRAM[layerName] ;
+			}
 
 			let drawStart = performance.now();
 
 			// The layer needs an update.
 			let updateNeeded = core.GRAPHICS.DATA.FLAGS[layerName].UPDATE;
+
 			// The layer must be redrawn.
 			let forceRedraw  = core.GRAPHICS.DATA.FLAGS[layerName].REDRAW;
 
-			// Clear the tile if indicated.
-			for(let t=0; t<VRAM.length; t+=1){
-				// Is this tile set to be cleared?
-				if( VRAM[t].clearThis ){
-					// Get the x and y positions.
-					let x         = VRAM[t].x    ;
-					let y         = VRAM[t].y    ;
-
-					// Clear the tile destination first.
-					ctx.clearRect( (x) << 0, (y) << 0, core.SETTINGS.TILE_WIDTH, core.SETTINGS.TILE_HEIGHT );
-
-					// Clear the clearThis flag.
-					VRAM[t].clearThis=false;
-				}
-			}
-
 			// Draw the tile if indicated.
 			if(updateNeeded || forceRedraw){
-				// Go through the VRAM.
-				for(let t=0; t<VRAM.length; t+=1){
+				// Clear the tile if indicated.
+				for(let t=0; t<data.length; t+=1){
+					// Skip gaps in the array. (Would happen more often with sprites.)
+					if(!data[t]){ continue; }
+
+					// Skip the whole canvas drawing tiles. This is handled elsewhere.
+					if(data[t].flags.CANVAS){ continue; }
+
+					// Is this tile set to be cleared?
+					if( data[t].clearThis ){
+						// let tile = core.GRAPHICS.ASSETS.tileObjs[ data[t].tileset ][ data[t].tileindex ];
+						// let canvas = tile.canvas;
+
+						// Determine which tile to clear with.
+						let clearWith = core.GRAPHICS.DATA.FLAGS[layerName].clearWith;
+						let clearTileset="default_tileset";
+						let clearIndex;
+						if     (clearWith=="black")      { clearIndex=0; }
+						else if(clearWith=="transparent"){ clearIndex=1; }
+						else{
+							let str = ["=E= update_layers_type1: clearWith is invalid.", layerName, clearWith,clearTileset,clearIndex];
+							console.error(str);
+							throw Error(str);
+						}
+
+						// console.log("Clearing", t, data[t]);
+						// Get the x and y positions.
+						let x         = data[t].x    ;
+						let y         = data[t].y    ;
+
+						// Clear the tile destination first.
+						ctx.clearRect( (x) << 0, (y) << 0, core.SETTINGS.TILE_WIDTH, core.SETTINGS.TILE_HEIGHT );
+						ctx.clearRect( (x) << 0, (y) << 0, core.SETTINGS.TILE_WIDTH, core.SETTINGS.TILE_HEIGHT );
+
+						// Draw the tile.
+						tile         = core.GRAPHICS.ASSETS.tileObjs[clearTileset][clearIndex]  ;
+						try{
+							tile_canvas  = tile.canvas  ;
+							tile_imgData = tile.imgData ;
+							ctx.drawImage( tile_canvas, (x) << 0, (y) << 0 );
+							tile.numUsed+=1;
+						}
+						catch(e){
+							let str = ["=E= update_layers_type1: (in clear) canvas or imgData not found.", e];
+							rej(str);
+							throw Error(str);
+							return;
+						}
+
+						// Clear the clearThis flag.
+						data[t].clearThis=false;
+					}
+				}
+
+				// Go through the data.
+				for(let t=0; t<data.length; t+=1){
+					// Skip gaps in the array. (Would happen more often with sprites.)
+					if(!data[t]){ continue; }
+
+					// Skip the whole canvas drawing tiles. This is handled elsewhere.
+					if(data[t].flags.CANVAS){ continue; }
+
 					// Draw this tile?
-					if(VRAM[t].drawThis || forceRedraw){
+					if(data[t].drawThis || forceRedraw){
 						// Get some data on the tile.
-						let tileset   = VRAM[t].tileset      ;
-						let tileindex = VRAM[t].tileindex    ;
-						let ROT       = VRAM[t].flags.ROT    ;
-						let FLIP_X    = VRAM[t].flags.FLIP_X ;
-						let FLIP_Y    = VRAM[t].flags.FLIP_Y ;
-						let OFF       = VRAM[t].flags.OFF    ;
+						let tileset   = data[t].tileset      ;
+						let tileindex = data[t].tileindex    ;
+						let flags     = data[t].flags        ;
+						let ROT       = data[t].flags.ROT    ;
+						let FLIP_X    = data[t].flags.FLIP_X ;
+						let FLIP_Y    = data[t].flags.FLIP_Y ;
+						let OFF       = data[t].flags.OFF    ;
 
 						// Get the x and y positions.
-						let x         = VRAM[t].x    ;
-						let y         = VRAM[t].y    ;
+						let x         = data[t].x    ;
+						let y         = data[t].y    ;
 
 						// Skip the drawing if at least one of these conditions is true.
 						if(!tileset || tileset==""){ continue; }
@@ -765,36 +1002,99 @@ core.GRAPHICS.FUNCS.update_layers_type1 = function(){
 						let tile_canvas;
 						let tile_imgData;
 
-						// Use the normal unmodified tile?
-						if(!ROT && !FLIP_X && !FLIP_Y){
-							tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][VRAM[t].tileindex]  ;
+						// Non-sprites (No ROT, FLIP_X, or FLIP_Y.)
+						if(!core.SETTINGS.layers[layerName].sprite){
+							// Use the normal unmodified tile.
+							tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
 							try{
-								tile_canvas  = core.GRAPHICS.ASSETS.tileObjs[tileset][VRAM[t].tileindex].canvas  ;
-								tile_imgData = core.GRAPHICS.ASSETS.tileObjs[tileset][VRAM[t].tileindex].imgData ;
+								tile_canvas  = tile.canvas  ;
+								tile_imgData = tile.imgData ;
 							}
 							catch(e){
-								let str = ["=E= update_layers_type1: canvas or imgData not found.", e];
+								let str = ["=E= update_layers_type1: (non-sprite in draw) canvas or imgData not found.", e];
 								rej(str);
 								throw Error(str);
 								return;
 							}
 						}
-						// Tile has modifications. Use cached modification or generate new.
+						// Sprites (Possible ROT, FLIP_X, or FLIP_Y.)
 						else{
-							// Skip these tiles. (TODO)
-							continue;
-
-							// Flip X and/or Flip Y?
-							if(FLIP_X | FLIP_Y){
-
+							// Use the normal unmodified tile?
+							if(!ROT && !FLIP_X && !FLIP_Y){
+								tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
+								try{
+									tile_canvas  = tile.canvas  ;
+									tile_imgData = tile.imgData ;
+								}
+								catch(e){
+									let str = ["=E= update_layers_type1: (sprite in draw) canvas or imgData not found.", e];
+									rej(str);
+									throw Error(str);
+									return;
+								}
 							}
+							// Tile has modifications. Use cached modification or generate new.
+							else{
+								// Original tile (unmodified.)
+								tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
 
-							// Rotate?
-							if(ROT){
+								// Rotate? Flip X? Flip Y?
+								if(ROT!=0 || FLIP_X || FLIP_Y){
+									// Original, unmodifed tile.
+									tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
 
+									// Try to find a cached copy of this tile.
+									let cachedTile = core.GRAPHICS.FUNCS.findFlippedTileInCache (tileset, tileindex, flags);
+
+									// Not available in cache? Create the tile and then add the cachedTile to the cache.
+									if(cachedTile.tile===false){
+										// Modifiy the tile.
+										let modifiedTile = core.GRAPHICS.FUNCS.flipImage_canvas(tile, tileset, tileindex, flags);
+										// console.log("Created modified tile:",modifiedTile,tileset,tileindex,flags);
+
+										// Set this tile to be drawn.
+										tile = modifiedTile;
+										tile_canvas  = tile.canvas  ;
+										tile_imgData = tile.imgData ;
+
+										// Cache new tiles that have one of the following rotations.
+										if(ROT==0 || ROT == 90 || ROT == 180 || ROT == 270){
+											// Add the tile data to the cache.
+											// console.log("Adding tile to cache:",modifiedTile,tileset,tileindex,flags);
+											core.GRAPHICS.FUNCS.AddFlippedTileToCache(modifiedTile, tileset, tileindex, flags);
+										}
+										else{
+											// Original, unmodifed tile.
+											// console.log("NOT adding tile to cache:",modifiedTile,tileset,tileindex,flags);
+											continue;
+										}
+									}
+									// In cache? Use the returned tile object.
+									else{
+										// console.log("Using existing cache:",cachedTile, tileset,tileindex,flags);
+										tile = cachedTile.tile;
+										tile_canvas  = tile.canvas  ;
+										tile_imgData = tile.imgData ;
+									}
+
+								}
+								else{
+									try{
+										// Original tile (unmodified.)
+										tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
+										tile_canvas  = tile.canvas  ;
+										tile_imgData = tile.imgData ;
+									}
+									catch(e){
+										let str = ["=E= update_layers_type1: (sprite no flags in draw) canvas or imgData not found.", e];
+										rej(str);
+										throw Error(str);
+										return;
+									}
+								}
 							}
-
 						}
+
 
 						// Try to draw the tile.
 						try{
@@ -802,7 +1102,7 @@ core.GRAPHICS.FUNCS.update_layers_type1 = function(){
 							ctx.drawImage( tile_canvas, (x) << 0, (y) << 0 );
 
 							// Update some flags.
-							VRAM[t].drawThis=false;
+							data[t].drawThis=false;
 							tile.numUsed+=1;
 						}
 						catch(e){
@@ -814,6 +1114,12 @@ core.GRAPHICS.FUNCS.update_layers_type1 = function(){
 					}
 				}
 
+				// Set the updateOUTPUT flag.
+				updateOUTPUT=true;
+
+				// Set the last update time for this layer.
+				core.GRAPHICS.DATA.FLAGS[layerName].lastUpdate=performance.now();
+
 				// Clear the UPDATE and REDRAW flags for this layer.
 				core.GRAPHICS.DATA.FLAGS[layerName].UPDATE=false;
 				core.GRAPHICS.DATA.FLAGS[layerName].REDRAW=false;
@@ -824,18 +1130,301 @@ core.GRAPHICS.FUNCS.update_layers_type1 = function(){
 
 		// Done! Resolve.
 		if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance.LAYERS["update_layers_type1"].push(performance.now() - drawStart_update_layers_type1);                   }
-		res();
+		res( {"updateOUTPUT":updateOUTPUT} );
+		}
+		catch(e){
+			console.log("=E= update_layers_type1: failure.", e);
+			throw Error(e);
+			rej(e);
+		}
 	});
+};
+// For sprites.
+core.GRAPHICS.FUNCS.update_layers_type2 = function(){
+	return new Promise(function(res,rej){
+		// Skip the whole canvas drawing tiles. This is handled elsewhere.
+		// if(!data[t].flags.CANVAS){ continue; }
+
+		// let updateOUTPUT = false;
+		let updateOUTPUT = true;
+		res( {"updateOUTPUT":updateOUTPUT} );
+	});
+
+	return new Promise(function(res,rej){
+		try{
+		// PER LAYER:
+			// Force "clearThis" on a tile if tindicated or specified by gamesettings.json.
+			// Draw only the tiles that have the "drawThis" flag set.
+			// Clear only the tiles that have the "clearThis" flag set.
+
+		let updateOUTPUT = false;
+
+		if(!core.GRAPHICS.performance.LAYERS["update_layers_type2"]){
+			core.GRAPHICS.performance.LAYERS["update_layers_type2"]=[ 0, 0, 0, 0, 0 ];
+		}
+
+		let drawStart_update_layers_type2;
+		if(JSGAME.FLAGS.debug) { drawStart_update_layers_type2 = performance.now(); core.GRAPHICS.performance.LAYERS["update_layers_type1"].shift(); }
+
+		// Determine the output canvas.
+		for(let c=0; c<core.GRAPHICS.DATA.DRAWORDER.length; c+=1){
+			let layerName = core.GRAPHICS.DATA.DRAWORDER[c]    ;
+
+			// let canvas    = core.GRAPHICS.canvas[layerName]    ;
+			let ctx       = core.GRAPHICS.ctx[layerName]       ;
+
+			// Sprites.
+			let data ;
+			if(core.SETTINGS.layers[layerName].sprite){
+				data = core.GRAPHICS.DATA.SPRITES[layerName] ;
+			}
+			// Non-sprites
+			else{
+				data = core.GRAPHICS.DATA.VRAM[layerName] ;
+			}
+
+			let drawStart = performance.now();
+
+			// The layer needs an update.
+			let updateNeeded = core.GRAPHICS.DATA.FLAGS[layerName].UPDATE;
+
+			// The layer must be redrawn.
+			let forceRedraw  = core.GRAPHICS.DATA.FLAGS[layerName].REDRAW;
+
+			// Draw the tile if indicated.
+			if(updateNeeded || forceRedraw){
+				// Clear the tile if indicated.
+				for(let t=0; t<data.length; t+=1){
+					// Skip gaps in the array. (Would happen more often with sprites.)
+					if(!data[t]){ continue; }
+
+					// Skip the whole canvas drawing tiles. This is handled elsewhere.
+					if(!data[t].flags.CANVAS){ continue; }
+
+					// Is this tile set to be cleared?
+					if( data[t].clearThis ){
+						// let tile = core.GRAPHICS.ASSETS.tileObjs[ data[t].tileset ][ data[t].tileindex ];
+						// let canvas = tile.canvas;
+
+						// Determine which tile to clear with.
+						let clearWith = core.GRAPHICS.DATA.FLAGS[layerName].clearWith;
+						let clearTileset="default_tileset";
+						let clearIndex;
+						if     (clearWith=="black")      { clearIndex=0; }
+						else if(clearWith=="transparent"){ clearIndex=1; }
+						else{
+							let str = ["=E= update_layers_type2: clearWith is invalid.", layerName, clearWith,clearTileset,clearIndex];
+							console.error(str);
+							throw Error(str);
+						}
+
+						// console.log("Clearing", t, data[t]);
+						// Get the x and y positions.
+						let x         = data[t].x    ;
+						let y         = data[t].y    ;
+
+						// Clear the tile destination first.
+						ctx.clearRect( (x) << 0, (y) << 0, core.SETTINGS.TILE_WIDTH, core.SETTINGS.TILE_HEIGHT );
+						ctx.clearRect( (x) << 0, (y) << 0, core.SETTINGS.TILE_WIDTH, core.SETTINGS.TILE_HEIGHT );
+
+						// Draw the tile.
+						tile         = core.GRAPHICS.ASSETS.tileObjs[clearTileset][clearIndex]  ;
+						try{
+							tile_canvas  = tile.canvas  ;
+							tile_imgData = tile.imgData ;
+							ctx.drawImage( tile_canvas, (x) << 0, (y) << 0 );
+							tile.numUsed+=1;
+						}
+						catch(e){
+							let str = ["=E= update_layers_type2: (in clear) canvas or imgData not found.", e];
+							rej(str);
+							throw Error(str);
+							return;
+						}
+
+						// Clear the clearThis flag.
+						data[t].clearThis=false;
+					}
+				}
+
+				// Go through the data.
+				for(let t=0; t<data.length; t+=1){
+					// Skip gaps in the array. (Would happen more often with sprites.)
+					if(!data[t]){ continue; }
+
+					// Skip the whole canvas drawing tiles. This is handled elsewhere.
+					if(!data[t].flags.CANVAS){ continue; }
+
+					// Draw this tile?
+					if(data[t].drawThis || forceRedraw){
+						// Get some data on the tile.
+						let tileset   = data[t].tileset      ;
+						let tileindex = data[t].tileindex    ;
+						let flags     = data[t].flags        ;
+						let ROT       = data[t].flags.ROT    ;
+						let FLIP_X    = data[t].flags.FLIP_X ;
+						let FLIP_Y    = data[t].flags.FLIP_Y ;
+						let OFF       = data[t].flags.OFF    ;
+
+						// Get the x and y positions.
+						let x         = data[t].x    ;
+						let y         = data[t].y    ;
+
+						// Skip the drawing if at least one of these conditions is true.
+						if(!tileset || tileset==""){ continue; }
+						if(OFF)                    { console.log("tile set to off"); continue; }
+
+						// Get the tile object and graphics data.
+						let tile;
+						let tile_canvas;
+						let tile_imgData;
+
+						// Non-sprites (No ROT, FLIP_X, or FLIP_Y.)
+						if(!core.SETTINGS.layers[layerName].sprite){
+							// Use the normal unmodified tile.
+							tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
+							try{
+								tile_canvas  = tile.canvas  ;
+								tile_imgData = tile.imgData ;
+							}
+							catch(e){
+								let str = ["=E= update_layers_type2: (non-sprite in draw) canvas or imgData not found.", e];
+								rej(str);
+								throw Error(str);
+								return;
+							}
+						}
+						// Sprites (Possible ROT, FLIP_X, or FLIP_Y.)
+						else{
+							// Use the normal unmodified tile?
+							if(!ROT && !FLIP_X && !FLIP_Y){
+								tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
+								try{
+									tile_canvas  = tile.canvas  ;
+									tile_imgData = tile.imgData ;
+								}
+								catch(e){
+									let str = ["=E= update_layers_type2: (sprite in draw) canvas or imgData not found.", e];
+									rej(str);
+									throw Error(str);
+									return;
+								}
+							}
+							// Tile has modifications. Use cached modification or generate new.
+							else{
+								// Original tile (unmodified.)
+								tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
+
+								// Rotate? Flip X? Flip Y?
+								if(ROT!=0 || FLIP_X || FLIP_Y){
+									// Original, unmodifed tile.
+									tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
+
+									// Try to find a cached copy of this tile.
+									let cachedTile = core.GRAPHICS.FUNCS.findFlippedTileInCache (tileset, tileindex, flags);
+
+									// Not available in cache? Create the tile and then add the cachedTile to the cache.
+									if(cachedTile.tile===false){
+										// Modifiy the tile.
+										let modifiedTile = core.GRAPHICS.FUNCS.flipImage_canvas(tile, tileset, tileindex, flags);
+										// console.log("Created modified tile:",modifiedTile,tileset,tileindex,flags);
+
+										// Set this tile to be drawn.
+										tile = modifiedTile;
+										tile_canvas  = tile.canvas  ;
+										tile_imgData = tile.imgData ;
+
+										// Cache new tiles that have one of the following rotations.
+										if(ROT==0 || ROT == 90 || ROT == 180 || ROT == 270){
+											// Add the tile data to the cache.
+											// console.log("Adding tile to cache:",modifiedTile,tileset,tileindex,flags);
+											core.GRAPHICS.FUNCS.AddFlippedTileToCache(modifiedTile, tileset, tileindex, flags);
+										}
+										else{
+											// Original, unmodifed tile.
+											// console.log("NOT adding tile to cache:",modifiedTile,tileset,tileindex,flags);
+											continue;
+										}
+									}
+									// In cache? Use the returned tile object.
+									else{
+										// console.log("Using existing cache:",cachedTile, tileset,tileindex,flags);
+										tile = cachedTile.tile;
+										tile_canvas  = tile.canvas  ;
+										tile_imgData = tile.imgData ;
+									}
+
+								}
+								else{
+									try{
+										// Original tile (unmodified.)
+										tile         = core.GRAPHICS.ASSETS.tileObjs[tileset][tileindex] ;
+										tile_canvas  = tile.canvas  ;
+										tile_imgData = tile.imgData ;
+									}
+									catch(e){
+										let str = ["=E= update_layers_type2: (sprite no flags in draw) canvas or imgData not found.", e];
+										rej(str);
+										throw Error(str);
+										return;
+									}
+								}
+							}
+						}
+
+
+						// Try to draw the tile.
+						try{
+							// Draw the tile.
+							ctx.drawImage( tile_canvas, (x) << 0, (y) << 0 );
+
+							// Update some flags.
+							data[t].drawThis=false;
+							tile.numUsed+=1;
+						}
+						catch(e){
+							// console.log(e);
+							let str = ["=E= update_layers_type2: ", e];
+							rej(str);
+							throw Error(str);
+						}
+					}
+				}
+
+				// Set the updateOUTPUT flag.
+				updateOUTPUT=true;
+
+				// Set the last update time for this layer.
+				core.GRAPHICS.DATA.FLAGS[layerName].lastUpdate=performance.now();
+
+				// Clear the UPDATE and REDRAW flags for this layer.
+				core.GRAPHICS.DATA.FLAGS[layerName].UPDATE=false;
+				core.GRAPHICS.DATA.FLAGS[layerName].REDRAW=false;
+			}
+
+			if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance.LAYERS[layerName].shift(); core.GRAPHICS.performance.LAYERS[layerName].push(performance.now() - drawStart);                   }
+		}
+
+		// Done! Resolve.
+		if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance.LAYERS["update_layers_type2"].push(performance.now() - drawStart_update_layers_type2);                   }
+		res( {"updateOUTPUT":updateOUTPUT} );
+		}
+		catch(e){
+			console.log("=E= update_layers_type2: failure.", e);
+			throw Error(e);
+			rej(e);
+		}
+	});
+
+
 };
 // Combines the layer and draws to the OUTPUT canvas.
 core.GRAPHICS.FUNCS.update_layer_OUTPUT = function(){
 	return new Promise(function(res,rej){
-		// Create the temp output.
-		let tempOutput     = document.createElement("canvas");
-		JSGAME.SHARED.setpixelated(tempOutput);
-		let tempOutput_ctx = tempOutput.getContext('2d', { alpha: true });
-		tempOutput.width   = core.GRAPHICS["canvas"].OUTPUT.width;
-		tempOutput.height  = core.GRAPHICS["canvas"].OUTPUT.height;
+		// Get a handle to the temp output.
+		let tempOutput = core.GRAPHICS.canvas.pre_OUTPUT;
+		let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
+		tempOutput_ctx.clearRect( 0,0, tempOutput.width, tempOutput.height );
 
 		// Draw each layer to the OUTPUT in the order specified by the gamesettings.json file.
 		for(let i=0; i<core.GRAPHICS.DATA.DRAWORDER.length; i+=1){
@@ -845,6 +1434,7 @@ core.GRAPHICS.FUNCS.update_layer_OUTPUT = function(){
 		}
 
 		// Draw to the OUTPUT canvas.
+		core.GRAPHICS.ctx.OUTPUT.clearRect( 0,0, core.GRAPHICS.canvas.OUTPUT.width, core.GRAPHICS.canvas.OUTPUT.height );
 		core.GRAPHICS.ctx.OUTPUT.drawImage(tempOutput,0,0);
 
 		// Done! Resolve.
@@ -853,37 +1443,47 @@ core.GRAPHICS.FUNCS.update_layer_OUTPUT = function(){
 };
 // Invokes the layer updates.
 core.GRAPHICS.FUNCS.update_allLayers    = function(){
+	// This should not fire until the game is ready. This is a guard (and is likely unneeded.)
+	if(!JSGAME.FLAGS.gameReady){ alert("game not ready but update_allLayers was started."); return ; }
+
 	// While this flag is set, main will not run the logic loop or another graphics loop.
 	core.GRAPHICS.DATA.INLAYERUPDATE=true;
 
 	// If an update is not needed then the promise will resolve right away.
 	let proms = [
 		core.GRAPHICS.FUNCS.update_layers_type1() ,
+		core.GRAPHICS.FUNCS.update_layers_type2() ,
 	];
 
 	Promise.all(proms).then(
 		// Success? Write the OUTPUT layer.
-		function(){
-			core.GRAPHICS.FUNCS.update_layer_OUTPUT().then(
-				// Success?
-				function(){
-					// Clear INLAYERUPDATE to allow another game loop.
-					core.GRAPHICS.DATA.INLAYERUPDATE=false;
-				},
-				// Failure?
-				function(err){
-					// Throw error.
-					let str = ["=E= update_allLayers: failed in update_layer_OUTPUT: ", err];
-					// console.error(str);
-					throw Error(str);
-				}
-			);
+		function(res){
+			if( res[0].updateOUTPUT || res[1].updateOUTPUT ){
+				core.GRAPHICS.FUNCS.update_layer_OUTPUT().then(
+					// Success?
+					function(){
+						// Clear INLAYERUPDATE to allow another game loop.
+						core.GRAPHICS.DATA.INLAYERUPDATE=false;
+					},
+					// Failure?
+					function(err){
+						// Throw error.
+						let str = ["=E= update_allLayers: failed in update_layer_OUTPUT: ", err];
+						console.error(str);
+						throw Error(str);
+					}
+				);
+			}
+			else {
+				// Clear INLAYERUPDATE to allow another game loop.
+				core.GRAPHICS.DATA.INLAYERUPDATE=false;
+			}
 		},
-		// Failure of at least one promise in the array?
+			// Failure of at least one promise in the array?
 		function(err){
 			// Throw error.
 			let str = ["=E= update_allLayers: failed promise in layer draws: ", err];
-			// console.error(err, str);
+			console.error(err, str);
 			throw Error(str);
 		},
 	);
@@ -951,6 +1551,7 @@ core.GRAPHICS.FUNCS.SetTile      = function(x, y, tileid, tileset, layer, flags)
 	currentTile.flags.FLIP_Y = false;
 	currentTile.flags.OFF    = false;
 	currentTile.flags.SPRITE = false;
+	currentTile.flags.CLEAR = false;
 
 	// If flags were specified, then use them to override the default settings.
 	if(flags.ROT   ) { currentTile.flags.ROT    = flags.ROT    ; }
@@ -958,23 +1559,21 @@ core.GRAPHICS.FUNCS.SetTile      = function(x, y, tileid, tileset, layer, flags)
 	if(flags.FLIP_Y) { currentTile.flags.FLIP_Y = flags.FLIP_Y ; }
 	if(flags.OFF   ) { currentTile.flags.OFF    = flags.OFF    ; }
 	if(flags.SPRITE) { currentTile.flags.SPRITE = flags.SPRITE ; }
+	if(flags.CLEAR ) { currentTile.flags.CLEAR  = flags.CLEAR  ; }
 
 	// Change the tile data.
-	if(currentTile.flags.OFF){ currentTile.clearThis=true; }
-	else                     { currentTile.clearThis = core.SETTINGS['layers'][layer].clearBeforeDraw; }
+	if     ( currentTile.flags.OFF   ){ currentTile.clearThis = true ; }
+	else if( currentTile.flags.CLEAR ){ currentTile.clearThis = true ; }
+	else                              { currentTile.clearThis = core.SETTINGS['layers'][layer].clearBeforeDraw ; }
+	currentTile.flags.CLEAR=false; // Flag value no longer needed.
+
 	currentTile.drawThis     = true;
 	currentTile.tileindex    = tileid;
 	currentTile.tileset      = tileset;
 
-	// Adjust coordinates if this is NOT a sprite.
-	if(currentTile.flags.SPRITE){
-		currentTile.x = x ;
-		currentTile.y = y ;
-	}
-	else{
-		currentTile.x = x * core.SETTINGS['TILE_WIDTH']  ;
-		currentTile.y = y * core.SETTINGS['TILE_HEIGHT'] ;
-	}
+	// Adjust coordinates to be pixel-aligned instead of grid-aligned.
+	currentTile.x = x * core.SETTINGS['TILE_WIDTH']  ;
+	currentTile.y = y * core.SETTINGS['TILE_HEIGHT'] ;
 
 	// Make the change.
 	core.GRAPHICS.DATA.VRAM[layer][addr] = currentTile ;
@@ -1034,7 +1633,7 @@ core.GRAPHICS.FUNCS.DrawMap2     = function(x, y, map, tileset, layer, flags){
 	// Can accept either an Array or an ArrayBuffer view.
 	if     (typeof map == "string"){
 		if(!core.GRAPHICS.ASSETS.tilemaps[tileset][map]){
-			let str = ["=E= DrawMap2: Map not valid: ", tileset, map, e ];
+			let str = ["=E= DrawMap2: Map not valid: ", tileset, map ];
 			throw Error(str);
 		}
 		else { map = core.GRAPHICS.ASSETS.tilemaps[tileset][map]; }
@@ -1097,7 +1696,7 @@ core.GRAPHICS.FUNCS.DrawMap_customDimensions = function(sx, sy, nw, nh, map, til
 	// Can accept either an Array or an ArrayBuffer view.
 	if     (typeof map == "string"){
 		if(!core.GRAPHICS.ASSETS.tilemaps[tileset][map]){
-			let str = ["=E= DrawMap_customDimensions: Map not valid: ", tileset, map, e ];
+			let str = ["=E= DrawMap_customDimensions: Map not valid: ", tileset, map ];
 			throw Error(str);
 		}
 		// else { map = core.GRAPHICS.ASSETS.tilemaps[tileset][map]; }
@@ -1117,7 +1716,11 @@ core.GRAPHICS.FUNCS.DrawMap_customDimensions = function(sx, sy, nw, nh, map, til
 		}
 	}
 };
-// *** SPRITE functions. ***
+// // Fills a region with a tile based on map dimensions.
+// core.GRAPHICS.FUNCS.FillMap     = function(x, y, map, tileset, layer, flags, tileid){
+// 	// (xpos, ypos, w, h, tileid, tileset, layer, flags)
+// 	core.GRAPHICS.FUNCS.Fill(x, y, map[0], map[1], tileid, tileset, layer, flags );
+// };
 
 // *** TEXT functions. ***
 
@@ -1138,7 +1741,7 @@ core.GRAPHICS.FUNCS.Print   = function(x, y, string, map, tileset, layer, flags)
 	}
 	else if( map.constructor === Array || ArrayBuffer.isView(map) ){ map = map; }
 	else{
-		let str = ["=E= Print: Map not valid: ", tileset, map, e ];
+		let str = ["=E= Print: Map not valid: ", tileset, map ];
 		throw Error(str);
 	}
 
@@ -1273,4 +1876,321 @@ core.GRAPHICS.FUNCS.Print_multiFont   = function(data){
 	});
 };
 
+// *** SPRITE functions. ***
+
+/*
+	Sprites are non-grid-aligned tiles that support transparency.
+	Sprites do NOT use the VRAM array but they do use tile objects.
+	When sprites overlap the higher sprite id (not tile id) is on top.
+	OPTION #1: Sprites are cleared and redrawn on any update.
+
+	core.GRAPHICS.DATA.SPRITES holds the tile objects for each sprite.
+*/
+
+// Clears the core.GRAPHICS.DATA.SPRITES array.
+core.GRAPHICS.FUNCS.clearSprites = function(layer){
+	let layersToClear=[];
+
+	// If a layer was not specifed then clear all sprite layers.
+	if(layer==undefined){
+		for(let c=0; c<core.GRAPHICS.DATA.DRAWORDER.length; c+=1){
+			let l = core.GRAPHICS.DATA.DRAWORDER[c];
+			if(core.SETTINGS.layers[l].sprite){
+				layersToClear.push(core.GRAPHICS.DATA.DRAWORDER[c]);
+			}
+		}
+	}
+
+	// If a specific layer was specified then only clear that layer.
+	else{ layersToClear.push(layer); }
+
+	// Clear the sprite objects and the sprite canvas(es).
+	for(let c=0; c<layersToClear.length; c+=1){
+		let thisLayer = layersToClear[c];
+
+		// Determine which tile to clear with.
+		let clearWith = core.GRAPHICS.DATA.FLAGS[thisLayer].clearWith;
+		let clearTileset="default_tileset";
+		let clearIndex;
+		if     (clearWith=="black")      { clearIndex=0; }
+		else if(clearWith=="transparent"){ clearIndex=1; }
+		else{
+			let str = ["=E= clearSprites: clearWith is invalid.", thisLayer, clearWith,clearTileset,clearIndex];
+			console.error(str);
+			throw Error(str);
+		}
+
+		// Replace all sprites with the default tile object.
+		let len = core.GRAPHICS.DATA.SPRITES[thisLayer].length;
+		for(let i=0; i<len; i+=1){
+			core.GRAPHICS.DATA.SPRITES[thisLayer][i] = core.GRAPHICS.FUNCS.returnNewTile_obj();
+			// core.GRAPHICS.DATA.SPRITES[thisLayer][i].drawThis     = true;
+			core.GRAPHICS.DATA.SPRITES[thisLayer][i].clearThis    = true;
+			// core.GRAPHICS.DATA.SPRITES[thisLayer][i].tileset      = clearTileset;
+			// core.GRAPHICS.DATA.SPRITES[thisLayer][i].tileindex    = clearIndex;
+			core.GRAPHICS.DATA.SPRITES[thisLayer][i].flags.SPRITE = true;
+			core.GRAPHICS.DATA.SPRITES[thisLayer][i].flags.OFF    = false;
+			// core.GRAPHICS.DATA.SPRITES[thisLayer][i].flags.CLEAR  = true;
+		}
+
+		// Clear the canvas.
+		let canvas = core.GRAPHICS.canvas[thisLayer];
+		let ctx = core.GRAPHICS.ctx[thisLayer];
+		ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+		// Update the draw flag for the specified layer.
+		core.GRAPHICS.DATA.FLAGS[thisLayer].UPDATE=true;
+	}
+
+};
+// Adds the tiles of a sprite map to the sprites array.
+core.GRAPHICS.FUNCS.MapSprite2   = function(startSprite, map, tileset, layer, flags){
+	// A map can be specified as a string or an actual map array.
+
+	// Make sure the layer exists the tileset exists, and the map exists.
+	let layerExists   = core.SETTINGS['layers'][layer]              ? true : false;
+	let tilesetExists = core.GRAPHICS.ASSETS.tileObjs[tileset]      ? true : false;
+	if( !layerExists   ){ let str = ["=E= MapSprite2: Layer not found: "   + layer  ]; throw Error(str); }
+	if( !tilesetExists ){ let str = ["=E= MapSprite2: Tileset not found: " + tileset]; throw Error(str); }
+	if     (typeof map == "string"){
+		if(!core.GRAPHICS.ASSETS.tilemaps[tileset][map]){
+			let str = ["=E= MapSprite2: Map not valid: ", tileset, map ];
+			throw Error(str);
+		}
+		else { map = core.GRAPHICS.ASSETS.tilemaps[tileset][map]; }
+	}
+	else if( map.constructor === Array || ArrayBuffer.isView(map) ){ map = map; }
+	else{
+		let str = ["=E= MapSprite2: Map not valid: ", tileset, map ];
+		throw Error(str);
+	}
+
+	// Make sure that flags were set. Assign default values if not set.
+	if(flags.ROT    == undefined ){ flags.ROT    = 0    ; }
+	if(flags.FLIP_X == undefined ){ flags.FLIP_X = false; }
+	if(flags.FLIP_Y == undefined ){ flags.FLIP_Y = false; }
+	if(flags.OFF    == undefined ){ flags.OFF    = true ; }
+	if(flags.SPRITE == undefined ){ flags.SPRITE = true ; }
+
+	let mapWidth  = map[0] ;
+	let mapHeight = map[1] ;
+	let x  ;
+	let y  ;
+	let dx ;
+	let dy ;
+	let t  ;
+	let numSprites = mapWidth * mapHeight;
+
+	// FLIP_X and FLIP_Y. This function does not flip the tiles. It only draws them in the correct order for the flip.
+
+	// Flip on X?
+	if( flags && flags.FLIP_X ){
+		x  = (mapWidth-1);
+		dx = -1;
+	}
+	else{
+		x  = 0;
+		dx = 1;
+	}
+
+	// Flip on Y?
+	if( flags && flags.FLIP_Y ){
+		y  = (mapHeight-1);
+		dy = -1;
+	}
+	else{
+		y  = 0;
+		dy = 1;
+	}
+
+	// Create sprite objects for the specified sprite tilemap.
+	for(let i=0; i<numSprites; i+=1){
+		core.GRAPHICS.DATA.SPRITES[layer][startSprite+i] = core.GRAPHICS.FUNCS.returnNewTile_obj();
+		core.GRAPHICS.DATA.SPRITES[layer][startSprite+i].flags.SPRITE=true;
+		core.GRAPHICS.DATA.SPRITES[layer][startSprite+i].tileset=tileset;
+	}
+
+	// Place the sprite tile ids in order.
+	for(let cy=0;cy<mapHeight;cy++){
+		for(let cx=0;cx<mapWidth;cx++){
+			// Is the sprite index still in bounds?
+			//
+
+			t=map[(y*mapWidth)+x+2];
+
+			core.GRAPHICS.DATA.SPRITES[layer][startSprite].tileindex = t;
+			core.GRAPHICS.DATA.SPRITES[layer][startSprite].flags = flags;
+
+			x += dx;
+
+			// Increment the start sprite number.
+			startSprite++;
+		}
+		y += dy;
+		x = ( flags && flags.FLIP_X ) ? (mapWidth-1) : 0 ;
+	}
+};
+// Updates the sprites of an already allocated sprite map in the sprites array.
+core.GRAPHICS.FUNCS.MoveSprite   = function(startSprite, x, y, width, height, layer){
+	let layerExists   = core.SETTINGS['layers'][layer]              ? true : false;
+	if( !layerExists   ){ let str = ["=E= MoveSprite: Layer not found: "   + layer  ]; throw Error(str); }
+
+	let dy;
+	let dx;
+
+	//
+	for (dy = 0; dy < height; dy++){
+		for (dx = 0; dx < width; dx++){
+			// Is the sprite index still in bounds?
+			//
+
+			core.GRAPHICS.DATA.SPRITES[layer][startSprite].x = (x + (core.SETTINGS.TILE_WIDTH  * dx)) << 0;
+			core.GRAPHICS.DATA.SPRITES[layer][startSprite].y = (y + (core.SETTINGS.TILE_HEIGHT * dy)) << 0;
+
+			core.GRAPHICS.DATA.SPRITES[layer][startSprite].flags.OFF=false;
+			core.GRAPHICS.DATA.SPRITES[layer][startSprite].clearThis=true;
+			core.GRAPHICS.DATA.SPRITES[layer][startSprite].drawThis=true;
+
+			// Increment the start sprite number.
+			startSprite++;
+		}
+	}
+
+	// Update the UPDATE and REDRAW flags for the specified layer.
+	core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
+	core.GRAPHICS.DATA.FLAGS[layer].REDRAW=true;
+};
+// Flips a canvas on X and/or Y.
+core.GRAPHICS.FUNCS.flipImage_canvas = function (tileObj, tileset, tileindex, flags) {
+
+	let srcCanvas = tileObj.canvas;
+
+	// Create temporary canvas to match the srcCanvas.
+	let destCanvas      = document.createElement("canvas");
+	let destCanvas_ctx  = destCanvas.getContext('2d');
+	destCanvas.width    = srcCanvas.width  ;
+	destCanvas.height   = srcCanvas.height ;
+
+	// Determine the settings for the flip.
+	let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
+	let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
+	let posX   = flags.FLIP_X ? destCanvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
+	let posY   = flags.FLIP_Y ? destCanvas.height * -1 : 0; // Set y position to -100% if flip vertical
+
+	// Do the flip.
+	destCanvas_ctx.save();                                                                // Save the current state
+	destCanvas_ctx.scale(scaleH, scaleV);                                                 // Set scale to flip the image
+	destCanvas_ctx.drawImage(srcCanvas, posX, posY); // Draw the image
+	destCanvas_ctx.restore();                                                             // Restore the last saved state
+
+	// Do the rotation.
+	if(flags.ROT){
+		let destCanvas2      = document.createElement("canvas");
+		let destCanvas2_ctx  = destCanvas2.getContext('2d');
+		destCanvas2.width    = destCanvas.width  ;
+		destCanvas2.height   = destCanvas.height ;
+
+		destCanvas2_ctx.save();    // Save the current state
+		destCanvas2_ctx.translate(destCanvas2.width/2, destCanvas2.height/2);
+		destCanvas2_ctx.rotate(flags.ROT * Math.PI/180);
+		destCanvas2_ctx.translate(-destCanvas2.width/2, -destCanvas2.height/2);
+		destCanvas2_ctx.drawImage(destCanvas,0,0);
+		destCanvas2_ctx.restore(); // Restore the last saved state
+		destCanvas=destCanvas2;
+	}
+
+	// Return the temp canvas
+	return {
+		"canvas":destCanvas ,
+		"imgData":destCanvas_ctx.getImageData(0,0,destCanvas.width, destCanvas.height),
+		"numUsed":0,
+	};
+};
+// Add to the cache of flipped canvas files (X, Y, XY)
+core.GRAPHICS.FUNCS.AddFlippedTileToCache  = function(tile, tilesetname, tileindex, flags){
+	// console.log("AddFlippedTileToCache:",
+	// 	"\n tile       :", tile,
+	// 	"\n tilesetname:", tilesetname,
+	// 	"\n tileindex  :", tileindex,
+	// 	"\n flags      :", flags
+	// );
+
+	// Generate the cache key.
+	let key = "";
+	if     (flags.FLIP_X && flags.FLIP_Y ){ key="XY"; }
+	else if(flags.FLIP_X                 ){ key="X_";  }
+	else if(flags.FLIP_Y                 ){ key="_Y";  }
+	key=(flags.ROT).toString().padStart(3, "0") + "_" + key; // EX: 000_X_
+
+	// Does the tilesetname key NOT exist in core.GRAPHICS.tiles_flipped?
+	if(core.GRAPHICS.ASSETS.CUSTOM_tileObjs[tilesetname]==undefined){
+		core.GRAPHICS.ASSETS.CUSTOM_tileObjs[tilesetname] = {};
+	}
+
+	// Does the tile key NOT exist ?
+	if(core.GRAPHICS.ASSETS.CUSTOM_tileObjs[tilesetname][tileindex]==undefined){
+		core.GRAPHICS.ASSETS.CUSTOM_tileObjs[tilesetname][tileindex] = {};
+	}
+
+	// Does the flip key NOT exist ?
+	if(core.GRAPHICS.ASSETS.CUSTOM_tileObjs[tilesetname][tileindex][key]==undefined){
+		core.GRAPHICS.ASSETS.CUSTOM_tileObjs[tilesetname][tileindex][key] =  tile;
+		// console.log("Tile has been added to the cache.", core.GRAPHICS.ASSETS.tileObjs[tilesetname][tileindex][key]);
+	}
+	// else{ console.log("----------- Tile already is in cache."); }
+};
+// Retrieve a cached flipped canvas tile (X, Y, XY)
+core.GRAPHICS.FUNCS.findFlippedTileInCache = function(tilesetname, tileindex, flags){
+	// Generate the cache key.
+	let key = "";
+	if     (flags.FLIP_X && flags.FLIP_Y ){ key="XY"; }
+	else if(flags.FLIP_X                 ){ key="X_";  }
+	else if(flags.FLIP_Y                 ){ key="_Y";  }
+	key=(flags.ROT).toString().padStart(3, "0") + "_" + key; // EX: 000_X_
+
+	// Try to find the cached copy of the requested tile.
+	try{
+		// Try to get to the cached tile. (Exception thrown on miss.)
+		// Get the tile.
+		let tile = core.GRAPHICS.ASSETS.CUSTOM_tileObjs[tilesetname][tileindex][key];
+		if(!tile){ console.log("cache miss", e); throw "cache miss"; }
+
+		// Return the cached tile.
+		return {
+			"tile":tile,
+			"key":key,
+		};
+	}
+	// Exception thrown. Tile was not found. Return false.
+	catch(e){
+		return {
+			"tile":false,
+			"key":key,
+			"e":e,
+		};
+	}
+
+};
+
+// // Draw a sprite tilemap as a canvas.
+// core.GRAPHICS.FUNCS.mapSprite_canvas   = function(spriteNum, map, tileset, layer, flags){
+// };
+// // Move a sprite canvas.
+// core.GRAPHICS.FUNCS.moveSprite_canvas  = function(spriteNum, map, tileset, layer, flags){
+// };
+// Draws a canvas sprite.
+core.GRAPHICS.FUNCS.moveSprite_canvas  = function(spriteNum, map, tileset, layer, flags){
+	core.GRAPHICS.DATA.SPRITES[layer][spriteNum] = core.GRAPHICS.FUNCS.returnNewTile_obj();
+	core.GRAPHICS.DATA.SPRITES[layer][spriteNum].flags.SPRITE=true;
+	core.GRAPHICS.DATA.SPRITES[layer][spriteNum].flags.CANVAS=true;
+	core.GRAPHICS.DATA.SPRITES[layer][spriteNum].tileset=tileset;
+};
+
+// core.GRAPHICS.ctx.OUTPUT.drawImage(
+// 	core.GRAPHICS.ASSETS.tilemaps_canvas.tilesSP1.mm_f2.canvas,
+// 	0,0
+// );
+
 // *** FADE functions. ***
+
+// TODO: Make sure the VRAM functions do not accept the sprite layers as input.
