@@ -90,7 +90,7 @@
 				<span id="topBar_line1_jsgame">JS GAME</span>
 				<span id="topBar_line1_gamename"></span>
 				<div id="topBar_line1_buttons">
-					<div class="reload" id="btn_reload"></div>
+					<div class="reload" onclick="window.location.reload();" id="btn_reload"></div>
 					<div class="pause" id="btn_togglePause"></div>
 				</div>
 			</div>

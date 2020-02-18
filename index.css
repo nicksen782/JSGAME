@@ -179,7 +179,7 @@ input#canvasScaleSlider {
 
 #mainCenter {
     min-height: 230px;
-    background-color: black;
+    background-color: #333333;
     min-width: 256px;
     min-height: 256px;
     display: block;
