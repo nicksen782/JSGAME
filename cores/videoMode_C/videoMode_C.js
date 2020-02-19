@@ -14,7 +14,7 @@ core.GRAPHICS.ASSETS      = {
 core.GRAPHICS.performance = {
 	LAYERS : {
 		// BG : [ 0, 0, 0, 0, 0 ] , //
-		"update_layers_type1":[ 0, 0, 0, 0, 0 ],
+		"update_layers_type2":[ 0, 0, 0, 0, 0 ],
 	},
 };
 // Holds the canvas elements.
@@ -33,7 +33,7 @@ var _CS = core.SETTINGS;
 
 // *** Logo functions ***
 
-// JS GAME logo for this video mode.
+// _DOC_ | logo | JS GAME logo for this video mode.
 core.FUNCS.graphics.logo = function(){
 	return new Promise(function(res,rej){
 		// Display the JSGAME logo.
@@ -65,8 +65,7 @@ core.FUNCS.graphics.logo = function(){
 		else{ res(); }
 	});
 };
-
-// One-time-use init function for the graphics.
+// _DOC_ | init | One-time-use init function for the graphics.
 core.GRAPHICS.init = function(){
 	return new Promise(function(res_VIDEO_INIT, rej_VIDEO_INIT){
 		JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "START");
@@ -140,7 +139,7 @@ core.GRAPHICS.init = function(){
 				for(let layer in core.SETTINGS['layers']){
 					// Get flags.
 					let clearWith       = core.SETTINGS['layers'][layer].clearWith       ; // Saved to core.GRAPHICS.FLAGS[layer]
-					let clearBeforeDraw = core.SETTINGS['layers'][layer].clearBeforeDraw ; // Saved to core.GRAPHICS.FLAGS[layer]
+					let clearCanvasBeforeUpdate = core.SETTINGS['layers'][layer].clearCanvasBeforeUpdate ; // Saved to core.GRAPHICS.FLAGS[layer]
 					let alpha           = core.SETTINGS['layers'][layer].alpha           ; // Used once here.
 					let type            = core.SETTINGS['layers'][layer].type            ;
 
@@ -157,7 +156,7 @@ core.GRAPHICS.init = function(){
 					// Set the pre-clear and layer update flags.
 					core.GRAPHICS.DATA.FLAGS[layer] = {};
 					core.GRAPHICS.DATA.FLAGS[layer].clearWith       = clearWith ;
-					core.GRAPHICS.DATA.FLAGS[layer].clearBeforeDraw = clearBeforeDraw ;
+					core.GRAPHICS.DATA.FLAGS[layer].clearCanvasBeforeUpdate = clearCanvasBeforeUpdate ;
 					core.GRAPHICS.DATA.FLAGS[layer].UPDATE          = false ; // Indicates that an update is needed.
 					core.GRAPHICS.DATA.FLAGS[layer].REDRAW          = false ; // Draw all of VRAM even if already drawn.
 					core.GRAPHICS.DATA.FLAGS[layer].lastUpdate      = performance.now() ; //
@@ -681,31 +680,50 @@ core.GRAPHICS.init = function(){
 					// 256 colors, 0x00 - 0xFF.
 					let str="";
 					let obj = {
-						"r332":{},
-						"r32":{}
+						// "r332":{},
+						// "r32":{},
+						"r32_hex":{}
 					};
 					for(let i=0; i<256; i+=1){
 						let dec_text = i.toString() ;
 						let hex_text = "0x"+i.toString(16).toUpperCase().padStart(2,"0") ;
 						let bin_text = "0b"+i.toString(2).padStart(8,"0") ;
-						let rgba32   = rgb_decode332(i, "arraybuffer_32", false) ;
+						// let rgba32   = rgb_decode332(i, "arraybuffer_32", false) ;
 						let rgba     = rgb_decode332(i, "object"        , false) ;
+						let r32_hex =
+							"#" +
+							  ( (rgba.r).toString(16).padStart(2, "0").toUpperCase() )
+							+ ( (rgba.g).toString(16).padStart(2, "0").toUpperCase() )
+							+ ( (rgba.b).toString(16).padStart(2, "0").toUpperCase() )
+							// + ( (rgba.a).toString(16).padStart(2, "0").toUpperCase() )
+						;
 
-						obj["r32"][rgba32] = {
-							"dec":dec_text,
-							"hex":hex_text,
-							"bin":bin_text,
-							"rgba32" : rgba32 ,
+						obj["r32_hex"][r32_hex]={
+							"uze_dec":dec_text,
+							"uze_hex":hex_text,
+							"uze_bin":bin_text,
+							// "rgba32" : rgba32 ,
 							"rgba"   : rgba ,
+							"r32_hex": r32_hex
 						};
 
-						obj["r332"][i] = {
-							"dec":dec_text,
-							"hex":hex_text,
-							"bin":bin_text,
-							"rgba32" : rgba32 ,
-							"rgba"   : rgba ,
-						};
+						// obj["r32"][rgba32] = {
+						// 	"dec":dec_text,
+						// 	"hex":hex_text,
+						// 	"bin":bin_text,
+						// 	"rgba32" : rgba32 ,
+						// 	"rgba"   : rgba ,
+						// 	"r32_hex": r32_hex
+						// };
+
+						// obj["r332"][i] = {
+						// 	"dec":dec_text,
+						// 	"hex":hex_text,
+						// 	"bin":bin_text,
+						// 	"rgba32" : rgba32 ,
+						// 	"rgba"   : rgba ,
+						// 	"r32_hex": r32_hex
+						// };
 					}
 
 					core.GRAPHICS.DATA.lookups = {};
@@ -743,6 +761,38 @@ core.GRAPHICS.init = function(){
 						"imgData" : imgData ,
 						"numUsed" : 0 ,
 					});
+
+					// Create a tile for each available color in the color conversion table.
+					let keys = Object.keys(core.GRAPHICS.DATA.lookups.colors.r32_hex);
+
+					/*
+					for(let i=0; i<keys.length; i+=1){
+						let key = keys[i];
+						let rgba = core.GRAPHICS.DATA.lookups.colors.r32_hex[key].rgba;
+						let uze_dec = core.GRAPHICS.DATA.lookups.colors.r32_hex[key].uze_dec;
+
+						canvas=document.createElement("canvas");
+						canvas.width  = core.SETTINGS.TILE_WIDTH;
+						canvas.height = core.SETTINGS.TILE_HEIGHT;
+						ctx=canvas.getContext("2d");
+						imgData = ctx.createImageData(canvas.width, canvas.height);
+						ctx.fillStyle = key;
+						ctx.fillRect(0, 0, canvas.width, canvas.height);
+						ctx.putImageData(imgData,0,0);
+
+						core.GRAPHICS.ASSETS.tilesets["default_tileset"].push({
+							"canvas"  : canvas ,
+							"imgData" : imgData ,
+							"numUsed" : 0 ,
+							"r32_hex" : key ,
+							"uze_dec" : parseInt(uze_dec,10) ,
+						});
+					}
+					*/
+
+					// core.GRAPHICS.DATA.lookups.colors
+
+
 				};
 				post_graphicsConversion();
 				post_graphicsConversion2();
@@ -857,12 +907,12 @@ core.GRAPHICS.init = function(){
 
 	});
 }
-
+// _DOC_ | update_layers_type2 | Handles drawing of VRAM and SPRITE layers.
 core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 	return new Promise(function(res,rej){
 		// Get all layer draw start time.
-		let drawStart_update_layers_type1;
-		if(JSGAME.FLAGS.debug) { drawStart_update_layers_type1 = performance.now(); core.GRAPHICS.performance.LAYERS["update_layers_type1"].shift(); }
+		let drawStart_update_layers_type2;
+		if(JSGAME.FLAGS.debug) { drawStart_update_layers_type2 = performance.now(); core.GRAPHICS.performance.LAYERS["update_layers_type2"].shift(); }
 
 		let drawOutput=false;
 
@@ -876,17 +926,17 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 			let UPDATE          = core.GRAPHICS.DATA.FLAGS[layer].UPDATE          ;
 			let REDRAW          = core.GRAPHICS.DATA.FLAGS[layer].REDRAW          ;
 			let layerFlags      = core.GRAPHICS.DATA.FLAGS[layer]                 ;
-			let clearBeforeDraw = core.GRAPHICS.DATA.FLAGS[layer].clearBeforeDraw ;
+			let clearCanvasBeforeUpdate = core.GRAPHICS.DATA.FLAGS[layer].clearCanvasBeforeUpdate ;
 			let canvas          = core.GRAPHICS.canvas[layer]                     ;
 			let ctx             = core.GRAPHICS.ctx[layer]                        ;
 
-			// Force redraw if UPDATE is set and the layer has clearBeforeDraw set.
-			if(UPDATE && clearBeforeDraw){
+			// Force redraw if UPDATE is set and the layer has clearCanvasBeforeUpdate set.
+			if(UPDATE && clearCanvasBeforeUpdate){
 				// Set REDRAW.
 				REDRAW=true;
 
 				// Clear this canvas.
-				if(clearBeforeDraw){ ctx.clearRect(0,0,canvas.width,canvas.height); }
+				if(clearCanvasBeforeUpdate){ ctx.clearRect(0,0,canvas.width,canvas.height); }
 			}
 
 			// Draw?
@@ -897,7 +947,7 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 				if     (layerFlags.type=="VRAM"  ){ VRAM = core.GRAPHICS.DATA.VRAM   [layer] ; }
 				else if(layerFlags.type=="SPRITE"){ VRAM = core.GRAPHICS.DATA.SPRITES[layer] ; }
 				else{
-					let str = ["=E= update_layers_type1: invalid layer type.", JSON.stringify(VRAM[t],null,1)];
+					let str = ["=E= update_layers_type2: invalid layer type.", JSON.stringify(VRAM[t],null,1)];
 					throw Error(str);
 				}
 
@@ -966,7 +1016,7 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 							finalImage.numUsed+=1;
 						}
 						else{
-							let str = ["=E= update_layers_type1: (drawThis) invalid data.", JSON.stringify(VRAM[t],null,1)];
+							let str = ["=E= update_layers_type2: (drawThis) invalid data.", JSON.stringify(VRAM[t],null,1)];
 							// console.error("============================", str, VRAM[t]);
 							console.info(
 								"============================",
@@ -1010,14 +1060,13 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 		}
 
 		// Update the all layer draw performance data.
-		if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance.LAYERS["update_layers_type1"].push(performance.now() - drawStart_update_layers_type1);                   }
+		if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance.LAYERS["update_layers_type2"].push(performance.now() - drawStart_update_layers_type2);                   }
 
 		// Done! Resolve.
 		res(drawOutput);
 	});
 };
-
-// Combines the layer and draws to the OUTPUT canvas.
+// _DOC_ | update_layer_OUTPUT | Combines the layer and draws to the OUTPUT canvas.
 core.GRAPHICS.FUNCS.update_layer_OUTPUT = function(){
 	return new Promise(function(res,rej){
 		// Get a handle to the temp output.
@@ -1040,12 +1089,11 @@ core.GRAPHICS.FUNCS.update_layer_OUTPUT = function(){
 		res();
 	});
 };
-// Draws the layer updates.
+// _DOC_ | update_allLayers | Draws the layer updates.
 core.GRAPHICS.FUNCS.update_allLayers    = function(){
 	return new Promise(function(res_updateAllLayers, rej_updateAllLayers){
 		// Update the layers.
 		let proms = [
-			// core.GRAPHICS.FUNCS.update_layers_type1() ,
 			core.GRAPHICS.FUNCS.update_layers_type2() ,
 		];
 
@@ -1091,8 +1139,7 @@ core.GRAPHICS.FUNCS.update_allLayers    = function(){
 
 	});
 };
-
-// Returns a new VRAM tile object with default settings.
+// _DOC_ | returnNewTile_obj | Returns a new VRAM tile object with default settings.
 core.GRAPHICS.FUNCS.returnNewTile_obj = function(){
 	let output = 	{
 		// Position and Dimension
@@ -1128,8 +1175,7 @@ core.GRAPHICS.FUNCS.returnNewTile_obj = function(){
 
 	return output;
 };
-
-// Clears the SPRITE data and clears the existing canvas layers.
+// _DOC_ | ClearSprites | Clears the SPRITE data and clears the existing canvas layers.
 core.GRAPHICS.FUNCS.ClearSprites             = function(layer){
 	let layersToClear=[];
 
@@ -1168,7 +1214,7 @@ core.GRAPHICS.FUNCS.ClearSprites             = function(layer){
 		ctx.clearRect(0,0,w,h); // Full transparent.
 	}
 }
-// Clears the VRAM data and clears the existing canvas layers.
+// _DOC_ | ClearVram | Clears the VRAM data and clears the existing canvas layers.
 core.GRAPHICS.FUNCS.ClearVram                = function(layer){
 	let layersToClear=[];
 
@@ -1245,12 +1291,12 @@ core.GRAPHICS.FUNCS.ClearVram                = function(layer){
 		core.GRAPHICS.FUNCS.ClearOUTPUT();
 	}
 }
-// Clear the OUTPUT canvas.
+// _DOC_ | ClearOUTPUT | Clear the OUTPUT canvas.
 core.GRAPHICS.FUNCS.ClearOUTPUT              = function(){
 	let canvas = core.GRAPHICS.canvas.OUTPUT;
 	core.GRAPHICS.ctx.OUTPUT.clearRect(0,0,canvas.w,canvas.h);
 };
-// Clear all canvas layers and their data.
+// _DOC_ | clearAllCanvases | Clear all canvas layers and their data.
 core.GRAPHICS.FUNCS.clearAllCanvases         = function(){
 	// Clear the VRAM, SPRITE, and OUTPUT layers and DATA.
 	core.GRAPHICS.FUNCS.ClearSprites();
@@ -1265,7 +1311,7 @@ core.GRAPHICS.FUNCS.clearAllCanvases         = function(){
 		ctx.clearRect(0,0,canvas.w,canvas.h);
 	}
 };
-// Draws a canvas tile to the indicated area.
+// _DOC_ | DrawTile | Draws a canvas tile to the indicated area.
 core.GRAPHICS.FUNCS.DrawTile                 = function(x, y, tileset, tileindex, layer, flags){
 	// Confirm that all arguments were provided.
 	if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
@@ -1292,7 +1338,7 @@ core.GRAPHICS.FUNCS.DrawTile                 = function(x, y, tileset, tileindex
 		"imgObj"    : imgObj
 	});
 }
-// Draws a canvas tilemap to the indicated area.
+// _DOC_ | DrawMap | Draws a canvas tilemap to the indicated area.
 core.GRAPHICS.FUNCS.DrawMap                  = function(x, y, tileset, tilemap , layer, flags){
 	// Confirm that all arguments were provided.
 	if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
@@ -1319,7 +1365,7 @@ core.GRAPHICS.FUNCS.DrawMap                  = function(x, y, tileset, tilemap ,
 		"imgObj"    : imgObj
 	});
 }
-// Used by DrawTile and DrawMap to draw.
+// _DOC_ | Adjust_NewTile_obj | Used by DrawTile and DrawMap to draw.
 core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 	let x          = data.x          ;
 	let y          = data.y          ;
@@ -1430,14 +1476,11 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 		// Draw to the tmp_canvas.
 		tmp_canvas_ctx.drawImage(imgObj.canvas, newX, newY, tmp_canvas.width, tmp_canvas.height); // Draw the image
 
+		let lookups = core.GRAPHICS.DATA.lookups.colors.r32_hex;
+
 		// Color modifications?
 		if(flags.colorSwaps.length){
 			let imgData = tmp_canvas_ctx.getImageData(0, 0, tmp_canvas.width, tmp_canvas.height);
-			var data = new Uint32Array(imgData.data.buffer);
-
-			// console.info("imgData   :", imgData);
-			// console.info("data      :", data);
-			// console.info("colorSwaps:", flags.colorSwaps);
 
 			// Loop through the imgData.
 			let numBytes = (imgData.width * imgData.height)*4;
@@ -1448,34 +1491,30 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 				let blue  = imgData.data[i+2];
 				let alpha = imgData.data[i+3];
 
-				// console.info(
-				// 	"i:", i.toString().padEnd(3, " "),
-				// 	", red:"   , (red)  .toString().padEnd(3, " "),
-				// 	", green:" , (green).toString().padEnd(3, " "),
-				// 	", blue:"  , (blue) .toString().padEnd(3, " "),
-				// 	", alpha:" , (alpha).toString().padEnd(3, " "),
-				// 	", DATA:", data[i],
-				// 	""
-				// );
-
 				// Go through the colorSwaps and look for matches.
 				for(let j=0; j<flags.colorSwaps.length; j+=1){
-					let lookFor     = flags.colorSwaps[j][0] ;
-					let replaceWith = flags.colorSwaps[j][1] ;
-
-					// console.info(lookfor, replaceWith);
+					// Determine the colors that we are looking for.
+					let lookFor       = flags.colorSwaps[j][0] ;
+					let lookFor_red   = parseInt(lookFor.substring(1,3),16) ;
+					let lookFor_green = parseInt(lookFor.substring(3,5),16) ;
+					let lookFor_blue  = parseInt(lookFor.substring(5,7),16) ;
+					let lookFor_alpha = 255 ;
 
 					// Color match?
-					if(
-						red   == lookFor[0] &&
-						green == lookFor[1] &&
-						blue  == lookFor[2] &&
-						alpha == lookFor[3]
-					){
-						imgData.data[i+0]=replaceWith[0];
-						imgData.data[i+1]=replaceWith[1];
-						imgData.data[i+2]=replaceWith[2];
-						imgData.data[i+3]=replaceWith[3];
+					let match = (red==lookFor_red && green==lookFor_green && blue==lookFor_blue && alpha==lookFor_alpha) ? true : false;
+					if(match){
+						// Determine the replacement colors.
+						let replaceWith       = flags.colorSwaps[j][1] ;
+						let replaceWith_red   = parseInt(replaceWith.substring(1,3),16) ;
+						let replaceWith_green = parseInt(replaceWith.substring(3,5),16) ;
+						let replaceWith_blue  = parseInt(replaceWith.substring(5,7),16) ;
+						let replaceWith_alpha = 255 ;
+
+						// Replace the colors.
+						imgData.data[i+0]=replaceWith_red  ;
+						imgData.data[i+1]=replaceWith_green;
+						imgData.data[i+2]=replaceWith_blue ;
+						imgData.data[i+3]=replaceWith_alpha;
 					}
 				}
 
@@ -1503,9 +1542,9 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 	// if(flags.clearThis != undefined){ newVRAM_entry.flags.clearThis = flags.clearThis; }
 	// if(flags.drawThis  != undefined){ newVRAM_entry.flags.drawThis  = flags.drawThis ; }
 
-	// Set the clearThis flag according to clearBeforeDraw for this layer.
+	// Set the clearThis flag according to clearCanvasBeforeUpdate for this layer.
 	// *************
-	// newVRAM_entry.flags.clearThis = core.GRAPHICS.DATA.FLAGS[layer].clearBeforeDraw;
+	// newVRAM_entry.flags.clearThis = core.GRAPHICS.DATA.FLAGS[layer].clearCanvasBeforeUpdate;
 	// *************
 
 	// Set drawThis.
@@ -1569,7 +1608,7 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 	// Set the UPDATE flag for this layer.
 	core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
 };
-// Fill a region with a tile.
+// _DOC_ | TileFill | Fill a region with a tile.
 core.GRAPHICS.FUNCS.TileFill                 = function(x, y, w, h, tileset, tileindex, layer, flags){
 	// Confirm that all arguments were provided.
 	if(tileset   == undefined){ let str = ["=E= TileFill: tileset is undefined."  ]; throw Error(str); }
@@ -1614,7 +1653,7 @@ core.GRAPHICS.FUNCS.TileFill                 = function(x, y, w, h, tileset, til
 
 }
 
-// Draw a tilemap to cover a region of varying dimensions. (Each dimension being a multiple of w and h.)
+// _DOC_ | MapFill | Draw a tilemap to cover a region of varying dimensions. (Each dimension being a multiple of w and h.)
 core.GRAPHICS.FUNCS.MapFill                  = function(sx, sy, nw, nh, tileset, tilemap, layer, flags){
 	// Confirm that all arguments were provided.
 	if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
@@ -1647,10 +1686,159 @@ core.GRAPHICS.FUNCS.MapFill                  = function(sx, sy, nw, nh, tileset,
 	}
 
 }
-// Draw a text string to the screen.
-core.GRAPHICS.FUNCS.Print                    = function(tileset, fontmap, layer, flags, string){}
-// Draw a text string to the screen (using multiple fonts.)
-core.GRAPHICS.FUNCS.Print_multiFont          = function(data){}
+// _DOC_ | Print | Draw a text string to the screen.
+core.GRAPHICS.FUNCS.Print                    = function(x, y, string, tileset, tilemap, layer, flags){
+	// Font maps should be 64 characters (plus 2 for the width/height of the map.)
+	// Font tiles are expected to be in the following order in the fontmap:
+	//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
+	// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
+	// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
+
+	// Confirm that all arguments were provided.
+	if(tileset   == undefined){ let str = ["=E= Print: tileset is undefined."  ]; throw Error(str); }
+	if(layer     == undefined){ let str = ["=E= Print: layer is undefined."    ]; throw Error(str); }
+	if(flags     == undefined){ let str = ["=E= Print: flags is undefined."    ]; throw Error(str); }
+	if(tilemap   == undefined){ let str = ["=E= Print: tilemap is undefined."  ]; throw Error(str); }
+
+	// Make sure that the specified tileset, tileindex, and layer exist.
+	if(_CGA.tilesets[tileset]          == undefined){ let str = ["=E= Print: tileset is invalid."  ]; throw Error(str); }
+	if(_CS.layers[layer]               == undefined){ let str = ["=E= Print: layer is invalid."    ]; throw Error(str); }
+	if(_CGA.tilemaps[tileset][tilemap] == undefined){ let str = ["=E= Print: tilemap is invalid."  ]; throw Error(str); }
+
+	// Make sure that only a whole number makes it through.
+	x = (x) << 0;
+	y = (y) << 0;
+	let startx = x;
+
+	// We need to use the original tilemap array for printing.
+	let fontmap = core.GRAPHICS.ASSETS._original_data.tilemaps[tileset][tilemap];
+	let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
+
+	// Turn the string into an iterable array and draw each letter individually.
+	Array.from( string ).forEach(function(d,i,a){
+		// Move down a line if a line break is found.
+		if(d=="\n"){ x=startx; y+=1; return; }
+
+		// Get the tileid for this character.
+		let tileid;
+		tileid = d.toUpperCase().charCodeAt() - 32;
+
+		// Make sure this is a valid tile in the font map (bounds-check.)
+		if(tileid < fontmap_len){
+			// Do a bounds-check before drawing the tile.
+
+			// Out of bounds on x?
+			if(x >= _CS.VRAM_TILES_H)     {
+				// console.log("Out of bounds: x", "x:", x, "core.SETTINGS.VRAM_TILES_H:", core.SETTINGS.VRAM_TILES_H);
+				return;
+			}
+			// Out of bounds on y?
+			else if(y >= _CS.VRAM_TILES_V){
+				// console.log("Out of bounds: y", "y:", y, "core.SETTINGS.VRAM_TILES_V:", core.SETTINGS.VRAM_TILES_V);
+				return;
+			}
+			// Draw the tile.
+			else{
+				let tileindex = fontmap[ tileid+2 ];
+				core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, layer, flags);
+			}
+		}
+
+		// If it is out of bounds, (such as the "|" character) print a space.
+		else {
+			let tileindex = " ".toUpperCase().charCodeAt() - 32;
+			core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, layer, flags);
+		}
+
+		// Move the "cursor" over one to the right.
+		x+=1;
+
+		// No wrapping allowed.
+		if(x>=_CS.VRAM_TILES_H-0){ return; }
+		if(y>=_CS.VRAM_TILES_V-0){ return; }
+	});
+}
+// _DOC_ | Print_multiFont | Draw a text string to the screen (using multiple fonts.)
+core.GRAPHICS.FUNCS.Print_multiFont          = function(data){
+	// Example usage:
+	// core.GRAPHICS.FUNCS.Print_multiFont(
+	// 	{
+	// 		"x"       : 0,
+	// 		"y"       : 0,
+	// 		"text"    : "I use multiple fonts!" ,
+	// 		"font"    : "010101010101010101010".split("").map(function(d){ return parseInt(d,10); }) ,
+	// 		"maps"    : [ "font_black", "font_white" ],
+	// 		"tileset" : "tilesTX1",
+	// 		"layer"   : "TEXT",
+	// 		"flags"   : {}
+	// 	},
+	// );
+
+	// Font maps should be 64 characters (plus 2 for the width/height of the map.)
+	// Font tiles are expected to be in the following order in the fontmap:
+	//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
+	// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
+	// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
+
+	// Confirm that all arguments were provided.
+	if(data.tileset == undefined){ let str = ["=E= Print_multiFont: tileset is undefined."  ]; throw Error(str); }
+	if(data.layer   == undefined){ let str = ["=E= Print_multiFont: layer is undefined."    ]; throw Error(str); }
+	if(data.flags   == undefined){ let str = ["=E= Print_multiFont: flags is undefined."    ]; throw Error(str); }
+
+	// Make sure that the specified tileset, tileindex, and layer exist.
+	if(_CGA.tilesets[data.tileset] == undefined){ let str = ["=E= Print_multiFont: tileset is invalid."  ]; throw Error(str); }
+	if(_CS.layers[data.layer]      == undefined){ let str = ["=E= Print_multiFont: layer is invalid."    ]; throw Error(str); }
+	data.maps.forEach(function(d){
+		let map = d;
+		if(!core.GRAPHICS.ASSETS._original_data.tilemaps[data.tileset][map]){
+			let str = ["=E= Print_multiFont: Map not valid: ", data.tileset, map ];
+			throw Error(str);
+		}
+	});
+
+	// Make sure that only a whole number makes it through.
+	let x = (data.x) << 0;
+	let y = (data.y) << 0;
+	let startx = x;
+
+	// Turn the string into an iterable array.
+	Array.from( data.text ).forEach(function(d,i){
+		// Move down a line if a line break is found.
+		if(d=="\n"){ x=startx; y+=1; return; }
+
+		// Determine which fontmap will be used.
+		// NOTE: We need to use the original tilemap array for printing.
+		let fontmap = core.GRAPHICS.ASSETS._original_data.tilemaps[ data.tileset][data.maps[data.font[i]] ];
+
+		// NOTE: Fontsets should all be the same length.
+		let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
+
+		// Get the tileid for this character.
+		tileid = d.toUpperCase().charCodeAt() - 32;
+
+		// Make sure this is a valid tile in the font map (bounds-check.)
+		if(tileid < fontmap_len){
+			let tileindex = fontmap[ tileid+2 ];
+			core.GRAPHICS.FUNCS.DrawTile(x, y, data.tileset, tileindex, data.layer, data.flags);
+		}
+
+		// If it is out of bounds, (such as the "|" character) print a space.
+		else {
+			let tileindex = " ".toUpperCase().charCodeAt() - 32;
+			core.GRAPHICS.FUNCS.DrawTile(x, y, data.tileset, tileindex, data.layer, data.flags);
+		}
+
+		// Move the "cursor" over one to the right.
+		x+=1;
+
+		// No wrapping allowed.
+		if(x>=core.SETTINGS.VRAM_TILES_H-0){ return; }
+		if(y>=core.SETTINGS.VRAM_TILES_V-0){ return; }
+	});
+
+}
 
 
 /*

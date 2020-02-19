@@ -184,11 +184,50 @@
 				""
 			]
 		},
+		"Print": {
+			"name": "Print",
+			"desc": "Draw a text string to the screen.",
+			"fulllocation": "core.GRAPHICS.FUNCS",
+			"shortlocation": "_CGF",
+			"args": {
+				"ARG1": { "type": "string", "default": "undefined", "desc": ""}
+			},
+			"examples": [
+				[ "_CGF.Print();"       , "" ]
+			],
+			"notes": [
+				""
+			]
+		},
+		"Print_multiFont": {
+			"name": "Print_multiFont",
+			"desc": "Draw a text string to the screen (using multiple fonts.)",
+			"fulllocation": "core.GRAPHICS.FUNCS",
+			"shortlocation": "_CGF",
+			"args": {
+				"ARG1": { "type": "string", "default": "undefined", "desc": ""}
+			},
+			"examples": [
+				[ "_CGF.Print_multiFont(data)", "(SEE NOTES FOR FULL EXAMPLE.)"]
+			],
+			"notes": [
+				"_CGF.Print_multiFont("                                                                                 ,
+				"{"                                                                                                     ,
+				"    \"x\"       : 4,"                                                                                  ,
+				"    \"y\"       : 14,"                                                                                 ,
+				"    \"text\"    : \"I use multiple fonts!\" ,"                                                         ,
+				"    \"font\"    : \"010101010101010101010\".split(\"\").map(function(d){ return parseInt(d,10); }) ,"  ,
+				"    \"maps\"    : [ \"font_black\", \"font_white\" ],"                                                 ,
+				"    \"tileset\" : \"tilesTX1\","                                                                       ,
+				"    \"layer\"   : \"TEXT\","                                                                           ,
+				"    \"flags\"   : {}"                                                                                  ,
+				"},"
 
-		"Print":{},
-		"Print_multiFont":{}
+			]
+		}
 
 	},
+
 	"VARS": {
 		"_CGF"                             : "Shortened way to access core.GRAPHICS."     ,
 		"_CFA"                             : "Shortened way to access core.ASSETS."       ,

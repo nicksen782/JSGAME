@@ -589,7 +589,8 @@ button.yellowHighlight {
 .gamepadIcon{
 	width: 100%;
 	height: 20px;
-	background-image: url(img/CUzeBox_controls_modified.png);
+	/* background-image: url(img/CUzeBox_controls_modified.png); */
+	background-image: url(img/SNES2.png);
 	background-repeat: no-repeat;
 	background-size: 100% 100%;
 	cursor:pointer;
@@ -636,7 +637,6 @@ span#topBar_line1_gamename {
 #bottom_bar_gamepadDetected{
 	background-color:#5d5c5c;
 	/* background-color:#333; */
-	/* background-image: url(img/CUzeBox_controls_modified.png); */
 	background-image: url(img/nesController.png);
 	background-repeat: no-repeat;
 	background-size: 100% 100%;
