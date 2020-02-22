@@ -10,6 +10,136 @@ core.GRAPHICS.ASSETS      = {
 	"tilemaps"       : {}, // All tilemaps, separated by their tileset name.
 	"_original_data" : {}  // Original Uzebox format tilesets/tilemaps.
 } ;
+
+// *** WEB WORKERS ***
+// window.navigator.hardwareConcurrency;
+// (typeof(Worker) !== "undefined");
+core.GRAPHICS.WORKERS = {
+	// newVRAM_entry.canvas  = new_canvas ;
+	// newVRAM_entry.imgData = undefined ;
+	// newVRAM_entry.w         = new_canvas.width  ;
+	// newVRAM_entry.h         = new_canvas.height ;
+	w_colorswaps :{
+		"worker": [] ,
+		// "callback":function(){
+		// 	worker.onmessage=null;
+		// 	switch( event.data.function ){
+		// 		// imgData manipulation for color swaps.
+		// 		case "colorswaps" : {
+		// 			// Convert the imgData back into an imgData object.
+		// 			// var array = new Uint8ClampedArray(event.data.imgData);
+		// 			// var imgData = new ImageData(array, event.data.imgData_w, event.data.imgData_h);
+
+		// 			// Clear the queue.
+		// 			core.GRAPHICS.WORKERS.w_colorswaps.queue=[];
+
+		// 			let imgDatas=event.data.finished_img_buffers_arr;
+		// 			let newVRAMs=event.data.finished_newVRAM_entries;
+
+		// 			for(let i=0; i<newVRAMs.length; i+=1){
+		// 				let img_buff = imgDatas[i] ;
+		// 				let img_view = new Uint8ClampedArray(img_buff) ;
+		// 				let newVRAM  = newVRAMs[i] ;
+		// 				let flags    = newVRAMs[i].flags ;
+
+		// 				// Create the src canvas from the imgData.
+		// 				let src_canvas    = document.createElement("canvas");  ;
+		// 				src_canvas.width  = newVRAM.w ;
+		// 				src_canvas.height = newVRAM.h ;
+		// 				JSGAME.SHARED.setpixelated(src_canvas);
+		// 				let src_ctx     = src_canvas.getContext("2d") ;
+		// 				src_ctx.putImageData(
+		// 					new ImageData(img_view, src_canvas.width, src_canvas.height) ,
+		// 					0,
+		// 					0
+		// 				);
+
+		// 				// Create the destination canvas.
+		// 				let dst_canvas    = document.createElement("canvas");  ;
+		// 				dst_canvas.width  = newVRAM.w ;
+		// 				dst_canvas.height = newVRAM.h ;
+		// 				JSGAME.SHARED.setpixelated(dst_canvas);
+		// 				let dst_ctx     = dst_canvas.getContext("2d") ;
+
+		// 				let newX=0;
+		// 				let newY=0;
+		// 				if(flags.ROT !== false || flags.FLIP_X || flags.FLIP_Y){
+		// 					if( flags.ROT ){
+		// 						let size = Math.max(src_canvas.width, src_canvas.height);
+		// 						dst_canvas.width   = size ;
+		// 						dst_canvas.height  = size ;
+
+		// 						dst_ctx.translate(src_canvas.width/2, src_canvas.height/2);
+		// 						dst_ctx.rotate(flags.ROT * Math.PI/180);
+		// 						dst_ctx.translate(-src_canvas.width/2, -src_canvas.height/2);
+		// 					}
+
+		// 					// FLIP_X and/or FLIP_Y?
+		// 					if( flags.FLIP_X || flags.FLIP_Y ){
+		// 						let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
+		// 						let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
+		// 						newX       = flags.FLIP_X ? src_canvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
+		// 						newY       = flags.FLIP_Y ? src_canvas.height * -1 : 0; // Set y position to -100% if flip vertical
+		// 						dst_ctx.scale(scaleH, scaleV);             // Set scale to flip the image
+		// 					}
+		// 				}
+
+		// 				// Draw the src_canvas to the dst_canvas.
+		// 				dst_ctx.drawImage(src_canvas,newX,newY);
+
+		// 				newVRAM.canvas         = dst_canvas ;
+		// 				newVRAM.imgData        = undefined ;
+		// 				newVRAM.flags.drawThis = true ;
+		// 				core.GRAPHICS.DATA.FLAGS[newVRAM.layer].UPDATE=true;
+
+		// 				core.GRAPHICS.FUNCS.placeTile({
+		// 					"mapWidth"      : (newVRAM.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
+		// 					"mapHeight"     : (newVRAM.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
+		// 					"newVRAM_entry" : newVRAM ,
+		// 				});
+		// 			}
+
+		// 			// Set w, h values.
+		// 			// newVRAM_entry.w = imgObj.canvas.width ;
+		// 			// newVRAM_entry.h = imgObj.canvas.height ;
+
+		// 			// newVRAM_entry.canvas  = undefined ;
+		// 			// newVRAM_entry.imgData = undefined ;
+
+		// 			// Set drawThis.
+		// 			// newVRAM_entry.flags.drawThis=true;
+
+		// 			// Set the UPDATE flag for this layer.
+		// 			// core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
+
+		// 			// Place the tile.
+		// 			// core.GRAPHICS.FUNCS.placeTile({
+		// 			// 	"mapWidth"      : (imgObj.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
+		// 			// 	"mapHeight"     : (imgObj.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
+		// 			// 	"newVRAM_entry" : newVRAM_entry ,
+		// 			// });
+
+		// 			// console.log("FROM WORKER: ", event.data);
+		// 			res();
+
+		// 			break;
+		// 		}
+
+		// 	// Unmatched function.
+		// 	default     : { break; }
+		// 	}
+		// },
+		"queue" : [
+		],
+	}
+};
+for(let i=0; i<window.navigator.hardwareConcurrency; i+=1){
+	//
+	let worker = new Worker('cores/videoMode_C/videoMode_C_webworker.js') ;
+	// worker.onmessage = core.GRAPHICS.WORKERS.w_colorswaps.callback;
+	core.GRAPHICS.WORKERS.w_colorswaps.worker.push( worker );
+}
+
 // PERFORMANCE MONITORING (layer draw timings.)
 core.GRAPHICS.performance = {
 	LAYERS : {
@@ -551,17 +681,22 @@ core.GRAPHICS.init = function(){
 						for(let n=0; n<numTiles; n+=1){
 							// Create an empty object.
 							core.GRAPHICS.ASSETS.tilesets[tilesetName][n]={};
+							let handle = core.GRAPHICS.ASSETS.tilesets[tilesetName][n];
 
 							// Canvas version of image.
-							core.GRAPHICS.ASSETS.tilesets[tilesetName][n].canvas  = arrayOfCanvases[n] ;
+							handle.canvas  = arrayOfCanvases[n] ;
+							JSGAME.SHARED.setpixelated(handle.canvas);
+							let ctx = handle.canvas.getContext("2d");
 
 							// imgData version of the image.
-							let ctx = arrayOfCanvases[n].getContext("2d");
-							imgData = ctx.getImageData(0, 0, arrayOfCanvases[n].width, arrayOfCanvases[n].height),
-							core.GRAPHICS.ASSETS.tilesets[tilesetName][n].imgData = imgData ;
+							imgData = ctx.getImageData(0, 0, handle.canvas.width, handle.canvas.height),
+							handle.imgData = imgData ;
+
+							// Store the ctx for the canvas.
+							handle.ctx = ctx ;
 
 							// Tile usage count (DEBUG.)
-							core.GRAPHICS.ASSETS.tilesets[tilesetName][n].numUsed = 0 ;
+							handle.numUsed = 0 ;
 						}
 
 					}
@@ -617,9 +752,10 @@ core.GRAPHICS.init = function(){
 
 							// Save the new object.
 							core.GRAPHICS.ASSETS.tilemaps[tilesetName][tilemapName]={
-								"canvas":canvas,
-								"imgData":ctx.getImageData(0, 0, canvas.width, canvas.height),
-								"numUsed":0,
+								"canvas"  : canvas,
+								"imgData" : ctx.getImageData(0, 0, canvas.width, canvas.height),
+								"ctx"     : ctx,
+								"numUsed" : 0,
 							}
 
 						}
@@ -644,6 +780,12 @@ core.GRAPHICS.init = function(){
 								if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
 
 								core.GRAPHICS.DATA.VRAM[layer][i] = core.GRAPHICS.FUNCS.returnNewTile_obj();
+
+								// Set the index within the tileObj.
+								let addr = (y*_CS.VRAM_TILES_H)+x;
+								core.GRAPHICS.DATA.VRAM[layer][i].index_VRAM   = addr;
+								core.GRAPHICS.DATA.VRAM[layer][i].index_SPRITE = undefined;
+								core.GRAPHICS.DATA.VRAM[layer][i].layerType    = layerFlags.type;
 
 								let clearWith       = core.GRAPHICS.DATA.FLAGS[layer].clearWith       ;
 
@@ -739,6 +881,7 @@ core.GRAPHICS.init = function(){
 					canvas=document.createElement("canvas");
 					canvas.width  = core.SETTINGS.TILE_WIDTH;
 					canvas.height = core.SETTINGS.TILE_HEIGHT;
+					JSGAME.SHARED.setpixelated(canvas);
 					ctx=canvas.getContext("2d");
 					ctx.fillStyle = "rgba(0, 0, 0, 1.0)";      // Black
 					ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -753,6 +896,7 @@ core.GRAPHICS.init = function(){
 					canvas=document.createElement("canvas");
 					canvas.width  = core.SETTINGS.TILE_WIDTH;
 					canvas.height = core.SETTINGS.TILE_HEIGHT;
+					JSGAME.SHARED.setpixelated(canvas);
 					ctx=canvas.getContext("2d");
 					ctx.clearRect(0,0,canvas.width,canvas.height); // Full transparent.
 					imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
@@ -774,6 +918,7 @@ core.GRAPHICS.init = function(){
 						canvas=document.createElement("canvas");
 						canvas.width  = core.SETTINGS.TILE_WIDTH;
 						canvas.height = core.SETTINGS.TILE_HEIGHT;
+						JSGAME.SHARED.setpixelated(canvas);
 						ctx=canvas.getContext("2d");
 						imgData = ctx.createImageData(canvas.width, canvas.height);
 						ctx.fillStyle = key;
@@ -794,6 +939,7 @@ core.GRAPHICS.init = function(){
 
 
 				};
+
 				post_graphicsConversion();
 				post_graphicsConversion2();
 				createVRAMs();
@@ -955,9 +1101,11 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 				for(let t=0; t<VRAM.length; t+=1){
 					// Skip gaps in the array.
 					if(!VRAM[t]){ continue; }
+
+					// Do not draw tiles that have OFF set.
 					if(VRAM[t].flags.OFF){ continue; }
 
-					// Draw this tile?
+					// Does this tile have the drawThis flag set?
 					if(VRAM[t].flags.drawThis || REDRAW){
 						// Position and Dimension
 						let x = VRAM[t].x ;
@@ -970,66 +1118,61 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 						// let layer     = VRAM[t].layer     ;
 						let tilemap   = VRAM[t].tilemap   ;
 						let tileindex = VRAM[t].tileindex ;
-						let img_canvas  = VRAM[t].canvas  ? VRAM[t].canvas  : false ;
+						let img_canvas  = (VRAM[t].canvas instanceof HTMLCanvasElement) ? VRAM[t].canvas  : false ;
 
 						let finalImage;
 
-						// Skip if the tileset was not specified.
+						// Skip the draw if the tileset was not specified.
 						if(!tileset || tileset==""){
 							console.info("Skipping VRAM["+t+"] due to missing tileset.", VRAM[t]);
 							continue;
 						}
 
-						let imgObj;
+						// *** DETERMINE WHAT IMAGE WILL BE DRAWN. ***
 
-						// Customized canvas?
+						// Draw the custom canvas if it exists.
 						if     (img_canvas !== false ){
-							// Get the image.
-							finalImage=img_canvas;
-
-							// Draw the tile.
-							ctx.drawImage( finalImage, (x) << 0, (y) << 0 );
-
-							// Update numUsed for this imgObj.
-							// imgObj.numUsed+=1;
+							finalImage=img_canvas; // Get the image.
+							finalImage.numUsed+=1; // Update numUsed for this imgObj.
 						}
-						// Is a tilemap?
+						// Draw the tilemap if it exists.
 						else if(tilemap   !== ""){
-							// Get the image.
-							finalImage=core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap];
-
-							// Draw the tile.
-							ctx.drawImage( finalImage.canvas, (x) << 0, (y) << 0 );
-
-							// Update numUsed for this imgObj.
-							finalImage.numUsed+=1;
+							finalImage=core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap].numUsed+=1; // Update numUsed for this imgObj.
+							finalImage=core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap].canvas;     // Get the image.
 						}
-						// Is a tile?
-						else if(tileindex !== ""){
-							// Get the image.
-							finalImage=core.GRAPHICS.ASSETS.tilesets[tileset][tileindex];
-
-							// Draw the tile.
-							ctx.drawImage( finalImage.canvas, (x) << 0, (y) << 0 );
-
-							// Update numUsed for this imgObj.
-							finalImage.numUsed+=1;
+						// Draw the tileindex if it exists.
+						else if(tileindex   !== ""){
+							core.GRAPHICS.ASSETS.tilesets[tileset][tileindex].numUsed+=1;        // Update numUsed for this imgObj.
+							finalImage=core.GRAPHICS.ASSETS.tilesets[tileset][tileindex].canvas; // Get the image.
 						}
 						else{
+							// continue;
 							let str = ["=E= update_layers_type2: (drawThis) invalid data.", JSON.stringify(VRAM[t],null,1)];
 							// console.error("============================", str, VRAM[t]);
 							console.info(
 								"============================",
-								"\n tilemap   :", tilemap   , "----", (tilemap   !=""),
-								// "\n tileset   :", tileset   , "----", (tileset   !=""),
-								"\n tileindex :", tileindex , "----", (tileindex !=""),
-								"\n VRAM      :", VRAM[t] ,
+								"\n layer :"         , layer     , "----",
+								"\n finalImage     :", finalImage, "----",
+								"\n tileset        :", tileset   , "----",
+								"\n img_canvas     :", img_canvas, "----",
+								"\n tilemap        :", tilemap   , "----",
+								"\n tileindex      :", tileindex , "----",
+								"\n VRAM           :", VRAM[t] ,
+								"\n VRAM[t].canvas :", VRAM[t].canvas ,
+								"\n TEST1: "         ,img_canvas !== false ,
+								"\n TEST2: "         ,tilemap    !== ""    ,
+								"\n TEST3: "         ,tileindex  !== ""    ,
+
+								"\n instanceof HTMLImageElement :", VRAM[t].canvas instanceof HTMLCanvasElement,
 								"\n core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap]  :", core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap] ,
 								"\n core.GRAPHICS.ASSETS.tilesets[tileset][tileindex]:", core.GRAPHICS.ASSETS.tilesets[tileset][tileindex] ,
 								""
 							);
 							throw Error(str);
 						}
+
+						// Draw the tile.
+						ctx.drawImage( finalImage, (x) << 0, (y) << 0 );
 
 						// Clear the drawThis flag.
 						VRAM[t].flags.drawThis=false;
@@ -1140,36 +1283,40 @@ core.GRAPHICS.FUNCS.update_allLayers    = function(){
 	});
 };
 // _DOC_ | returnNewTile_obj | Returns a new VRAM tile object with default settings.
-core.GRAPHICS.FUNCS.returnNewTile_obj = function(){
+core.GRAPHICS.FUNCS.returnNewTile_obj   = function(){
 	let output = 	{
 		// Position and Dimension
-		"x" : 0               , // Pixel-aligned x position.
-		"y" : 0               , // Pixel-aligned y position.
-		"w" : _CS.TILE_WIDTH  , // Width in pixels.
-		"h" : _CS.TILE_HEIGHT , // Height in pixels.
+		"x"               : 0                 , // Pixel-aligned x position.
+		"y"               : 0                 , // Pixel-aligned y position.
+		"w"               : _CS.TILE_WIDTH    , // Width in pixels.
+		"h"               : _CS.TILE_HEIGHT   , // Height in pixels.
 
 		// Source image data.
-		"tileset"   : "default_tileset" , // Name of tileset. Used for filtering.
-		"layer"     : ""                , // Name of layer. Used for filtering.
-		"tilemap"   : ""                , // Name of tilemap. (Might not always be populated.)
-		"tileindex" : 0                 , // Tile index into the tileset. (Might not always be populated.)
+		"layerType"       : ""                ,
+		"tileset"         : "default_tileset" , // Name of tileset. Used for filtering.
+		"layer"           : ""                , // Name of layer. Used for filtering.
+		"tilemap"         : ""                , // Name of tilemap. (Might not always be populated.)
+		"tileindex"       : 0                 , // Tile index into the tileset. (Might not always be populated.)
 
 		// Customized canvas (not using one of the pre-converted imgObj.
-		"canvas"    : false, // If set with a canvas it can be drawn instead of from imgObj. false: ignored.
-		"imgData"   : false, // If set with a imgData it can be drawn instead of from imgObj. false: ignored.
+		"canvas"          : undefined             , // If set with a canvas it can be drawn instead of from imgObj. false: ignored.
+		"imgData"         : undefined             , // If set with a imgData it can be drawn instead of from imgObj. false: ignored.
+
+		// VRAM or SPRITE array indexes.
+		"index_VRAM"      : undefined         , //
+		"index_SPRITE"    : undefined         , //
 
 		// Draw flags
-		"flags"     : {
+		"flags"           : {
 			// Sprite-like flags:
-			"OFF"         : false     , // If true then the tile is ignored at draw time.
-			"ROT"         : 0         , // Rotation. (degrees, -360 through +360.)
-			"FLIP_X"      : false     , // Horizontal flip. true: Tile canvas flipped horizontally., false: Tile is not flipped horizontally
-			"FLIP_Y"      : false     , // Vertical flip. true: Tile canvas flipped vertically., false: Tile is not flipped vertically
-			"spriteIndex" : undefined , // Vertical flip. true: Tile canvas flipped vertically., false: Tile is not flipped vertically
+			"OFF"         : false             , // If true then the tile is ignored at draw time.
+			"ROT"         : false             , // Rotation. (degrees, -360 through +360.), false: rotation is not considered.
+			"FLIP_X"      : false             , // Horizontal flip. true: Tile canvas flipped horizontally., false: Tile is not flipped horizontally
+			"FLIP_Y"      : false             , // Vertical flip. true: Tile canvas flipped vertically., false: Tile is not flipped vertically
+			"spriteIndex" : undefined         , // Vertical flip. true: Tile canvas flipped vertically., false: Tile is not flipped vertically
 
-			// Draw and Clear flags.
-			"clearThis" : false , // Clear status. true: Drawn image will be cleared then removed from the array., false: No clearing/removing of the image.
-			"drawThis"  : false , // Draw status.  true: Image will be drawn., false: Image will not be drawn.
+			// Draw flags.
+			"drawThis"    : false             , // Draw status.  true: Image will be drawn., false: Image will not be drawn.
 		}
 	};
 
@@ -1250,6 +1397,12 @@ core.GRAPHICS.FUNCS.ClearVram                = function(layer){
 					if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
 					if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
 					core.GRAPHICS.DATA.VRAM[layer][i] = core.GRAPHICS.FUNCS.returnNewTile_obj();
+
+					// Set the index within the tileObj.
+					let addr = (y*_CS.VRAM_TILES_H)+x;
+					core.GRAPHICS.DATA.VRAM[layer][i].index_VRAM   = addr;
+					core.GRAPHICS.DATA.VRAM[layer][i].index_SPRITE = undefined;
+
 					core.GRAPHICS.DATA.VRAM[layer][i].x=x*_CS.TILE_WIDTH;
 					core.GRAPHICS.DATA.VRAM[layer][i].y=y*_CS.TILE_HEIGHT;
 					core.GRAPHICS.DATA.VRAM[layer][i].tileindex=0;
@@ -1266,6 +1419,12 @@ core.GRAPHICS.FUNCS.ClearVram                = function(layer){
 					if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
 					if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
 					core.GRAPHICS.DATA.VRAM[layer][i] = core.GRAPHICS.FUNCS.returnNewTile_obj();
+
+					// Set the index within the tileObj.
+					let addr = (y*_CS.VRAM_TILES_H)+x;
+					core.GRAPHICS.DATA.VRAM[layer][i].index_VRAM   = addr;
+					core.GRAPHICS.DATA.VRAM[layer][i].index_SPRITE = undefined;
+
 					core.GRAPHICS.DATA.VRAM[layer][i].x=x*_CS.TILE_WIDTH;
 					core.GRAPHICS.DATA.VRAM[layer][i].y=y*_CS.TILE_HEIGHT;
 					core.GRAPHICS.DATA.VRAM[layer][i].tileindex=1;
@@ -1396,6 +1555,8 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 	// Get a new default tileObj.
 	let newVRAM_entry = core.GRAPHICS.FUNCS.returnNewTile_obj();
 
+	newVRAM_entry.layerType = layerType;
+
 	// Set the tileset, tileindex, layer values.
 	newVRAM_entry.tileset   = tileset   ;
 	newVRAM_entry.layer     = layer     ;
@@ -1438,175 +1599,48 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 	}
 
 	// Set the flags if present. Otherwise, use the defaults.
-	if(flags.ROT         == undefined){ flags.ROT         = 0         ; }
+	if(flags.ROT         == undefined){ flags.ROT         = false     ; }
 	if(flags.FLIP_X      == undefined){ flags.FLIP_X      = false     ; }
 	if(flags.FLIP_Y      == undefined){ flags.FLIP_Y      = false     ; }
 	if(flags.spriteIndex == undefined){ flags.spriteIndex = undefined ; }
 	if(flags.colorSwaps  == undefined){ flags.colorSwaps  = []        ; }
 	newVRAM_entry.flags = flags;
 
+	// DEBUG:
+	newVRAM_entry.__calledBy = data.__calledBy;
+
 	// Rotate or flip the image?
-	if(flags.ROT || flags.FLIP_X || flags.FLIP_Y || flags.colorSwaps.length){
-		// console.log("flags found!", flags);
-		let tmp_canvas     = document.createElement("canvas");
-		let tmp_canvas_ctx = tmp_canvas.getContext('2d');
-		let size           = Math.max(imgObj.canvas.width, imgObj.canvas.height);
-		tmp_canvas.width   = size ;
-		tmp_canvas.height  = size ;
-		JSGAME.SHARED.setpixelated(tmp_canvas);
-		let newX=0;
-		let newY=0;
-
-		// Rotation.
-		if(flags.ROT){
-			tmp_canvas_ctx.translate(tmp_canvas.width/2, tmp_canvas.height/2);
-			tmp_canvas_ctx.rotate(flags.ROT * Math.PI/180);
-			tmp_canvas_ctx.translate(-tmp_canvas.width/2, -tmp_canvas.height/2);
-		}
-
-		// X and or Y flipping.
-		if(flags.FLIP_X || flags.FLIP_Y){
-			let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
-			let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
-			newX       = flags.FLIP_X ? tmp_canvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
-			newY       = flags.FLIP_Y ? tmp_canvas.height * -1 : 0; // Set y position to -100% if flip vertical
-			tmp_canvas_ctx.scale(scaleH, scaleV);             // Set scale to flip the image
-		}
-
-		// Draw to the tmp_canvas.
-		tmp_canvas_ctx.drawImage(imgObj.canvas, newX, newY, tmp_canvas.width, tmp_canvas.height); // Draw the image
-
-		let lookups = core.GRAPHICS.DATA.lookups.colors.r32_hex;
-
-		// Color modifications?
-		if(flags.colorSwaps.length){
-			let imgData = tmp_canvas_ctx.getImageData(0, 0, tmp_canvas.width, tmp_canvas.height);
-
-			// Loop through the imgData.
-			let numBytes = (imgData.width * imgData.height)*4;
-			for(let i=0; i<numBytes; i+=4){
-				// Get the RGB values for this pixel.
-				let red   = imgData.data[i+0];
-				let green = imgData.data[i+1];
-				let blue  = imgData.data[i+2];
-				let alpha = imgData.data[i+3];
-
-				// Go through the colorSwaps and look for matches.
-				for(let j=0; j<flags.colorSwaps.length; j+=1){
-					// Determine the colors that we are looking for.
-					let lookFor       = flags.colorSwaps[j][0] ;
-					let lookFor_red   = parseInt(lookFor.substring(1,3),16) ;
-					let lookFor_green = parseInt(lookFor.substring(3,5),16) ;
-					let lookFor_blue  = parseInt(lookFor.substring(5,7),16) ;
-					let lookFor_alpha = 255 ;
-
-					// Color match?
-					let match = (red==lookFor_red && green==lookFor_green && blue==lookFor_blue && alpha==lookFor_alpha) ? true : false;
-					if(match){
-						// Determine the replacement colors.
-						let replaceWith       = flags.colorSwaps[j][1] ;
-						let replaceWith_red   = parseInt(replaceWith.substring(1,3),16) ;
-						let replaceWith_green = parseInt(replaceWith.substring(3,5),16) ;
-						let replaceWith_blue  = parseInt(replaceWith.substring(5,7),16) ;
-						let replaceWith_alpha = 255 ;
-
-						// Replace the colors.
-						imgData.data[i+0]=replaceWith_red  ;
-						imgData.data[i+1]=replaceWith_green;
-						imgData.data[i+2]=replaceWith_blue ;
-						imgData.data[i+3]=replaceWith_alpha;
-					}
-				}
-
-			}
-
-			// Update the tmp_canvas.
-			tmp_canvas_ctx.putImageData(imgData, 0, 0);
-		}
-
+	if(flags.ROT !== false || flags.FLIP_X || flags.FLIP_Y || flags.colorSwaps.length){
+		// Custom canvases will not have the tilemap or tileindex set.
 		newVRAM_entry.tileindex = "";
 		newVRAM_entry.tilemap   = "";
+		newVRAM_entry.w         = imgObj.canvas.width  ;
+		newVRAM_entry.h         = imgObj.canvas.height ;
 
-		newVRAM_entry.canvas = tmp_canvas;
-
-		// Set w, h values.
-		newVRAM_entry.w = size ;
-		newVRAM_entry.h = size ;
+		let hash = "TS:"+tileset+"TM:"+tilemap+"TI:"+tileindex;
+		core.GRAPHICS.FUNCS.addTileFlagChangesToQueue(imgObj.imgData, newVRAM_entry, hash);
 	}
 	else{
 		// Set w, h values.
 		newVRAM_entry.w = imgObj.canvas.width ;
 		newVRAM_entry.h = imgObj.canvas.height ;
+
+		newVRAM_entry.canvas  = undefined ;
+		newVRAM_entry.imgData = undefined ;
+
+		// Set drawThis.
+		newVRAM_entry.flags.drawThis=true;
+
+		// Set the UPDATE flag for this layer.
+		core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
+
+		// Place the tile.
+		core.GRAPHICS.FUNCS.placeTile({
+			"mapWidth"      : (imgObj.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
+			"mapHeight"     : (imgObj.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
+			"newVRAM_entry" : newVRAM_entry ,
+		});
 	}
-
-	// if(flags.clearThis != undefined){ newVRAM_entry.flags.clearThis = flags.clearThis; }
-	// if(flags.drawThis  != undefined){ newVRAM_entry.flags.drawThis  = flags.drawThis ; }
-
-	// Set the clearThis flag according to clearCanvasBeforeUpdate for this layer.
-	// *************
-	// newVRAM_entry.flags.clearThis = core.GRAPHICS.DATA.FLAGS[layer].clearCanvasBeforeUpdate;
-	// *************
-
-	// Set drawThis.
-	newVRAM_entry.flags.drawThis=true;
-
-	// DEBUG:
-	newVRAM_entry.__calledBy = data.__calledBy;
-
-	// Add the newVRAM_entry to the specified layer's VRAM/SPRITES.
-	if     (layerType=="VRAM")  {
-		// Adjust VRAM. (One entry.)
-		if     (__calledBy=="DrawTile"){
-			addr = ( y * core.SETTINGS['VRAM_TILES_H'] ) + x ;
-			newVRAM_entry.flags.OFF = false ;
-			core.GRAPHICS.DATA.VRAM[layer][addr] = newVRAM_entry;
-		}
-
-		// Adjust VRAM. (Multiple entries.)
-		else if(__calledBy=="DrawMap"){
-			// Start VRAM index.
-			let addr_1    = ( y * core.SETTINGS['VRAM_TILES_H'] ) + x ;
-
-			// Get the width and height of this tilemap.
-			let mapWidth  = (imgObj.canvas.width   / _CS.TILE_WIDTH ) << 0;
-			let mapHeight = (imgObj.canvas.height  / _CS.TILE_HEIGHT) << 0;
-
-			// Go through all VRAM indexes that would be used if this map were made up of tiles.
-			for(let _y=0; _y < mapHeight; _y += 1){
-				for(let _x=0; _x < mapWidth; _x += 1){
-					// What is the next VRAM index?
-					let thisAddr = addr_1 + ( (_y * _CS.VRAM_TILES_H) + _x );
-
-					// First index gets the newVRAM_entry.
-					if(thisAddr==addr_1){
-						newVRAM_entry.flags.OFF = false ;
-						core.GRAPHICS.DATA.VRAM[layer][thisAddr] = newVRAM_entry;
-					}
-					// Other indexes get turned off.
-					else{
-						// Set this tile to be OFF.
-						let existingObj = core.GRAPHICS.DATA.VRAM[layer][thisAddr];
-						existingObj.flags.OFF = true ;
-
-						// Set this tile to be transparent.
-						// existingObj.flags.OFF = false ;
-						// existingObj.tileset   = "default_tileset" ;
-						// existingObj.tilemap   = "" ;
-						// existingObj.tileindex = 1 ;
-					}
-				}
-			}
-
-		}
-
-	}
-	else if(layerType=="SPRITE"){
-		// Set to the specified spriteNum index in SPRITES.
-		core.GRAPHICS.DATA.SPRITES[layer][flags.spriteIndex]=newVRAM_entry;
-	}
-
-	// Set the UPDATE flag for this layer.
-	core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
 };
 // _DOC_ | TileFill | Fill a region with a tile.
 core.GRAPHICS.FUNCS.TileFill                 = function(x, y, w, h, tileset, tileindex, layer, flags){
@@ -1840,6 +1874,289 @@ core.GRAPHICS.FUNCS.Print_multiFont          = function(data){
 
 }
 
+//
+core.GRAPHICS.FUNCS.placeTile                 = function(data){
+	let newVRAM_entry = data.newVRAM_entry       ;
+	let layerType     = newVRAM_entry.layerType  ;
+	let __calledBy    = newVRAM_entry.__calledBy ;
+	let layer         = newVRAM_entry.layer      ;
+	let flags         = newVRAM_entry.flags      ;
+
+	// Add the newVRAM_entry to the specified layer's VRAM/SPRITES.
+	if     (layerType=="VRAM")  {
+		let x  = (newVRAM_entry.x / _CS.TILE_WIDTH ) << 0;
+		let y  = (newVRAM_entry.y / _CS.TILE_HEIGHT) << 0;
+
+		// Adjust VRAM. (One entry.)
+		if     (__calledBy=="DrawTile"){
+			addr = (y*_CS.VRAM_TILES_H)+x;
+			newVRAM_entry.flags.OFF = false ;
+			core.GRAPHICS.DATA.VRAM[layer][addr] = newVRAM_entry;
+
+			core.GRAPHICS.DATA.VRAM[layer][addr].index_VRAM   = addr;
+			core.GRAPHICS.DATA.VRAM[layer][addr].index_SPRITE = undefined;
+
+			// console.log(__calledBy, layer, addr, newVRAM_entry);
+		}
+
+		// Adjust VRAM. (Multiple entries.)
+		else if(__calledBy=="DrawMap"){
+			// Start VRAM index.
+			let addr_1    = (y*_CS.VRAM_TILES_H)+x;
+
+			let mapWidth      = data.mapWidth            ;
+			let mapHeight     = data.mapHeight           ;
+
+			// Go through all VRAM indexes that would be used if this map were made up of tiles.
+			for(let _y=0; _y < mapHeight; _y += 1){
+				for(let _x=0; _x < mapWidth; _x += 1){
+					// What is the next VRAM index?
+					let thisAddr = addr_1 + ( (_y * _CS.VRAM_TILES_H) + _x );
+
+					// First index gets the newVRAM_entry.
+					if(thisAddr==addr_1){
+						newVRAM_entry.flags.OFF = false ;
+						newVRAM_entry.index_VRAM=thisAddr;
+						newVRAM_entry.index_SPRITE=undefined;
+						core.GRAPHICS.DATA.VRAM[layer][thisAddr] = newVRAM_entry;
+					}
+					// Other indexes get turned off.
+					else{
+						// Set this tile to be OFF.
+						let existingObj = core.GRAPHICS.DATA.VRAM[layer][thisAddr];
+						existingObj.flags.OFF = true ;
+						existingObj.index_VRAM=thisAddr;
+						existingObj.index_SPRITE=undefined;
+
+						// Set this tile to be transparent.
+						// existingObj.flags.OFF = false ;
+						// existingObj.tileset   = "default_tileset" ;
+						// existingObj.tilemap   = "" ;
+						// existingObj.tileindex = 1 ;
+					}
+				}
+			}
+
+			// console.log(__calledBy, layer, addr_1, newVRAM_entry);
+
+		}
+	}
+	else if(layerType=="SPRITE"){
+		// Set to the specified spriteNum index in SPRITES.
+		newVRAM_entry.index_VRAM   = flags.spriteIndex;
+		newVRAM_entry.index_SPRITE = undefined;
+		core.GRAPHICS.DATA.SPRITES[layer][flags.spriteIndex]=newVRAM_entry;
+
+		// console.log(__calledBy, layer, flags.spriteIndex, newVRAM_entry);
+	}
+
+}
+//
+core.GRAPHICS.FUNCS.addTileFlagChangesToQueue = function(imgData, newVRAM_entry, hash){
+	// Create the object.
+	let newObj = {
+		"imgData_buffer" : imgData.data.buffer.slice(0) ,
+		"newVRAM_entry"  : newVRAM_entry
+	};
+
+	// Add the object to the queue.
+	core.GRAPHICS.WORKERS.w_colorswaps.queue.push(newObj);
+};
+//
+core.GRAPHICS.FUNCS.runTileFlagChangesQueue   = function(){
+	return new Promise(function(res,rej){
+		let workers = [
+		];
+
+		//
+		for(let i=0; i<window.navigator.hardwareConcurrency; i+=1){
+			workers.push( core.GRAPHICS.WORKERS.w_colorswaps.worker[i] );
+		}
+
+		let proms = [];
+
+		let num_per_worker = core.GRAPHICS.WORKERS.w_colorswaps.queue.length / window.navigator.hardwareConcurrency;
+		let curIndex=0;
+		workers.forEach(function(d, workerNum){
+			proms.push(
+				new Promise(function(res_inner, rej_inner){
+					let worker = d;
+					let img_buffers_arr = [] ;
+					let newVRAM_entries = [] ;
+					let transferList    = [] ;
+
+					worker.onmessage = function(){
+						switch( event.data.function ){
+							// imgData manipulation for color swaps.
+							case "colorswaps" : {
+								let imgDatas=event.data.finished_img_buffers_arr;
+								let newVRAMs=event.data.finished_newVRAM_entries;
+
+								for(let i=0; i<newVRAMs.length; i+=1){
+									// Convert the imgData back into an imgData object.
+									let img_buff = imgDatas[i] ;
+									let img_view = new Uint8ClampedArray(img_buff) ;
+									let newVRAM  = newVRAMs[i] ;
+									let flags    = newVRAMs[i].flags ;
+
+									// Create the src canvas from the imgData.
+									let src_canvas    = document.createElement("canvas");  ;
+									src_canvas.width  = newVRAM.w ;
+									src_canvas.height = newVRAM.h ;
+									JSGAME.SHARED.setpixelated(src_canvas);
+									let src_ctx     = src_canvas.getContext("2d") ;
+									src_ctx.putImageData(
+										new ImageData(img_view, src_canvas.width, src_canvas.height) ,
+										0,
+										0
+									);
+									let newX=0;
+									let newY=0;
+
+									// Create the destination canvas.
+									let dst_canvas    = document.createElement("canvas");  ;
+									dst_canvas.width  = src_canvas.width ;
+									dst_canvas.height = src_canvas.height ;
+									JSGAME.SHARED.setpixelated(dst_canvas);
+									let dst_ctx     = dst_canvas.getContext("2d") ;
+
+									if(flags.ROT !== false || flags.FLIP_X || flags.FLIP_Y){
+										if( flags.ROT ){
+											let size = Math.max(src_canvas.width, src_canvas.height);
+											dst_canvas.width   = size ;
+											dst_canvas.height  = size ;
+
+											dst_ctx.translate(src_canvas.width/2, src_canvas.height/2);
+											dst_ctx.rotate(flags.ROT * Math.PI/180);
+											dst_ctx.translate(-src_canvas.width/2, -src_canvas.height/2);
+										}
+
+										// FLIP_X and/or FLIP_Y?
+										if( flags.FLIP_X || flags.FLIP_Y ){
+											let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
+											let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
+											newX       = flags.FLIP_X ? src_canvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
+											newY       = flags.FLIP_Y ? src_canvas.height * -1 : 0; // Set y position to -100% if flip vertical
+											dst_ctx.scale(scaleH, scaleV);             // Set scale to flip the image
+										}
+									}
+
+									// Draw the src_canvas to the dst_canvas.
+									dst_ctx.drawImage(src_canvas,newX,newY);
+
+									newVRAM.canvas         = dst_canvas ;
+									// newVRAM.canvas         = src_canvas ;
+									newVRAM.imgData        = undefined ;
+									newVRAM.flags.drawThis = true ;
+									core.GRAPHICS.DATA.FLAGS[newVRAM.layer].UPDATE=true;
+
+									core.GRAPHICS.FUNCS.placeTile({
+										"mapWidth"      : (newVRAM.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
+										"mapHeight"     : (newVRAM.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
+										"newVRAM_entry" : newVRAM ,
+									});
+								}
+
+								// setTimeout(function(){
+									res_inner();
+								// },100);
+
+								break;
+							}
+
+							// Unmatched function.
+							default     : { break; }
+						}
+					};
+
+					//
+					let cnt=0;
+					let len = core.GRAPHICS.WORKERS.w_colorswaps.queue.length;
+					for(let i=curIndex; i<len; i+=1){
+						// if( (cnt==num_per_worker) ) { console.log(cnt, num_per_worker); break; }
+
+						// Add data.
+						let rec = core.GRAPHICS.WORKERS.w_colorswaps.queue[i];
+						img_buffers_arr.push( rec.imgData_buffer );
+						newVRAM_entries.push( rec.newVRAM_entry  );
+
+						// Add the data to the transfer list as a copy.
+						// transferList.push( rec.imgData_buffer );
+
+						//
+						curIndex=i;
+						// cnt+=1;
+					}
+
+					let msg = {
+						"function"          : "colorswaps"      ,
+						"img_buffers_arr"   : img_buffers_arr   ,
+						"newVRAM_entries"   : newVRAM_entries   ,
+					};
+
+					console.log("workerNum:", workerNum, "gets curIndex of:", len);
+
+					// Send the data to the worker.
+					worker.postMessage(
+						msg ,
+						transferList
+					);
+
+				})
+			);
+		});
+
+		Promise.all(proms).then(
+			function(data){
+				// Clear the onmessage listener.
+				for(let i=0; i<window.navigator.hardwareConcurrency; i+=1){
+					// workers[i].onmessage=null;
+				}
+
+				// Clear the queue.
+				core.GRAPHICS.WORKERS.w_colorswaps.queue=[];
+
+
+				// Resolve the outer promise.
+				res();
+			},
+			function(err){
+				console.log("err:", err);
+			}
+		);
+		// Clear the queue.
+		// core.GRAPHICS.WORKERS.w_colorswaps.queue=[];
+	});
+}
+//
+core.GRAPHICS.FUNCS.colorSwaps = function(imgData, newVRAM_entry){
+	// We will need the imgData version of the canvas.
+
+	// Get a handle to our worker.
+	let worker      = core.GRAPHICS.WORKERS.w_colorswaps.worker;
+	let activeCount = core.GRAPHICS.WORKERS.w_colorswaps.activeCount;
+
+	// Send the data to the worker.
+	worker.postMessage(
+		{
+			"function"      : "colorswaps"        ,
+			"imgData"       : imgData.data.buffer ,
+			"imgData_w"     : imgData.width       ,
+			"imgData_h"     : imgData.height      ,
+			"activeCount"   : activeCount         ,
+			"newVRAM_entry" : newVRAM_entry       ,
+		},
+		[
+			imgData.data.buffer
+		]
+		);
+
+	//
+	core.GRAPHICS.WORKERS.w_colorswaps.done[activeCount]=false;
+
+	// Adjust the worker active usage count.
+	core.GRAPHICS.WORKERS.w_colorswaps.activeCount += 1;
+};
 
 /*
 https://www.diffnow.com

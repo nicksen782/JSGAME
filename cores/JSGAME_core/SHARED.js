@@ -225,12 +225,14 @@ JSGAME.SHARED={
 	// Set the pixelated settings for a canvas.
 	setpixelated       : function(canvas){
 		// https://stackoverflow.com/a/13294650
+		// https://stackoverflow.com/a/32798277
+
 		let ctx = canvas.getContext("2d");
-		// ctx.mozImageSmoothingEnabled    = false; // Depreciated. Use imageSmoothingEnabled instead.
-		ctx.imageSmoothingEnabled       = false; //
-		ctx.oImageSmoothingEnabled      = false; //
-		ctx.webkitImageSmoothingEnabled = false; //
-		ctx.msImageSmoothingEnabled     = false; //
+		// ctx['mozImageSmoothingEnabled']    = false; // Depreciated. Use imageSmoothingEnabled instead.
+		ctx['imageSmoothingEnabled']       = false; //
+		ctx['oImageSmoothingEnabled']      = false; //
+		ctx['webkitImageSmoothingEnabled'] = false; //
+		ctx['msImageSmoothingEnabled']     = false; //
 
 		// image-rendering: crisp-edges;
 		// image-rendering: -moz-crisp-edges;
