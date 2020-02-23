@@ -90,22 +90,21 @@ function colorswaps(event){
 			finished_newVRAM_entries.push(VRAM_entry);
 			transferList            .push(img_buff);
 		}
+		// Otherwise just write the pixels as they are.
 		else{
 			finished_img_buffers_arr.push(img_buff);
 			finished_newVRAM_entries.push(VRAM_entry);
 			transferList            .push(img_buff);
 		}
-
 	}
 
 	let msg = {
-		"function"          : "colorswaps"      ,
+		"function"                 : "colorswaps"             ,
 		"finished_img_buffers_arr" : finished_img_buffers_arr ,
 		"finished_newVRAM_entries" : finished_newVRAM_entries ,
 		"length"                   : event.data.img_buffers_arr.length ,
 	};
 
 	// Return the data.
-	// self.postMessage(msg, []);
 	self.postMessage(msg, transferList);
 };

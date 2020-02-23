@@ -12,140 +12,25 @@ core.GRAPHICS.ASSETS      = {
 } ;
 
 // *** WEB WORKERS ***
-// window.navigator.hardwareConcurrency;
-// (typeof(Worker) !== "undefined");
 core.GRAPHICS.WORKERS = {
 	// newVRAM_entry.canvas  = new_canvas ;
 	// newVRAM_entry.imgData = undefined ;
 	// newVRAM_entry.w         = new_canvas.width  ;
 	// newVRAM_entry.h         = new_canvas.height ;
 	w_colorswaps :{
-		"worker": [] ,
-		// "callback":function(){
-		// 	worker.onmessage=null;
-		// 	switch( event.data.function ){
-		// 		// imgData manipulation for color swaps.
-		// 		case "colorswaps" : {
-		// 			// Convert the imgData back into an imgData object.
-		// 			// var array = new Uint8ClampedArray(event.data.imgData);
-		// 			// var imgData = new ImageData(array, event.data.imgData_w, event.data.imgData_h);
-
-		// 			// Clear the queue.
-		// 			core.GRAPHICS.WORKERS.w_colorswaps.queue=[];
-
-		// 			let imgDatas=event.data.finished_img_buffers_arr;
-		// 			let newVRAMs=event.data.finished_newVRAM_entries;
-
-		// 			for(let i=0; i<newVRAMs.length; i+=1){
-		// 				let img_buff = imgDatas[i] ;
-		// 				let img_view = new Uint8ClampedArray(img_buff) ;
-		// 				let newVRAM  = newVRAMs[i] ;
-		// 				let flags    = newVRAMs[i].flags ;
-
-		// 				// Create the src canvas from the imgData.
-		// 				let src_canvas    = document.createElement("canvas");  ;
-		// 				src_canvas.width  = newVRAM.w ;
-		// 				src_canvas.height = newVRAM.h ;
-		// 				JSGAME.SHARED.setpixelated(src_canvas);
-		// 				let src_ctx     = src_canvas.getContext("2d") ;
-		// 				src_ctx.putImageData(
-		// 					new ImageData(img_view, src_canvas.width, src_canvas.height) ,
-		// 					0,
-		// 					0
-		// 				);
-
-		// 				// Create the destination canvas.
-		// 				let dst_canvas    = document.createElement("canvas");  ;
-		// 				dst_canvas.width  = newVRAM.w ;
-		// 				dst_canvas.height = newVRAM.h ;
-		// 				JSGAME.SHARED.setpixelated(dst_canvas);
-		// 				let dst_ctx     = dst_canvas.getContext("2d") ;
-
-		// 				let newX=0;
-		// 				let newY=0;
-		// 				if(flags.ROT !== false || flags.FLIP_X || flags.FLIP_Y){
-		// 					if( flags.ROT ){
-		// 						let size = Math.max(src_canvas.width, src_canvas.height);
-		// 						dst_canvas.width   = size ;
-		// 						dst_canvas.height  = size ;
-
-		// 						dst_ctx.translate(src_canvas.width/2, src_canvas.height/2);
-		// 						dst_ctx.rotate(flags.ROT * Math.PI/180);
-		// 						dst_ctx.translate(-src_canvas.width/2, -src_canvas.height/2);
-		// 					}
-
-		// 					// FLIP_X and/or FLIP_Y?
-		// 					if( flags.FLIP_X || flags.FLIP_Y ){
-		// 						let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
-		// 						let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
-		// 						newX       = flags.FLIP_X ? src_canvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
-		// 						newY       = flags.FLIP_Y ? src_canvas.height * -1 : 0; // Set y position to -100% if flip vertical
-		// 						dst_ctx.scale(scaleH, scaleV);             // Set scale to flip the image
-		// 					}
-		// 				}
-
-		// 				// Draw the src_canvas to the dst_canvas.
-		// 				dst_ctx.drawImage(src_canvas,newX,newY);
-
-		// 				newVRAM.canvas         = dst_canvas ;
-		// 				newVRAM.imgData        = undefined ;
-		// 				newVRAM.flags.drawThis = true ;
-		// 				core.GRAPHICS.DATA.FLAGS[newVRAM.layer].UPDATE=true;
-
-		// 				core.GRAPHICS.FUNCS.placeTile({
-		// 					"mapWidth"      : (newVRAM.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
-		// 					"mapHeight"     : (newVRAM.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
-		// 					"newVRAM_entry" : newVRAM ,
-		// 				});
-		// 			}
-
-		// 			// Set w, h values.
-		// 			// newVRAM_entry.w = imgObj.canvas.width ;
-		// 			// newVRAM_entry.h = imgObj.canvas.height ;
-
-		// 			// newVRAM_entry.canvas  = undefined ;
-		// 			// newVRAM_entry.imgData = undefined ;
-
-		// 			// Set drawThis.
-		// 			// newVRAM_entry.flags.drawThis=true;
-
-		// 			// Set the UPDATE flag for this layer.
-		// 			// core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
-
-		// 			// Place the tile.
-		// 			// core.GRAPHICS.FUNCS.placeTile({
-		// 			// 	"mapWidth"      : (imgObj.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
-		// 			// 	"mapHeight"     : (imgObj.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
-		// 			// 	"newVRAM_entry" : newVRAM_entry ,
-		// 			// });
-
-		// 			// console.log("FROM WORKER: ", event.data);
-		// 			res();
-
-		// 			break;
-		// 		}
-
-		// 	// Unmatched function.
-		// 	default     : { break; }
-		// 	}
-		// },
-		"queue" : [
-		],
+		"worker": [] , // An array of workers.
+		"queue" : [] , // An array of arrays. Each outer array is for the same indexed worker.
+		"queuedCount": 0 ,
 	}
 };
-for(let i=0; i<window.navigator.hardwareConcurrency; i+=1){
-	//
-	let worker = new Worker('cores/videoMode_C/videoMode_C_webworker.js') ;
-	// worker.onmessage = core.GRAPHICS.WORKERS.w_colorswaps.callback;
-	core.GRAPHICS.WORKERS.w_colorswaps.worker.push( worker );
-}
 
 // PERFORMANCE MONITORING (layer draw timings.)
 core.GRAPHICS.performance = {
-	LAYERS : {
+	"LAYERS" : {
 		// BG : [ 0, 0, 0, 0, 0 ] , //
-		"update_layers_type2":[ 0, 0, 0, 0, 0 ],
 	},
+	"update_layers_type2":[ 0, 0, 0, 0, 0 ],
+	"worker_timings1":[ 0, 0, 0, 0, 0 ],
 };
 // Holds the canvas elements.
 core.GRAPHICS.canvas      = {} ;
@@ -954,11 +839,38 @@ core.GRAPHICS.init = function(){
 		});};
 
 		/**
-		 * PART4: Clean-up and canvas clearing.
+		 * PART4: Web-workers, clean-up and canvas clearing.
 		*/
 		let cleanup = function(){ return new Promise(function(res1, rej1){
 			let _perf_name = "VIDEO_INIT_"+"cleanup";
 			try{
+				// Create web workers.
+				if( window.navigator.hardwareConcurrency >= 2){
+					// Only use half the max number of web workers.
+					// let coresToUse = (window.navigator.hardwareConcurrency /2 ) << 0;
+
+					// Use all available cores for web workers.
+					let coresToUse = (window.navigator.hardwareConcurrency)
+
+					// Force failure.
+					// let coresToUse = 0;
+					// if(!coresToUse || !window.navigator.hardwareConcurrency ){
+					// 	rej1("web worker setup") ;
+					// 	throw "web worker setup" ;
+					// 	return;
+					// }
+
+					// console.log("For web workers: Using " + coresToUse + " of " + window.navigator.hardwareConcurrency + ".");
+					for(let i=0; i<coresToUse; i+=1){
+						//
+						let worker = new Worker('cores/videoMode_C/videoMode_C_webworker.js') ;
+						// core.GRAPHICS.WORKERS.w_colorswaps.worker.push( worker );
+						// core.GRAPHICS.WORKERS.w_colorswaps.queue.push( [] );
+						core.GRAPHICS.WORKERS.w_colorswaps.worker[i] = worker ;
+						core.GRAPHICS.WORKERS.w_colorswaps.queue [i] = [] ;
+					}
+				}
+
 				// Clear all canvases and data.
 				JSGAME.SHARED.PERFORMANCE.stamp(_perf_name+"_clearAllCanvases" , "START");
 				core.GRAPHICS.FUNCS.clearAllCanvases();
@@ -1058,7 +970,7 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 	return new Promise(function(res,rej){
 		// Get all layer draw start time.
 		let drawStart_update_layers_type2;
-		if(JSGAME.FLAGS.debug) { drawStart_update_layers_type2 = performance.now(); core.GRAPHICS.performance.LAYERS["update_layers_type2"].shift(); }
+		if(JSGAME.FLAGS.debug) { drawStart_update_layers_type2 = performance.now(); core.GRAPHICS.performance["update_layers_type2"].shift(); }
 
 		let drawOutput=false;
 
@@ -1071,10 +983,16 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 			let layer           = layers[i];
 			let UPDATE          = core.GRAPHICS.DATA.FLAGS[layer].UPDATE          ;
 			let REDRAW          = core.GRAPHICS.DATA.FLAGS[layer].REDRAW          ;
+
+			// Early exit?
+			// if(!UPDATE && !REDRAW){ continue ; }
+
+			// Get layer variables.
 			let layerFlags      = core.GRAPHICS.DATA.FLAGS[layer]                 ;
 			let clearCanvasBeforeUpdate = core.GRAPHICS.DATA.FLAGS[layer].clearCanvasBeforeUpdate ;
 			let canvas          = core.GRAPHICS.canvas[layer]                     ;
 			let ctx             = core.GRAPHICS.ctx[layer]                        ;
+
 
 			// Force redraw if UPDATE is set and the layer has clearCanvasBeforeUpdate set.
 			if(UPDATE && clearCanvasBeforeUpdate){
@@ -1203,7 +1121,7 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 		}
 
 		// Update the all layer draw performance data.
-		if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance.LAYERS["update_layers_type2"].push(performance.now() - drawStart_update_layers_type2);                   }
+		if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance["update_layers_type2"].push(performance.now() - drawStart_update_layers_type2);                   }
 
 		// Done! Resolve.
 		res(drawOutput);
@@ -1617,8 +1535,7 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 		newVRAM_entry.w         = imgObj.canvas.width  ;
 		newVRAM_entry.h         = imgObj.canvas.height ;
 
-		let hash = "TS:"+tileset+"TM:"+tilemap+"TI:"+tileindex;
-		core.GRAPHICS.FUNCS.addTileFlagChangesToQueue(imgObj.imgData, newVRAM_entry, hash);
+		core.GRAPHICS.FUNCS.addTileFlagChangesToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
 	}
 	else{
 		// Set w, h values.
@@ -1952,170 +1869,186 @@ core.GRAPHICS.FUNCS.placeTile                 = function(data){
 
 }
 //
-core.GRAPHICS.FUNCS.addTileFlagChangesToQueue = function(imgData, newVRAM_entry, hash){
+core.GRAPHICS.FUNCS.addTileFlagChangesToQueue = function(imgData, newVRAM_entry){
 	// Create the object.
 	let newObj = {
-		"imgData_buffer" : imgData.data.buffer.slice(0) ,
+		"imgData_buffer" : imgData ,
 		"newVRAM_entry"  : newVRAM_entry
 	};
 
+	// Determine which worker's queue to add this change into.
+	let queues = core.GRAPHICS.WORKERS.w_colorswaps.queue ;
+	let queueLengths=[];
+
+	// Each for each queue.
+	for(let queueNum=0; queueNum<queues.length; queueNum+=1){
+		// Save the number of items in the queue.
+		queueLengths.push(queues[queueNum].length);
+	}
+	// let destinationQueue = queueLengths.indexOf(Math.min.apply(null,queueLengths)) ;
+	let destinationQueue = queueLengths.indexOf(Math.min(...queueLengths)) ;
+
 	// Add the object to the queue.
-	core.GRAPHICS.WORKERS.w_colorswaps.queue.push(newObj);
+	// core.GRAPHICS.WORKERS.w_colorswaps.queue.push(newObj);
+	core.GRAPHICS.WORKERS.w_colorswaps.queue[destinationQueue].push(newObj);
+
+	//
+	core.GRAPHICS.WORKERS.w_colorswaps.queuedCount+=1;
 };
 //
 core.GRAPHICS.FUNCS.runTileFlagChangesQueue   = function(){
 	return new Promise(function(res,rej){
-		let workers = [
-		];
+		// Early exit?
+		if(!core.GRAPHICS.WORKERS.w_colorswaps.queuedCount){ res(); return; }
 
 		//
-		for(let i=0; i<window.navigator.hardwareConcurrency; i+=1){
-			workers.push( core.GRAPHICS.WORKERS.w_colorswaps.worker[i] );
-		}
+		let drawStart_worker_timings1;
+		if(JSGAME.FLAGS.debug) { drawStart_worker_timings1 = performance.now(); core.GRAPHICS.performance["worker_timings1"].shift(); }
 
-		let proms = [];
+		// let ts_start = performance.now();
 
-		let num_per_worker = core.GRAPHICS.WORKERS.w_colorswaps.queue.length / window.navigator.hardwareConcurrency;
-		let curIndex=0;
-		workers.forEach(function(d, workerNum){
+		// Each for each queue.
+		let workers = core.GRAPHICS.WORKERS.w_colorswaps.worker ;
+		let queues  = core.GRAPHICS.WORKERS.w_colorswaps.queue ;
+
+		let proms=[];
+
+		for(let queueNum=0; queueNum<queues.length; queueNum+=1){
+
 			proms.push(
-				new Promise(function(res_inner, rej_inner){
-					let worker = d;
-					let img_buffers_arr = [] ;
-					let newVRAM_entries = [] ;
-					let transferList    = [] ;
+				new Promise(
+					function(res_inner, rej_inner){
+						let thisQueue       = queues[queueNum]  ;
+						let worker          = workers[queueNum] ;
+						let img_buffers_arr = []                ;
+						let newVRAM_entries = []                ;
+						let transferList    = []                ;
 
-					worker.onmessage = function(){
-						switch( event.data.function ){
-							// imgData manipulation for color swaps.
-							case "colorswaps" : {
-								let imgDatas=event.data.finished_img_buffers_arr;
-								let newVRAMs=event.data.finished_newVRAM_entries;
+						let queueLen=thisQueue.length;
+						for(let i=0; i<queueLen; i+=1){
+							// Add data.
+							let rec = thisQueue[i];
+							img_buffers_arr.push( rec.imgData_buffer );
+							newVRAM_entries.push( rec.newVRAM_entry  );
+						}
 
-								for(let i=0; i<newVRAMs.length; i+=1){
-									// Convert the imgData back into an imgData object.
-									let img_buff = imgDatas[i] ;
-									let img_view = new Uint8ClampedArray(img_buff) ;
-									let newVRAM  = newVRAMs[i] ;
-									let flags    = newVRAMs[i].flags ;
+						// Define onmessage callback.
+						worker.onmessage = function(){
+							switch( event.data.function ){
+								// imgData manipulation for color swaps.
+								case "colorswaps" : {
+									// console.log("MSG: colorswaps: ", event.data.finished_img_buffers_arr.length);
 
-									// Create the src canvas from the imgData.
-									let src_canvas    = document.createElement("canvas");  ;
-									src_canvas.width  = newVRAM.w ;
-									src_canvas.height = newVRAM.h ;
-									JSGAME.SHARED.setpixelated(src_canvas);
-									let src_ctx     = src_canvas.getContext("2d") ;
-									src_ctx.putImageData(
-										new ImageData(img_view, src_canvas.width, src_canvas.height) ,
-										0,
-										0
-									);
-									let newX=0;
-									let newY=0;
+									let imgDatas=event.data.finished_img_buffers_arr;
+									let newVRAMs=event.data.finished_newVRAM_entries;
 
-									// Create the destination canvas.
-									let dst_canvas    = document.createElement("canvas");  ;
-									dst_canvas.width  = src_canvas.width ;
-									dst_canvas.height = src_canvas.height ;
-									JSGAME.SHARED.setpixelated(dst_canvas);
-									let dst_ctx     = dst_canvas.getContext("2d") ;
+									for(let i=0; i<newVRAMs.length; i+=1){
+										// Convert the imgData back into an imgData object.
+										let img_buff = imgDatas[i] ;
+										let img_view = new Uint8ClampedArray(img_buff) ;
+										let newVRAM  = newVRAMs[i] ;
+										let flags    = newVRAMs[i].flags ;
 
-									if(flags.ROT !== false || flags.FLIP_X || flags.FLIP_Y){
-										if( flags.ROT ){
-											let size = Math.max(src_canvas.width, src_canvas.height);
-											dst_canvas.width   = size ;
-											dst_canvas.height  = size ;
+										// Create the src canvas from the imgData.
+										let src_canvas    = document.createElement("canvas");  ;
+										src_canvas.width  = newVRAM.w ;
+										src_canvas.height = newVRAM.h ;
+										JSGAME.SHARED.setpixelated(src_canvas);
+										let src_ctx     = src_canvas.getContext("2d") ;
+										src_ctx.putImageData(
+											new ImageData(img_view, src_canvas.width, src_canvas.height) ,
+											0,
+											0
+										);
+										let newX=0;
+										let newY=0;
 
-											dst_ctx.translate(src_canvas.width/2, src_canvas.height/2);
-											dst_ctx.rotate(flags.ROT * Math.PI/180);
-											dst_ctx.translate(-src_canvas.width/2, -src_canvas.height/2);
+										// Create the destination canvas.
+										let dst_canvas    = document.createElement("canvas");  ;
+										dst_canvas.width  = src_canvas.width ;
+										dst_canvas.height = src_canvas.height ;
+										JSGAME.SHARED.setpixelated(dst_canvas);
+										let dst_ctx     = dst_canvas.getContext("2d") ;
+
+										if(flags.ROT !== false || flags.FLIP_X || flags.FLIP_Y){
+											if( flags.ROT ){
+												let size = Math.max(src_canvas.width, src_canvas.height);
+												dst_canvas.width   = size ;
+												dst_canvas.height  = size ;
+												JSGAME.SHARED.setpixelated(dst_canvas);
+
+												dst_ctx.translate(src_canvas.width/2, src_canvas.height/2);
+												dst_ctx.rotate(flags.ROT * Math.PI/180);
+												dst_ctx.translate(-src_canvas.width/2, -src_canvas.height/2);
+											}
+
+											// FLIP_X and/or FLIP_Y?
+											if( flags.FLIP_X || flags.FLIP_Y ){
+												let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
+												let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
+												newX       = flags.FLIP_X ? src_canvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
+												newY       = flags.FLIP_Y ? src_canvas.height * -1 : 0; // Set y position to -100% if flip vertical
+												dst_ctx.scale(scaleH, scaleV);             // Set scale to flip the image
+											}
 										}
 
-										// FLIP_X and/or FLIP_Y?
-										if( flags.FLIP_X || flags.FLIP_Y ){
-											let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
-											let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
-											newX       = flags.FLIP_X ? src_canvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
-											newY       = flags.FLIP_Y ? src_canvas.height * -1 : 0; // Set y position to -100% if flip vertical
-											dst_ctx.scale(scaleH, scaleV);             // Set scale to flip the image
-										}
+										// Draw the src_canvas to the dst_canvas.
+										dst_ctx.drawImage(src_canvas,newX,newY);
+
+										newVRAM.canvas         = dst_canvas ;
+										// newVRAM.canvas         = src_canvas ;
+										newVRAM.imgData        = undefined ;
+										newVRAM.flags.drawThis = true ;
+										core.GRAPHICS.DATA.FLAGS[newVRAM.layer].UPDATE=true;
+
+										core.GRAPHICS.FUNCS.placeTile({
+											"mapWidth"      : (newVRAM.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
+											"mapHeight"     : (newVRAM.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
+											"newVRAM_entry" : newVRAM ,
+										});
 									}
 
-									// Draw the src_canvas to the dst_canvas.
-									dst_ctx.drawImage(src_canvas,newX,newY);
+									// setTimeout(function(){
+										res_inner();
+									// },100);
 
-									newVRAM.canvas         = dst_canvas ;
-									// newVRAM.canvas         = src_canvas ;
-									newVRAM.imgData        = undefined ;
-									newVRAM.flags.drawThis = true ;
-									core.GRAPHICS.DATA.FLAGS[newVRAM.layer].UPDATE=true;
-
-									core.GRAPHICS.FUNCS.placeTile({
-										"mapWidth"      : (newVRAM.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
-										"mapHeight"     : (newVRAM.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
-										"newVRAM_entry" : newVRAM ,
-									});
+									break;
 								}
 
-								// setTimeout(function(){
-									res_inner();
-								// },100);
-
-								break;
+								// Unmatched function.
+								default     : { break; }
 							}
+						};
 
-							// Unmatched function.
-							default     : { break; }
-						}
-					};
+						let msg = {
+							"function"          : "colorswaps"      ,
+							"img_buffers_arr"   : img_buffers_arr   ,
+							"newVRAM_entries"   : newVRAM_entries   ,
+						};
 
-					//
-					let cnt=0;
-					let len = core.GRAPHICS.WORKERS.w_colorswaps.queue.length;
-					for(let i=curIndex; i<len; i+=1){
-						// if( (cnt==num_per_worker) ) { console.log(cnt, num_per_worker); break; }
-
-						// Add data.
-						let rec = core.GRAPHICS.WORKERS.w_colorswaps.queue[i];
-						img_buffers_arr.push( rec.imgData_buffer );
-						newVRAM_entries.push( rec.newVRAM_entry  );
-
-						// Add the data to the transfer list as a copy.
-						// transferList.push( rec.imgData_buffer );
-
-						//
-						curIndex=i;
-						// cnt+=1;
+						// Send the data to the worker.
+						worker.postMessage( msg , transferList );
 					}
-
-					let msg = {
-						"function"          : "colorswaps"      ,
-						"img_buffers_arr"   : img_buffers_arr   ,
-						"newVRAM_entries"   : newVRAM_entries   ,
-					};
-
-					console.log("workerNum:", workerNum, "gets curIndex of:", len);
-
-					// Send the data to the worker.
-					worker.postMessage(
-						msg ,
-						transferList
-					);
-
-				})
+				)
 			);
-		});
+
+		}
 
 		Promise.all(proms).then(
 			function(data){
-				// Clear the onmessage listener.
-				for(let i=0; i<window.navigator.hardwareConcurrency; i+=1){
-					// workers[i].onmessage=null;
+				// For the workers and the queues.
+				for(let i=0; i<workers.length; i+=1){
+					// Clear the onmessage listener.
+					workers[i].onmessage=null;
+
+					// Clear the queue.
+					core.GRAPHICS.WORKERS.w_colorswaps.queue[i]=[];
 				}
 
-				// Clear the queue.
-				core.GRAPHICS.WORKERS.w_colorswaps.queue=[];
+				// console.log("runTileFlagChangesQueue:", (performance.now() - ts_start), "ms" );
+				if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance["worker_timings1"].push(performance.now() - drawStart_worker_timings1);                   }
 
+				core.GRAPHICS.WORKERS.w_colorswaps.queuedCount=0;
 
 				// Resolve the outer promise.
 				res();
@@ -2124,39 +2057,8 @@ core.GRAPHICS.FUNCS.runTileFlagChangesQueue   = function(){
 				console.log("err:", err);
 			}
 		);
-		// Clear the queue.
-		// core.GRAPHICS.WORKERS.w_colorswaps.queue=[];
 	});
 }
-//
-core.GRAPHICS.FUNCS.colorSwaps = function(imgData, newVRAM_entry){
-	// We will need the imgData version of the canvas.
-
-	// Get a handle to our worker.
-	let worker      = core.GRAPHICS.WORKERS.w_colorswaps.worker;
-	let activeCount = core.GRAPHICS.WORKERS.w_colorswaps.activeCount;
-
-	// Send the data to the worker.
-	worker.postMessage(
-		{
-			"function"      : "colorswaps"        ,
-			"imgData"       : imgData.data.buffer ,
-			"imgData_w"     : imgData.width       ,
-			"imgData_h"     : imgData.height      ,
-			"activeCount"   : activeCount         ,
-			"newVRAM_entry" : newVRAM_entry       ,
-		},
-		[
-			imgData.data.buffer
-		]
-		);
-
-	//
-	core.GRAPHICS.WORKERS.w_colorswaps.done[activeCount]=false;
-
-	// Adjust the worker active usage count.
-	core.GRAPHICS.WORKERS.w_colorswaps.activeCount += 1;
-};
 
 /*
 https://www.diffnow.com
