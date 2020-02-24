@@ -1,18 +1,33 @@
-// core.GRAPHICS = {};
+// _DOC_ | core.GRAPHICS.DATA | Holds data such as FLAGS, VRAM, SPRITES, lookups.
 core.GRAPHICS.DATA         = {} ;
+
+// _DOC_ | core.GRAPHICS.DATA.FLAGS | Holds layer draw flags.
 core.GRAPHICS.DATA.FLAGS   = {} ;
+
+// _DOC_ | core.GRAPHICS.DATA.VRAM | Holds tile objects for each vram layer.
 core.GRAPHICS.DATA.VRAM    = {} ;
+
+// _DOC_ | core.GRAPHICS.DATA.SPRITES | Holds tile objects for each sprite layer.
 core.GRAPHICS.DATA.SPRITES = {} ;
+
+// _DOC_ | core.GRAPHICS.DATA.FLAGS["OUTPUT"] | Tracks the draw offset for the OUTPUT layer.
+core.GRAPHICS.DATA.FLAGS["OUTPUT"] = {
+	"x_offset":0,
+	"y_offset":0,
+} ;
+
+// _DOC_ | core.GRAPHICS.FUNCS | Holds the core functions to this video mode.
 core.GRAPHICS.FUNCS        = {} ;
-// Holds tile and tilemap assets.
-core.GRAPHICS.ASSETS      = {
+
+// _DOC_ | core.GRAPHICS.ASSETS | Holds tileset and tilemap assets.
+core.GRAPHICS.ASSETS       = {
 	"tilesets"       : {}, // All tiles, separated by their tileset name.
 	"tilemaps"       : {}, // All tilemaps, separated by their tileset name.
 	"_original_data" : {}  // Original Uzebox format tilesets/tilemaps.
 } ;
 
-// *** WEB WORKERS ***
-core.GRAPHICS.WORKERS = {
+// _DOC_ | core.GRAPHICS.WORKERS | Web workers.
+core.GRAPHICS.WORKERS      = {
 	// newVRAM_entry.canvas  = new_canvas ;
 	// newVRAM_entry.imgData = undefined ;
 	// newVRAM_entry.w         = new_canvas.width  ;
@@ -24,29 +39,40 @@ core.GRAPHICS.WORKERS = {
 	}
 };
 
-// PERFORMANCE MONITORING (layer draw timings.)
-core.GRAPHICS.performance = {
+// _DOC_ | core.GRAPHICS.performance | PERFORMANCE MONITORING (layer draw timings.)
+core.GRAPHICS.performance  = {
+	// Declared/defined by GRAPHICS.init.
 	"LAYERS" : {
 		// BG : [ 0, 0, 0, 0, 0 ] , //
 	},
-	"update_layers_type2":[ 0, 0, 0, 0, 0 ],
-	"worker_timings1":[ 0, 0, 0, 0, 0 ],
+	//
+	"gfx_timings"           : [] ,
+	"doColorSwapping"       : [] ,
+	"update_layers"         : [] ,
+	"layer_combines" : [] ,
+	"fade_timings"          : [] ,
+	"output_timings"        : [] ,
 };
-// Holds the canvas elements.
-core.GRAPHICS.canvas      = {} ;
-// Holds the canvas contexts.
-core.GRAPHICS.ctx         = {} ;
 
-// Shortened way to access core.GRAPHICS.
+// _DOC_ | core.GRAPHICS.canvas | Holds the canvas elements.
+core.GRAPHICS.canvas       = {} ;
+
+// _DOC_ | core.GRAPHICS.ctx | Holds the canvas contexts.
+core.GRAPHICS.ctx          = {} ;
+
+// _DOC_ | _CGF | Shortened way to access core.GRAPHICS.
 var _CGF = core.GRAPHICS.FUNCS;
 
-// Shortened way to access core.ASSETS.
+// _DOC_ | _CGA | Shortened way to access core.ASSETS.
 var _CGA = core.GRAPHICS.ASSETS;
 
-// Shortened way to access core.SETTINGS.
-var _CS = core.SETTINGS;
+// _DOC_ | _CGP | Shortened way to access core.GRAPHICS.performance.
+var _CGP = core.GRAPHICS.performance;
 
-// *** Logo functions ***
+// _DOC_ | _CS | Shortened way to access core.SETTINGS.
+var _CS  = core.SETTINGS;
+
+// *** LOGO FUNCTIONS.  ***
 
 // _DOC_ | logo | JS GAME logo for this video mode.
 core.FUNCS.graphics.logo = function(){
@@ -80,6 +106,9 @@ core.FUNCS.graphics.logo = function(){
 		else{ res(); }
 	});
 };
+
+// *** INIT FUNCTIONS.  ***
+
 // _DOC_ | init | One-time-use init function for the graphics.
 core.GRAPHICS.init = function(){
 	return new Promise(function(res_VIDEO_INIT, rej_VIDEO_INIT){
@@ -184,7 +213,8 @@ core.GRAPHICS.init = function(){
 					core.GRAPHICS.ctx[layer] = newCanvas.getContext('2d', { alpha: alpha }) ;
 
 					// Add to core.GRAPHICS.performance
-					core.GRAPHICS.performance.LAYERS[layer] = [ 0, 0, 0, 0, 0 ] ; //
+					// core.GRAPHICS.performance.LAYERS[layer] = [ 0, 0, 0, 0, 0 ] ; //
+					core.GRAPHICS.performance.LAYERS[layer] = [ ] ; //
 				}
 
 				// Create the OUTPUT canvas. (Primary output canvas.)
@@ -967,13 +997,12 @@ core.GRAPHICS.init = function(){
 
 	});
 }
-// _DOC_ | update_layers_type2 | Handles drawing of VRAM and SPRITE layers.
-core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
-	return new Promise(function(res,rej){
-		// Get all layer draw start time.
-		let drawStart_update_layers_type2;
-		if(JSGAME.FLAGS.debug) { drawStart_update_layers_type2 = performance.now(); core.GRAPHICS.performance["update_layers_type2"].shift(); }
 
+// *** KERNEL DRAWING FUNCTIONS ***
+
+// _DOC_ | update_layers | Handles drawing of VRAM and SPRITE layers.
+core.GRAPHICS.FUNCS.update_layers        = function( updatedLayers ){
+	return new Promise(function(res,rej){
 		let drawOutput=false;
 
 		let layers = Object.keys(core.SETTINGS['layers']);
@@ -986,15 +1015,11 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 			let UPDATE          = core.GRAPHICS.DATA.FLAGS[layer].UPDATE          ;
 			let REDRAW          = core.GRAPHICS.DATA.FLAGS[layer].REDRAW          ;
 
-			// Early exit?
-			// if(!UPDATE && !REDRAW){ continue ; }
-
 			// Get layer variables.
 			let layerFlags      = core.GRAPHICS.DATA.FLAGS[layer]                 ;
 			let clearCanvasBeforeUpdate = core.GRAPHICS.DATA.FLAGS[layer].clearCanvasBeforeUpdate ;
 			let canvas          = core.GRAPHICS.canvas[layer]                     ;
 			let ctx             = core.GRAPHICS.ctx[layer]                        ;
-
 
 			// Force redraw if UPDATE is set and the layer has clearCanvasBeforeUpdate set.
 			if(UPDATE && clearCanvasBeforeUpdate){
@@ -1013,7 +1038,7 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 				if     (layerFlags.type=="VRAM"  ){ VRAM = core.GRAPHICS.DATA.VRAM   [layer] ; }
 				else if(layerFlags.type=="SPRITE"){ VRAM = core.GRAPHICS.DATA.SPRITES[layer] ; }
 				else{
-					let str = ["=E= update_layers_type2: invalid layer type.", JSON.stringify(VRAM[t],null,1)];
+					let str = ["=E= update_layers: invalid layer type.", JSON.stringify(VRAM[t],null,1)];
 					throw Error(str);
 				}
 
@@ -1068,7 +1093,7 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 						}
 						else{
 							// continue;
-							let str = ["=E= update_layers_type2: (drawThis) invalid data.", JSON.stringify(VRAM[t],null,1)];
+							let str = ["=E= update_layers: (drawThis) invalid data.", JSON.stringify(VRAM[t],null,1)];
 							// console.error("============================", str, VRAM[t]);
 							console.info(
 								"============================",
@@ -1124,21 +1149,20 @@ core.GRAPHICS.FUNCS.update_layers_type2 = function( updatedLayers ){
 			}
 
 			// Update the layer draw performance data.
-			if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance.LAYERS[layer].shift(); core.GRAPHICS.performance.LAYERS[layer].push(performance.now() - drawStart);                   }
+			if(JSGAME.FLAGS.debug) {
+				if(core.GRAPHICS.performance.LAYERS[layer].length >=5){ core.GRAPHICS.performance.LAYERS[layer].shift(); }
+				core.GRAPHICS.performance.LAYERS[layer].push(performance.now() - drawStart);                   }
 		}
-
-		// Update the all layer draw performance data.
-		if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance["update_layers_type2"].push(performance.now() - drawStart_update_layers_type2);                   }
 
 		// Done! Resolve.
 		res(drawOutput);
 	});
 };
-// _DOC_ | update_layer_OUTPUT | Combines the layer and draws to the OUTPUT canvas.
-core.GRAPHICS.FUNCS.update_layer_OUTPUT = function(){
+// _DOC_ | update_layer_COMBINE | Combines the individual layers into the pre_OUTPUT.
+core.GRAPHICS.FUNCS.update_layer_COMBINE = function(){
 	return new Promise(function(res,rej){
 		// Get a handle to the temp output.
-		let tempOutput = core.GRAPHICS.canvas.pre_OUTPUT;
+		let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
 		let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
 		tempOutput_ctx.clearRect( 0,0, tempOutput.width, tempOutput.height );
 
@@ -1149,109 +1173,130 @@ core.GRAPHICS.FUNCS.update_layer_OUTPUT = function(){
 			tempOutput_ctx.drawImage( canvas, 0, 0) ;
 		}
 
-		// Draw to the OUTPUT canvas.
+		// Done! Resolve.
+		res();
+	});
+
+};
+// _DOC_ | update_layer_OUTPUT | Writes the pre_OUTPUT to the OUTPUT canvas.
+core.GRAPHICS.FUNCS.update_layer_OUTPUT  = function(){
+	return new Promise(function(res,rej){
+		// Get a handle to the temp output.
+		let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
+
+		// Clear the OUTPUT canvas.
 		core.GRAPHICS.ctx.OUTPUT.clearRect( 0,0, core.GRAPHICS.canvas.OUTPUT.width, core.GRAPHICS.canvas.OUTPUT.height );
-		core.GRAPHICS.ctx.OUTPUT.drawImage(tempOutput,0,0);
+
+		// Draw to the OUTPUT canvas.
+		let x_offset = core.GRAPHICS.DATA.FLAGS["OUTPUT"].x_offset;
+		let y_offset = core.GRAPHICS.DATA.FLAGS["OUTPUT"].y_offset;
+		core.GRAPHICS.ctx.OUTPUT.drawImage(
+			tempOutput,
+			0 + x_offset,
+			0 + y_offset
+		);
 
 		// Done! Resolve.
 		res();
 	});
 };
-// _DOC_ | update_allLayers | Draws the layer updates.
-core.GRAPHICS.FUNCS.update_allLayers    = function(){
-	return new Promise(function(res_updateAllLayers, rej_updateAllLayers){
-		// Update the layers.
-		let proms = [
-			core.GRAPHICS.FUNCS.update_layers_type2() ,
-		];
-
-		// Update the OUTPUT canvas.
-		Promise.all(proms).then(
-			// Success? Write the OUTPUT layer.
-			function(res){
-				// Was there an update to the layers?
-				if(res[0]==true){
-					core.GRAPHICS.FUNCS.update_layer_OUTPUT().then(
-						// Success?
-						function(){
-							res_updateAllLayers();
-							return;
-						},
-
-						// Failure?
-						function(err){
-							// Throw error.
-							rej_updateAllLayers();
-							let str = ["=E= update_layer_OUTPUT:", err];
-							console.error(str);
-							throw Error(str);
-						}
-					);
-				}
-				// No? Nothing to do. Resolve.
-				else{
-					res_updateAllLayers();
-					return;
-				}
-			},
-
-			// Failure of at least one promise in the array?
-			function(err){
-				// Throw error.
-				rej_updateAllLayers();
-				let str = ["=E= update_allLayers: failed promise in layer draws: ", err];
-				console.error(err, str);
-				throw Error(str);
-			},
-		);
-
+// _DOC_ | update_layer_FADE |
+core.GRAPHICS.FUNCS.update_layer_FADE    = function(){
+	return new Promise(function(res,rej){
+		// Done! Resolve.
+		res();
 	});
 };
-// _DOC_ | returnNewTile_obj | Returns a new VRAM tile object with default settings.
-core.GRAPHICS.FUNCS.returnNewTile_obj   = function(){
-	let output = 	{
-		// Position and Dimension
-		"x"               : 0                 , // Pixel-aligned x position.
-		"y"               : 0                 , // Pixel-aligned y position.
-		"w"               : _CS.TILE_WIDTH    , // Width in pixels.
-		"h"               : _CS.TILE_HEIGHT   , // Height in pixels.
+// _DOC_ | graphicsUpdate | Handles all graphical updates ot the OUTPUT canvas.
+core.GRAPHICS.FUNCS.graphicsUpdate       = function(){
 
-		"x_offset"        : 0 , // Used with rotated canvases to correct positioning.
-		"y_offset"        : 0 , // Used with rotated canvases to correct positioning.
+	return new Promise(function(res_updateAllLayers, rej_updateAllLayers){
+		let gfx_start ;
+		if(JSGAME.FLAGS.debug) { gfx_start = performance.now(); }
 
-		// Source image data.
-		"layerType"       : ""                ,
-		"tileset"         : "default_tileset" , // Name of tileset. Used for filtering.
-		"layer"           : ""                , // Name of layer. Used for filtering.
-		"tilemap"         : ""                , // Name of tilemap. (Might not always be populated.)
-		"tileindex"       : 0                 , // Tile index into the tileset. (Might not always be populated.)
+		let errorHandler=function(name, err){
+			let str = ["=E= graphicsUpdate: ("+name+") rejected promise.", err ];
+			console.error("err: "+name+": ", err);
+			throw Error(str);
+		};
 
-		// Customized canvas (not using one of the pre-converted imgObj.
-		"canvas"          : undefined             , // If set with a canvas it can be drawn instead of from imgObj. false: ignored.
-		"imgData"         : undefined             , // If set with a imgData it can be drawn instead of from imgObj. false: ignored.
+		let fade = false;
 
-		// VRAM or SPRITE array indexes.
-		"index_VRAM"      : undefined         , //
-		"index_SPRITE"    : undefined         , //
+		// Perform color swaps.
+		let doColorSwapping_start ;
+		if(JSGAME.FLAGS.debug) { doColorSwapping_start = performance.now(); }
+		core.GRAPHICS.FUNCS.doColorSwapping().then(
+			function(){
+				if(JSGAME.FLAGS.debug) { if(_CGP.doColorSwapping.length >=5){ _CGP.doColorSwapping.shift(); } _CGP.doColorSwapping.push(performance.now() - doColorSwapping_start); }
 
-		// Draw flags
-		"flags"           : {
-			// Sprite-like flags:
-			"OFF"         : false             , // If true then the tile is ignored at draw time.
-			"ROT"         : false             , // Rotation. (degrees, -360 through +360.), false: rotation is not considered.
-			"FLIP_X"      : false             , // Horizontal flip. true: Tile canvas flipped horizontally., false: Tile is not flipped horizontally
-			"FLIP_Y"      : false             , // Vertical flip. true: Tile canvas flipped vertically., false: Tile is not flipped vertically
-			"spriteIndex" : undefined         , // Vertical flip. true: Tile canvas flipped vertically., false: Tile is not flipped vertically
+				// Update layers.
+				let update_layers_timings_start ;
+				if(JSGAME.FLAGS.debug) { update_layers_timings_start = performance.now(); }
+				core.GRAPHICS.FUNCS.update_layers().then(
+					function(drawOutput){
+						if(JSGAME.FLAGS.debug) { if(_CGP.update_layers.length >=5){ _CGP.update_layers.shift(); } _CGP.update_layers.push(performance.now() - update_layers_timings_start); }
 
-			// Draw flags.
-			"drawThis"    : false             , // Draw status.  true: Image will be drawn., false: Image will not be drawn.
-		}
-	};
+						// Do we draw?
+						if(drawOutput || fade){
+							// Combine layers.
+							let layer_combines_start ;
+							if(JSGAME.FLAGS.debug) { layer_combines_start = performance.now(); }
+							core.GRAPHICS.FUNCS.update_layer_COMBINE().then(
+								function(){
+									if(JSGAME.FLAGS.debug) { if(_CGP.layer_combines.length >=5){ _CGP.layer_combines.shift(); } _CGP.layer_combines.push(performance.now() - layer_combines_start); }
 
-	return output;
+									// Fade?
+									let fade_timings_start;
+									if(JSGAME.FLAGS.debug) { fade_timings_start = performance.now(); }
+									core.GRAPHICS.FUNCS.update_layer_FADE().then(
+										function(){
+											if(JSGAME.FLAGS.debug) { if(_CGP.fade_timings.length >=5){ _CGP.fade_timings.shift(); } _CGP.fade_timings.push(performance.now() - fade_timings_start); }
+
+											// Final output.
+											let output_timings_start;
+											if(JSGAME.FLAGS.debug) { output_timings_start = performance.now(); }
+											core.GRAPHICS.FUNCS.update_layer_OUTPUT().then(
+												function(){
+													if(JSGAME.FLAGS.debug) { if(_CGP.output_timings.length >=5){ _CGP.output_timings.shift(); } _CGP.output_timings.push(performance.now() - output_timings_start); }
+													if(JSGAME.FLAGS.debug) { if(_CGP.gfx_timings.length >=5){ _CGP.gfx_timings.shift(); } _CGP.gfx_timings.push(performance.now() - gfx_start); }
+
+													res_updateAllLayers();
+													return;
+												},
+												function(err){ errorHandler("update_layer_OUTPUT", err); }
+											);
+										},
+										function(err){ errorHandler("update_layer_FADE", err); }
+									);
+								},
+								function(err){ errorHandler("update_layer_COMBINE", err); }
+							);
+						}
+						else{
+							res_updateAllLayers();
+							return;
+						}
+
+					},
+					function(err){ errorHandler("update_layers", err); }
+				);
+			},
+			function(err){ errorHandler("doColorSwapping", err); }
+		);
+	});
+
 };
+
+// *** USER-ACCESSIBLE DRAW FUNCTIONS ***
+
+// _DOC_ | xxxxxxxx | xxxxxxxxxxxxx
+core.GRAPHICS.FUNCS.adjustOutputOffsets = function(x_offset, y_offset){
+	core.GRAPHICS.DATA.FLAGS["OUTPUT"].x_offset = x_offset ;
+	core.GRAPHICS.DATA.FLAGS["OUTPUT"].y_offset = y_offset ;
+};
+
 // _DOC_ | ClearSprites | Clears the SPRITE data and clears the existing canvas layers.
-core.GRAPHICS.FUNCS.ClearSprites             = function(layer){
+core.GRAPHICS.FUNCS.ClearSprites     = function(layer){
 	let layersToClear=[];
 
 	// If a layer was not specifed then clear all layers.
@@ -1290,7 +1335,7 @@ core.GRAPHICS.FUNCS.ClearSprites             = function(layer){
 	}
 }
 // _DOC_ | ClearVram | Clears the VRAM data and clears the existing canvas layers.
-core.GRAPHICS.FUNCS.ClearVram                = function(layer){
+core.GRAPHICS.FUNCS.ClearVram        = function(layer){
 	let layersToClear=[];
 
 	// If a layer was not specifed then clear all layers.
@@ -1379,12 +1424,12 @@ core.GRAPHICS.FUNCS.ClearVram                = function(layer){
 	}
 }
 // _DOC_ | ClearOUTPUT | Clear the OUTPUT canvas.
-core.GRAPHICS.FUNCS.ClearOUTPUT              = function(){
+core.GRAPHICS.FUNCS.ClearOUTPUT      = function(){
 	let canvas = core.GRAPHICS.canvas.OUTPUT;
 	core.GRAPHICS.ctx.OUTPUT.clearRect(0,0,canvas.w,canvas.h);
 };
 // _DOC_ | clearAllCanvases | Clear all canvas layers and their data.
-core.GRAPHICS.FUNCS.clearAllCanvases         = function(){
+core.GRAPHICS.FUNCS.clearAllCanvases = function(){
 	// Clear the VRAM, SPRITE, and OUTPUT layers and DATA.
 	core.GRAPHICS.FUNCS.ClearSprites();
 	core.GRAPHICS.FUNCS.ClearVram();
@@ -1399,7 +1444,7 @@ core.GRAPHICS.FUNCS.clearAllCanvases         = function(){
 	}
 };
 // _DOC_ | DrawTile | Draws a canvas tile to the indicated area.
-core.GRAPHICS.FUNCS.DrawTile                 = function(x, y, tileset, tileindex, layer, flags){
+core.GRAPHICS.FUNCS.DrawTile         = function(x, y, tileset, tileindex, layer, flags){
 	// Confirm that all arguments were provided.
 	if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
 	if(layer     == undefined){ let str = ["=E= DrawTile: layer is undefined."    ]; throw Error(str); }
@@ -1426,7 +1471,7 @@ core.GRAPHICS.FUNCS.DrawTile                 = function(x, y, tileset, tileindex
 	});
 }
 // _DOC_ | DrawMap | Draws a canvas tilemap to the indicated area.
-core.GRAPHICS.FUNCS.DrawMap                  = function(x, y, tileset, tilemap , layer, flags){
+core.GRAPHICS.FUNCS.DrawMap          = function(x, y, tileset, tilemap , layer, flags){
 	// Confirm that all arguments were provided.
 	if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
 	if(layer     == undefined){ let str = ["=E= DrawTile: layer is undefined."    ]; throw Error(str); }
@@ -1452,8 +1497,293 @@ core.GRAPHICS.FUNCS.DrawMap                  = function(x, y, tileset, tilemap ,
 		"imgObj"    : imgObj
 	});
 }
+// _DOC_ | TileFill | Fill a region with a tile.
+core.GRAPHICS.FUNCS.TileFill         = function(x, y, w, h, tileset, tileindex, layer, flags){
+	// Confirm that all arguments were provided.
+	if(tileset   == undefined){ let str = ["=E= TileFill: tileset is undefined."  ]; throw Error(str); }
+	if(layer     == undefined){ let str = ["=E= TileFill: layer is undefined."    ]; throw Error(str); }
+	if(flags     == undefined){ let str = ["=E= TileFill: flags is undefined."    ]; throw Error(str); }
+	if(tileindex == undefined){ let str = ["=E= TileFill: tileindex is undefined."]; throw Error(str); }
+
+	// Make sure that the specified tileset, tileindex, and layer exist.
+	if(_CGA.tilesets[tileset]            == undefined){ let str = ["=E= TileFill: tileset is invalid."  ]; throw Error(str); }
+	if(_CS.layers[layer]                 == undefined){ let str = ["=E= TileFill: layer is invalid."    ]; throw Error(str); }
+	if(_CGA.tilesets[tileset][tileindex] == undefined){ let str = ["=E= TileFill: tileindex is invalid."]; throw Error(str); }
+
+	// TileFill should only be used on VRAM.
+	layerType      = core.GRAPHICS.DATA.FLAGS[layer].type;
+	if     (layerType != "VRAM"   ){
+		let str = ["=E= TileFill: layer type must be VRAM.."];
+		throw Error(str);
+	}
+
+	// Draw the box, one tile at a time with SetTile.
+	for(let ypos=0; ypos<h; ypos+=1){
+		for(let xpos=0; xpos<w; xpos+=1){
+			// Do a bounds-check before drawing the tile.
+
+			// Out of bounds on x?
+			if(x+xpos >= core.SETTINGS.VRAM_TILES_H)     {
+				// console.log("Out of bounds: x", "x:", x, "core.SETTINGS.VRAM_TILES_H:", core.SETTINGS.VRAM_TILES_H);
+				continue;
+			}
+			// Out of bounds on y?
+			else if(y+ypos >= core.SETTINGS.VRAM_TILES_V){
+				// console.log("Out of bounds: y", "y:", y, "core.SETTINGS.VRAM_TILES_V:", core.SETTINGS.VRAM_TILES_V);
+				continue;
+			}
+			// In-bounds. Draw the tile.
+			else{
+				// Update VRAM
+				core.GRAPHICS.FUNCS.DrawTile(x+xpos, y+ypos, tileset, tileindex, layer, flags);
+			}
+		}
+	}
+
+}
+// _DOC_ | MapFill | Draw a tilemap to cover a region of varying dimensions. (Each dimension being a multiple of w and h.)
+core.GRAPHICS.FUNCS.MapFill          = function(sx, sy, nw, nh, tileset, tilemap, layer, flags){
+	// Confirm that all arguments were provided.
+	if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
+	if(layer     == undefined){ let str = ["=E= DrawTile: layer is undefined."    ]; throw Error(str); }
+	if(flags     == undefined){ let str = ["=E= DrawTile: flags is undefined."    ]; throw Error(str); }
+	if(tilemap   == undefined){ let str = ["=E= DrawTile: tilemap is undefined."  ]; throw Error(str); }
+
+	// Make sure that the specified tileset, tileindex, and layer exist.
+	if(_CGA.tilesets[tileset]          == undefined){ let str = ["=E= DrawTile: tileset is invalid."  ]; throw Error(str); }
+	if(_CS.layers[layer]               == undefined){ let str = ["=E= DrawTile: layer is invalid."    ]; throw Error(str); }
+	if(_CGA.tilemaps[tileset][tilemap] == undefined){ let str = ["=E= DrawTile: tilemap is invalid."  ]; throw Error(str); }
+
+	// Get the width and height of this tilemap.
+	let imgObj = _CGA.tilemaps[tileset][tilemap];
+	let mapWidth  = (imgObj.canvas.width   / _CS.TILE_WIDTH ) << 0;
+	let mapHeight = (imgObj.canvas.height  / _CS.TILE_HEIGHT) << 0;
+
+	// console.log(
+	// 	"\n tileset   :", tileset   ,
+	// 	"\n tilemap   :", tilemap   ,
+	// 	"\n mapWidth  :", mapWidth  ,
+	// 	"\n mapHeight :", mapHeight ,
+	// 	""
+	// );
+
+	for(let y=0; y<nh; y+=mapHeight){
+		for(let x=0; x<nw; x+=mapWidth){
+			core.GRAPHICS.FUNCS.DrawMap( (x+sx), (y+sy), tileset, tilemap, layer, flags);
+		}
+	}
+
+}
+// _DOC_ | Print | Draw a text string to the screen (one tile at a time.)
+core.GRAPHICS.FUNCS.Print            = function(x, y, string, tileset, tilemap, layer, flags){
+	// Font maps should be 64 characters (plus 2 for the width/height of the map.)
+	// Font tiles are expected to be in the following order in the fontmap:
+	//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
+	// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
+	// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
+
+	// Confirm that all arguments were provided.
+	if(tileset   == undefined){ let str = ["=E= Print: tileset is undefined."  ]; throw Error(str); }
+	if(layer     == undefined){ let str = ["=E= Print: layer is undefined."    ]; throw Error(str); }
+	if(flags     == undefined){ let str = ["=E= Print: flags is undefined."    ]; throw Error(str); }
+	if(tilemap   == undefined){ let str = ["=E= Print: tilemap is undefined."  ]; throw Error(str); }
+
+	// Make sure that the specified tileset, tileindex, and layer exist.
+	if(_CGA.tilesets[tileset]          == undefined){ let str = ["=E= Print: tileset is invalid."  ]; throw Error(str); }
+	if(_CS.layers[layer]               == undefined){ let str = ["=E= Print: layer is invalid."    ]; throw Error(str); }
+	if(_CGA.tilemaps[tileset][tilemap] == undefined){ let str = ["=E= Print: tilemap is invalid."  ]; throw Error(str); }
+
+	// Make sure that only a whole number makes it through.
+	x = (x) << 0;
+	y = (y) << 0;
+	let startx = x;
+
+	// We need to use the original tilemap array for printing.
+	let fontmap = core.GRAPHICS.ASSETS._original_data.tilemaps[tileset][tilemap];
+	let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
+
+	// Turn the string into an iterable array and draw each letter individually.
+	Array.from( string ).forEach(function(d,i,a){
+		// Move down a line if a line break is found.
+		if(d=="\n"){ x=startx; y+=1; return; }
+
+		// Get the tileid for this character.
+		let tileid;
+		tileid = d.toUpperCase().charCodeAt() - 32;
+
+		// Make sure this is a valid tile in the font map (bounds-check.)
+		if(tileid < fontmap_len){
+			// Do a bounds-check before drawing the tile.
+
+			// Out of bounds on x?
+			if(x >= _CS.VRAM_TILES_H)     {
+				// console.log("Out of bounds: x", "x:", x, "core.SETTINGS.VRAM_TILES_H:", core.SETTINGS.VRAM_TILES_H);
+				return;
+			}
+			// Out of bounds on y?
+			else if(y >= _CS.VRAM_TILES_V){
+				// console.log("Out of bounds: y", "y:", y, "core.SETTINGS.VRAM_TILES_V:", core.SETTINGS.VRAM_TILES_V);
+				return;
+			}
+			// Draw the tile.
+			else{
+				let tileindex = fontmap[ tileid+2 ];
+				core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, layer, flags);
+			}
+		}
+
+		// If it is out of bounds, (such as the "|" character) print a space.
+		else {
+			let tileindex = " ".toUpperCase().charCodeAt() - 32;
+			core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, layer, flags);
+		}
+
+		// Move the "cursor" over one to the right.
+		x+=1;
+
+		// No wrapping allowed.
+		if(x>=_CS.VRAM_TILES_H-0){ return; }
+		if(y>=_CS.VRAM_TILES_V-0){ return; }
+	});
+}
+// _DOC_ | Print_multiFont | Draw a text string to the screen (using multiple fonts.) (one tile at a time.)
+core.GRAPHICS.FUNCS.Print_multiFont  = function(data){
+	// Example usage:
+	// core.GRAPHICS.FUNCS.Print_multiFont(
+	// 	{
+	// 		"x"       : 4,
+	// 		"y"       : 17,
+	// 		"text"    : "MULTI FONT TEST 6 1234." ,
+	// 		"font"    : "01010101010101010101010".split("").map(function(d){ return parseInt(d,10); }) ,
+	// 		"maps"    : [
+	// 			{ "tileset":"tilesTX1", "font":"font1", "flags":{ "colorSwaps":[ ["#FFFFFF", "#FF0000"], ["#484891", "#999999"] ] } },
+	// 			{ "tileset":"tilesTX1", "font":"font1", "flags":{ "colorSwaps":[ ["#FFFFFF", "#0000FF"], ["#484891", "#999999"] ] } }
+	// 		],
+	// 		"layer"   : "TEXT",
+	// 	},
+	// );
+
+	// Font maps should be 64 characters (plus 2 for the width/height of the map.)
+	// Font tiles are expected to be in the following order in the fontmap:
+	//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
+	// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
+	// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
+	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
+
+	// Make sure that the specified tileset, tilemap, and layer exist.
+	data.maps.forEach(function(d){
+		let map = d.font;
+		let tileset = d.tileset;
+
+		// Valid tileset?
+		if(!_CGA.tilesets[tileset]){
+			let str = ["=E= Print_multiFont: Tilemap not valid: ", tileset, map ];
+			throw Error(str);
+		}
+
+		// Valid tilemap?
+		if(!_CGA._original_data.tilemaps[tileset][map]){
+			let str = ["=E= Print_multiFont: Map not valid: ", tileset, map ];
+			throw Error(str);
+		}
+	});
+	if(data.layer             == undefined){ let str = ["=E= Print_multiFont: layer is undefined." ]; throw Error(str); }
+	if(_CS.layers[data.layer] == undefined){ let str = ["=E= Print_multiFont: layer is invalid."   ]; throw Error(str); }
+
+	// Make sure that only a whole number makes it through.
+	let x = (data.x) << 0;
+	let y = (data.y) << 0;
+	let startx = x;
+
+	// Turn the string into an iterable array.
+	Array.from( data.text ).forEach(function(d,i){
+		// Move down a line if a line break is found.
+		if(d=="\n"){ x=startx; y+=1; return; }
+
+		// Determine which fontmap will be used.
+		// NOTE: We need to use the original tilemap array for printing.
+		let map_obj = data.maps[ data.font[i] ] ;
+		let flags   = map_obj.flags ;
+		let tileset = map_obj.tileset ;
+		let fontmap = core.GRAPHICS.ASSETS._original_data.tilemaps [tileset] [ data.maps[ data.font[i] ].font ] ;
+		if(flags   == undefined){ flags={}; }
+
+		// NOTE: Fontsets should all be the same length.
+		let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
+
+		// Get the tileid for this character.
+		tileid = d.toUpperCase().charCodeAt() - 32;
+
+		// Make sure this is a valid tile in the font map (bounds-check.)
+		if(tileid < fontmap_len){
+			let tileindex = fontmap[ tileid+2 ];
+			core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, data.layer, flags);
+		}
+
+		// If it is out of bounds, (such as the "|" character) print a space.
+		else {
+			let tileindex = " ".toUpperCase().charCodeAt() - 32;
+			core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, data.layer, flags);
+		}
+
+		// Move the "cursor" over one to the right.
+		x+=1;
+
+		// No wrapping allowed.
+		if(x>=core.SETTINGS.VRAM_TILES_H-0){ return; }
+		if(y>=core.SETTINGS.VRAM_TILES_V-0){ return; }
+	});
+
+}
+
+// *** HELPER FUNCTIONS FOR DrawTile, DrawMap, AND addColorSwapToQueue, etc.
+
+// _DOC_ | returnNewTile_obj | Returns a new VRAM tile object with default settings.
+core.GRAPHICS.FUNCS.returnNewTile_obj   = function(){
+	let output = 	{
+		// Position and Dimension
+		"x"               : 0                 , // Pixel-aligned x position.
+		"y"               : 0                 , // Pixel-aligned y position.
+		"w"               : _CS.TILE_WIDTH    , // Width in pixels.
+		"h"               : _CS.TILE_HEIGHT   , // Height in pixels.
+
+		"x_offset"        : 0 , // Used with rotated canvases to correct positioning.
+		"y_offset"        : 0 , // Used with rotated canvases to correct positioning.
+
+		// Source image data.
+		"layerType"       : ""                ,
+		"tileset"         : "default_tileset" , // Name of tileset. Used for filtering.
+		"layer"           : ""                , // Name of layer. Used for filtering.
+		"tilemap"         : ""                , // Name of tilemap. (Might not always be populated.)
+		"tileindex"       : 0                 , // Tile index into the tileset. (Might not always be populated.)
+
+		// Customized canvas (not using one of the pre-converted imgObj.
+		"canvas"          : undefined             , // If set with a canvas it can be drawn instead of from imgObj. false: ignored.
+		"imgData"         : undefined             , // If set with a imgData it can be drawn instead of from imgObj. false: ignored.
+
+		// VRAM or SPRITE array indexes.
+		"index_VRAM"      : undefined         , //
+		"index_SPRITE"    : undefined         , //
+
+		// Draw flags
+		"flags"           : {
+			// Sprite-like flags:
+			"OFF"         : false             , // If true then the tile is ignored at draw time.
+			"ROT"         : false             , // Rotation. (degrees, -360 through +360.), false: rotation is not considered.
+			"FLIP_X"      : false             , // Horizontal flip. true: Tile canvas flipped horizontally., false: Tile is not flipped horizontally
+			"FLIP_Y"      : false             , // Vertical flip. true: Tile canvas flipped vertically., false: Tile is not flipped vertically
+			"spriteIndex" : undefined         , // Vertical flip. true: Tile canvas flipped vertically., false: Tile is not flipped vertically
+
+			// Draw flags.
+			"drawThis"    : false             , // Draw status.  true: Image will be drawn., false: Image will not be drawn.
+		}
+	};
+
+	return output;
+};
 // _DOC_ | Adjust_NewTile_obj | Used by DrawTile and DrawMap to draw.
-core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
+core.GRAPHICS.FUNCS.Adjust_NewTile_obj  = function(data){
 	let x          = data.x          ;
 	let y          = data.y          ;
 	let tileset    = data.tileset    ;
@@ -1547,11 +1877,10 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 
 		// Add to colorSwap queue?
 		if(flags.colorSwaps.length){
-			core.GRAPHICS.FUNCS.addTileFlagChangesToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
+			core.GRAPHICS.FUNCS.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
 		}
 		// No colorswap, just rotation and/or flipping?
 		else if ( (flags.ROT !== false && flags.ROT !== 0) || flags.FLIP_X || flags.FLIP_Y ){
-			// core.GRAPHICS.FUNCS.addTileFlagChangesToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
 
 			// Rotation? FLIP_X? FLIP_Y?
 			let obj = core.GRAPHICS.FUNCS.ROT_FLIPX_FLIPY(imgObj.canvas, newVRAM_entry);
@@ -1613,249 +1942,8 @@ core.GRAPHICS.FUNCS.Adjust_NewTile_obj       = function(data){
 		});
 	}
 };
-// _DOC_ | TileFill | Fill a region with a tile.
-core.GRAPHICS.FUNCS.TileFill                 = function(x, y, w, h, tileset, tileindex, layer, flags){
-	// Confirm that all arguments were provided.
-	if(tileset   == undefined){ let str = ["=E= TileFill: tileset is undefined."  ]; throw Error(str); }
-	if(layer     == undefined){ let str = ["=E= TileFill: layer is undefined."    ]; throw Error(str); }
-	if(flags     == undefined){ let str = ["=E= TileFill: flags is undefined."    ]; throw Error(str); }
-	if(tileindex == undefined){ let str = ["=E= TileFill: tileindex is undefined."]; throw Error(str); }
-
-	// Make sure that the specified tileset, tileindex, and layer exist.
-	if(_CGA.tilesets[tileset]            == undefined){ let str = ["=E= TileFill: tileset is invalid."  ]; throw Error(str); }
-	if(_CS.layers[layer]                 == undefined){ let str = ["=E= TileFill: layer is invalid."    ]; throw Error(str); }
-	if(_CGA.tilesets[tileset][tileindex] == undefined){ let str = ["=E= TileFill: tileindex is invalid."]; throw Error(str); }
-
-	// TileFill should only be used on VRAM.
-	layerType      = core.GRAPHICS.DATA.FLAGS[layer].type;
-	if     (layerType != "VRAM"   ){
-		let str = ["=E= TileFill: layer type must be VRAM.."];
-		throw Error(str);
-	}
-
-	// Draw the box, one tile at a time with SetTile.
-	for(let ypos=0; ypos<h; ypos+=1){
-		for(let xpos=0; xpos<w; xpos+=1){
-			// Do a bounds-check before drawing the tile.
-
-			// Out of bounds on x?
-			if(x+xpos >= core.SETTINGS.VRAM_TILES_H)     {
-				// console.log("Out of bounds: x", "x:", x, "core.SETTINGS.VRAM_TILES_H:", core.SETTINGS.VRAM_TILES_H);
-				continue;
-			}
-			// Out of bounds on y?
-			else if(y+ypos >= core.SETTINGS.VRAM_TILES_V){
-				// console.log("Out of bounds: y", "y:", y, "core.SETTINGS.VRAM_TILES_V:", core.SETTINGS.VRAM_TILES_V);
-				continue;
-			}
-			// In-bounds. Draw the tile.
-			else{
-				// Update VRAM
-				core.GRAPHICS.FUNCS.DrawTile(x+xpos, y+ypos, tileset, tileindex, layer, flags);
-			}
-		}
-	}
-
-}
-
-// _DOC_ | MapFill | Draw a tilemap to cover a region of varying dimensions. (Each dimension being a multiple of w and h.)
-core.GRAPHICS.FUNCS.MapFill                  = function(sx, sy, nw, nh, tileset, tilemap, layer, flags){
-	// Confirm that all arguments were provided.
-	if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
-	if(layer     == undefined){ let str = ["=E= DrawTile: layer is undefined."    ]; throw Error(str); }
-	if(flags     == undefined){ let str = ["=E= DrawTile: flags is undefined."    ]; throw Error(str); }
-	if(tilemap   == undefined){ let str = ["=E= DrawTile: tilemap is undefined."  ]; throw Error(str); }
-
-	// Make sure that the specified tileset, tileindex, and layer exist.
-	if(_CGA.tilesets[tileset]          == undefined){ let str = ["=E= DrawTile: tileset is invalid."  ]; throw Error(str); }
-	if(_CS.layers[layer]               == undefined){ let str = ["=E= DrawTile: layer is invalid."    ]; throw Error(str); }
-	if(_CGA.tilemaps[tileset][tilemap] == undefined){ let str = ["=E= DrawTile: tilemap is invalid."  ]; throw Error(str); }
-
-	// Get the width and height of this tilemap.
-	let imgObj = _CGA.tilemaps[tileset][tilemap];
-	let mapWidth  = (imgObj.canvas.width   / _CS.TILE_WIDTH ) << 0;
-	let mapHeight = (imgObj.canvas.height  / _CS.TILE_HEIGHT) << 0;
-
-	// console.log(
-	// 	"\n tileset   :", tileset   ,
-	// 	"\n tilemap   :", tilemap   ,
-	// 	"\n mapWidth  :", mapWidth  ,
-	// 	"\n mapHeight :", mapHeight ,
-	// 	""
-	// );
-
-	for(let y=0; y<nh; y+=mapHeight){
-		for(let x=0; x<nw; x+=mapWidth){
-			core.GRAPHICS.FUNCS.DrawMap( (x+sx), (y+sy), tileset, tilemap, layer, flags);
-		}
-	}
-
-}
-// _DOC_ | Print | Draw a text string to the screen (one tile at a time.)
-core.GRAPHICS.FUNCS.Print                    = function(x, y, string, tileset, tilemap, layer, flags){
-	// Font maps should be 64 characters (plus 2 for the width/height of the map.)
-	// Font tiles are expected to be in the following order in the fontmap:
-	//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
-	// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
-	// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
-	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
-
-	// Confirm that all arguments were provided.
-	if(tileset   == undefined){ let str = ["=E= Print: tileset is undefined."  ]; throw Error(str); }
-	if(layer     == undefined){ let str = ["=E= Print: layer is undefined."    ]; throw Error(str); }
-	if(flags     == undefined){ let str = ["=E= Print: flags is undefined."    ]; throw Error(str); }
-	if(tilemap   == undefined){ let str = ["=E= Print: tilemap is undefined."  ]; throw Error(str); }
-
-	// Make sure that the specified tileset, tileindex, and layer exist.
-	if(_CGA.tilesets[tileset]          == undefined){ let str = ["=E= Print: tileset is invalid."  ]; throw Error(str); }
-	if(_CS.layers[layer]               == undefined){ let str = ["=E= Print: layer is invalid."    ]; throw Error(str); }
-	if(_CGA.tilemaps[tileset][tilemap] == undefined){ let str = ["=E= Print: tilemap is invalid."  ]; throw Error(str); }
-
-	// Make sure that only a whole number makes it through.
-	x = (x) << 0;
-	y = (y) << 0;
-	let startx = x;
-
-	// We need to use the original tilemap array for printing.
-	let fontmap = core.GRAPHICS.ASSETS._original_data.tilemaps[tileset][tilemap];
-	let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
-
-	// Turn the string into an iterable array and draw each letter individually.
-	Array.from( string ).forEach(function(d,i,a){
-		// Move down a line if a line break is found.
-		if(d=="\n"){ x=startx; y+=1; return; }
-
-		// Get the tileid for this character.
-		let tileid;
-		tileid = d.toUpperCase().charCodeAt() - 32;
-
-		// Make sure this is a valid tile in the font map (bounds-check.)
-		if(tileid < fontmap_len){
-			// Do a bounds-check before drawing the tile.
-
-			// Out of bounds on x?
-			if(x >= _CS.VRAM_TILES_H)     {
-				// console.log("Out of bounds: x", "x:", x, "core.SETTINGS.VRAM_TILES_H:", core.SETTINGS.VRAM_TILES_H);
-				return;
-			}
-			// Out of bounds on y?
-			else if(y >= _CS.VRAM_TILES_V){
-				// console.log("Out of bounds: y", "y:", y, "core.SETTINGS.VRAM_TILES_V:", core.SETTINGS.VRAM_TILES_V);
-				return;
-			}
-			// Draw the tile.
-			else{
-				let tileindex = fontmap[ tileid+2 ];
-				core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, layer, flags);
-			}
-		}
-
-		// If it is out of bounds, (such as the "|" character) print a space.
-		else {
-			let tileindex = " ".toUpperCase().charCodeAt() - 32;
-			core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, layer, flags);
-		}
-
-		// Move the "cursor" over one to the right.
-		x+=1;
-
-		// No wrapping allowed.
-		if(x>=_CS.VRAM_TILES_H-0){ return; }
-		if(y>=_CS.VRAM_TILES_V-0){ return; }
-	});
-}
-// _DOC_ | Print_multiFont | Draw a text string to the screen (using multiple fonts.) (one tile at a time.)
-core.GRAPHICS.FUNCS.Print_multiFont          = function(data){
-	// Example usage:
-	// core.GRAPHICS.FUNCS.Print_multiFont(
-	// 	{
-	// 		"x"       : 4,
-	// 		"y"       : 17,
-	// 		"text"    : "MULTI FONT TEST 6 1234." ,
-	// 		"font"    : "01010101010101010101010".split("").map(function(d){ return parseInt(d,10); }) ,
-	// 		"maps"    : [
-	// 			{ "tileset":"tilesTX1", "font":"font1", "flags":{ "colorSwaps":[ ["#FFFFFF", "#FF0000"], ["#484891", "#999999"] ] } },
-	// 			{ "tileset":"tilesTX1", "font":"font1", "flags":{ "colorSwaps":[ ["#FFFFFF", "#0000FF"], ["#484891", "#999999"] ] } }
-	// 		],
-	// 		"layer"   : "TEXT",
-	// 	},
-	// );
-
-	// Font maps should be 64 characters (plus 2 for the width/height of the map.)
-	// Font tiles are expected to be in the following order in the fontmap:
-	//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
-	// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
-	// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
-	// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
-
-	// Make sure that the specified tileset, tilemap, and layer exist.
-	data.maps.forEach(function(d){
-		let map = d.font;
-		let tileset = d.tileset;
-
-		// Valid tileset?
-		if(!_CGA.tilesets[tileset]){
-			let str = ["=E= Print_multiFont: Tilemap not valid: ", tileset, map ];
-			throw Error(str);
-		}
-
-		// Valid tilemap?
-		if(!_CGA._original_data.tilemaps[tileset][map]){
-			let str = ["=E= Print_multiFont: Map not valid: ", tileset, map ];
-			throw Error(str);
-		}
-	});
-	if(data.layer             == undefined){ let str = ["=E= Print_multiFont: layer is undefined." ]; throw Error(str); }
-	if(_CS.layers[data.layer] == undefined){ let str = ["=E= Print_multiFont: layer is invalid."   ]; throw Error(str); }
-
-	// Make sure that only a whole number makes it through.
-	let x = (data.x) << 0;
-	let y = (data.y) << 0;
-	let startx = x;
-
-	// Turn the string into an iterable array.
-	Array.from( data.text ).forEach(function(d,i){
-		// Move down a line if a line break is found.
-		if(d=="\n"){ x=startx; y+=1; return; }
-
-		// Determine which fontmap will be used.
-		// NOTE: We need to use the original tilemap array for printing.
-		let map_obj = data.maps[ data.font[i] ] ;
-		let flags   = map_obj.flags ;
-		let tileset = map_obj.tileset ;
-		let fontmap = core.GRAPHICS.ASSETS._original_data.tilemaps [tileset] [ data.maps[ data.font[i] ].font ] ;
-		if(flags   == undefined){ flags={}; }
-
-		// NOTE: Fontsets should all be the same length.
-		let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
-
-		// Get the tileid for this character.
-		tileid = d.toUpperCase().charCodeAt() - 32;
-
-		// Make sure this is a valid tile in the font map (bounds-check.)
-		if(tileid < fontmap_len){
-			let tileindex = fontmap[ tileid+2 ];
-			core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, data.layer, flags);
-		}
-
-		// If it is out of bounds, (such as the "|" character) print a space.
-		else {
-			let tileindex = " ".toUpperCase().charCodeAt() - 32;
-			core.GRAPHICS.FUNCS.DrawTile(x, y, tileset, tileindex, data.layer, flags);
-		}
-
-		// Move the "cursor" over one to the right.
-		x+=1;
-
-		// No wrapping allowed.
-		if(x>=core.SETTINGS.VRAM_TILES_H-0){ return; }
-		if(y>=core.SETTINGS.VRAM_TILES_V-0){ return; }
-	});
-
-}
-
-//
-core.GRAPHICS.FUNCS.placeTile                 = function(data){
+// _DOC_ | placeTile |
+core.GRAPHICS.FUNCS.placeTile           = function(data){
 	let newVRAM_entry = data.newVRAM_entry       ;
 	let layerType     = newVRAM_entry.layerType  ;
 	let __calledBy    = newVRAM_entry.__calledBy ;
@@ -1935,110 +2023,11 @@ core.GRAPHICS.FUNCS.placeTile                 = function(data){
 	newVRAM_entry.flags.drawThis = true ;
 	core.GRAPHICS.DATA.FLAGS[newVRAM_entry.layer].UPDATE=true;
 }
-//
-core.GRAPHICS.FUNCS.ROT_FLIPX_FLIPY           = function(imgObj_canvas, newVRAM_entry){
-	// Create the src canvas as a copy of the provided canvas.
-	let src_canvas    = document.createElement("canvas");  ;
-	src_canvas.width  = newVRAM_entry.w ;
-	src_canvas.height = newVRAM_entry.h ;
-	JSGAME.SHARED.setpixelated(src_canvas);
-	let src_ctx       = src_canvas.getContext("2d") ;
-	src_ctx.drawImage(imgObj_canvas, 0, 0);
-
-	// Create the destination canvas.
-	let newX=0;
-	let newY=0;
-	let dst_canvas    = document.createElement("canvas");  ;
-	dst_canvas.width  = newVRAM_entry.w ;
-	dst_canvas.height = newVRAM_entry.h ;
-	JSGAME.SHARED.setpixelated(dst_canvas);
-	let dst_ctx       = dst_canvas.getContext("2d") ;
-
-	// Rotate if indicated.
-	let flags = newVRAM_entry.flags;
-	if( (flags.ROT !== false && flags.ROT !== 0) ){
-		// Determine the diagonal length of the image.
-		let diag = Math.floor(Math.sqrt( Math.pow(dst_canvas.width,2) + Math.pow(dst_canvas.height,2) ));
-
-		// Adjust the width and height for the dst_canvas and setpixelated.
-		dst_canvas.width  = diag ;
-		dst_canvas.height = diag ;
-		JSGAME.SHARED.setpixelated(dst_canvas);
-
-		// Update the width and height for the newVRAM_entry.
-		newVRAM_entry.w   = diag;
-		newVRAM_entry.h   = diag;
-
-		// Calcuate and store the x and y offset (needed to correct positioning due to rotation.)
-		newVRAM_entry.x_offset = (dst_canvas.width  - src_canvas.width)  /2 ;
-		newVRAM_entry.y_offset = (dst_canvas.height - src_canvas.height) /2 ;
-
-		// Translate position, rotate, un-translate position.
-		dst_ctx.translate(diag/2, diag/2);
-		dst_ctx.rotate(flags.ROT * Math.PI/180);
-		dst_ctx.translate((-1*diag)/2, (-1*diag)/2);
-	}
-
-	// FLIP_X and/or FLIP_Y if indicated.
-	if( flags.FLIP_X || flags.FLIP_Y ){
-		// Make sure there are values for both FLIP_X and FLIP_Y.
-		flags.FLIP_X = flags.FLIP_X ? true : false ;
-		flags.FLIP_Y = flags.FLIP_Y ? true : false ;
-
-		// Scale (this performs the flipping.)
-		let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
-		let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
-		newX       = flags.FLIP_X ? dst_canvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
-		newY       = flags.FLIP_Y ? dst_canvas.height * -1 : 0; // Set y position to -100% if flip vertical
-		dst_ctx.scale(scaleH, scaleV);                          // Set scale to flip the image
-	}
-
-	// JSGAME.SHARED.setpixelated(dst_canvas);
-
-	// Return the finished canvas.
-	return {
-		"canvas" : dst_canvas ,
-		"ctx"    : dst_ctx    ,
-		"newX"   : newX       ,
-		"newY"   : newY       ,
-	};
-
-}
-//
-core.GRAPHICS.FUNCS.addTileFlagChangesToQueue = function(imgData, newVRAM_entry){
-	// Create the object.
-	let newObj = {
-		"imgData_buffer" : imgData ,
-		"newVRAM_entry"  : newVRAM_entry
-	};
-
-	// Determine which worker's queue to add this change into.
-	let queues = core.GRAPHICS.WORKERS.w_colorswaps.queue ;
-	let queueLengths=[];
-
-	// Each for each queue.
-	for(let queueNum=0; queueNum<queues.length; queueNum+=1){
-		// Save the number of items in the queue.
-		queueLengths.push(queues[queueNum].length);
-	}
-	// let destinationQueue = queueLengths.indexOf(Math.min.apply(null,queueLengths)) ;
-	let destinationQueue = queueLengths.indexOf(Math.min(...queueLengths)) ;
-
-	// Add the object to the queue.
-	core.GRAPHICS.WORKERS.w_colorswaps.queue[destinationQueue].push(newObj);
-
-	//
-	core.GRAPHICS.WORKERS.w_colorswaps.queuedCount+=1;
-};
-//
-core.GRAPHICS.FUNCS.runTileFlagChangesQueue   = function(){
+// _DOC_ | doColorSwapping |
+core.GRAPHICS.FUNCS.doColorSwapping     = function(){
 	return new Promise(function(res,rej){
 		// Early exit?
 		if(!core.GRAPHICS.WORKERS.w_colorswaps.queuedCount){ res(); return; }
-
-		//
-		let drawStart_worker_timings1;
-		if(JSGAME.FLAGS.debug) { drawStart_worker_timings1 = performance.now(); core.GRAPHICS.performance["worker_timings1"].shift(); }
 
 		// Each for each queue.
 		let workers = core.GRAPHICS.WORKERS.w_colorswaps.worker ;
@@ -2208,9 +2197,6 @@ core.GRAPHICS.FUNCS.runTileFlagChangesQueue   = function(){
 					core.GRAPHICS.WORKERS.w_colorswaps.queue[i]=[];
 				}
 
-				// console.log("runTileFlagChangesQueue:", (performance.now() - ts_start), "ms" );
-				if(JSGAME.FLAGS.debug) { core.GRAPHICS.performance["worker_timings1"].push(performance.now() - drawStart_worker_timings1);                   }
-
 				core.GRAPHICS.WORKERS.w_colorswaps.queuedCount=0;
 
 				// Resolve the outer promise.
@@ -2221,8 +2207,99 @@ core.GRAPHICS.FUNCS.runTileFlagChangesQueue   = function(){
 			}
 		);
 	});
-}
+};
+// _DOC_ | ROT_FLIPX_FLIPY |
+core.GRAPHICS.FUNCS.ROT_FLIPX_FLIPY     = function(imgObj_canvas, newVRAM_entry){
+	// Create the src canvas as a copy of the provided canvas.
+	let src_canvas    = document.createElement("canvas");  ;
+	src_canvas.width  = newVRAM_entry.w ;
+	src_canvas.height = newVRAM_entry.h ;
+	JSGAME.SHARED.setpixelated(src_canvas);
+	let src_ctx       = src_canvas.getContext("2d") ;
+	src_ctx.drawImage(imgObj_canvas, 0, 0);
 
-/*
-https://www.diffnow.com
-*/
+	// Create the destination canvas.
+	let newX=0;
+	let newY=0;
+	let dst_canvas    = document.createElement("canvas");  ;
+	dst_canvas.width  = newVRAM_entry.w ;
+	dst_canvas.height = newVRAM_entry.h ;
+	JSGAME.SHARED.setpixelated(dst_canvas);
+	let dst_ctx       = dst_canvas.getContext("2d") ;
+
+	// Rotate if indicated.
+	let flags = newVRAM_entry.flags;
+	if( (flags.ROT !== false && flags.ROT !== 0) ){
+		// Determine the diagonal length of the image.
+		let diag = Math.floor(Math.sqrt( Math.pow(dst_canvas.width,2) + Math.pow(dst_canvas.height,2) ));
+
+		// Adjust the width and height for the dst_canvas and setpixelated.
+		dst_canvas.width  = diag ;
+		dst_canvas.height = diag ;
+		JSGAME.SHARED.setpixelated(dst_canvas);
+
+		// Update the width and height for the newVRAM_entry.
+		newVRAM_entry.w   = diag;
+		newVRAM_entry.h   = diag;
+
+		// Calcuate and store the x and y offset (needed to correct positioning due to rotation.)
+		newVRAM_entry.x_offset = (dst_canvas.width  - src_canvas.width)  /2 ;
+		newVRAM_entry.y_offset = (dst_canvas.height - src_canvas.height) /2 ;
+
+		// Translate position, rotate, un-translate position.
+		dst_ctx.translate(diag/2, diag/2);
+		dst_ctx.rotate(flags.ROT * Math.PI/180);
+		dst_ctx.translate((-1*diag)/2, (-1*diag)/2);
+	}
+
+	// FLIP_X and/or FLIP_Y if indicated.
+	if( flags.FLIP_X || flags.FLIP_Y ){
+		// Make sure there are values for both FLIP_X and FLIP_Y.
+		flags.FLIP_X = flags.FLIP_X ? true : false ;
+		flags.FLIP_Y = flags.FLIP_Y ? true : false ;
+
+		// Scale (this performs the flipping.)
+		let scaleH = flags.FLIP_X ? -1                     : 1; // Set horizontal scale to -1 if flip horizontal
+		let scaleV = flags.FLIP_Y ? -1                     : 1; // Set verical scale to -1 if flip vertical
+		newX       = flags.FLIP_X ? dst_canvas.width  * -1 : 0; // Set x position to -100% if flip horizontal
+		newY       = flags.FLIP_Y ? dst_canvas.height * -1 : 0; // Set y position to -100% if flip vertical
+		dst_ctx.scale(scaleH, scaleV);                          // Set scale to flip the image
+	}
+
+	// JSGAME.SHARED.setpixelated(dst_canvas);
+
+	// Return the finished canvas.
+	return {
+		"canvas" : dst_canvas ,
+		"ctx"    : dst_ctx    ,
+		"newX"   : newX       ,
+		"newY"   : newY       ,
+	};
+
+}
+// _DOC_ | addColorSwapToQueue |
+core.GRAPHICS.FUNCS.addColorSwapToQueue = function(imgData, newVRAM_entry){
+	// Create the object.
+	let newObj = {
+		"imgData_buffer" : imgData ,
+		"newVRAM_entry"  : newVRAM_entry
+	};
+
+	// Determine which worker's queue to add this change into.
+	let queues = core.GRAPHICS.WORKERS.w_colorswaps.queue ;
+	let queueLengths=[];
+
+	// Each for each queue.
+	for(let queueNum=0; queueNum<queues.length; queueNum+=1){
+		// Save the number of items in the queue.
+		queueLengths.push(queues[queueNum].length);
+	}
+	// let destinationQueue = queueLengths.indexOf(Math.min.apply(null,queueLengths)) ;
+	let destinationQueue = queueLengths.indexOf(Math.min(...queueLengths)) ;
+
+	// Add the object to the queue.
+	core.GRAPHICS.WORKERS.w_colorswaps.queue[destinationQueue].push(newObj);
+
+	//
+	core.GRAPHICS.WORKERS.w_colorswaps.queuedCount+=1;
+};

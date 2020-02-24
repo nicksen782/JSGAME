@@ -762,6 +762,17 @@ JSGAME.SHARED={
 		return newValue;
 	},
 
+	// Map number in one range into another range.
+	map_range : function(in_num, in_min, in_max, out_min, out_max) {
+		// https://gist.github.com/xposedbones/75ebaef3c10060a3ee3b246166caab56
+
+		// Example: range #1 is 0-100 and range #2 is 0-200.
+		// Example: map_range(50, 0, 100, 0, 200);
+		// A 50 from range #1 should be a 100 in range #2.
+		// NOTE: This might not return an integer.
+
+		return (in_num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+	},
 	// *** MISC ***
 
 	// This is the highest volume allowed.
