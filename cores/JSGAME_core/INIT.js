@@ -384,7 +384,8 @@ JSGAME.INIT={
 						setTimeout(function(){
 							core.FUNCS.graphics.logo().then( function(){
 								console.log("=======================================\n\n");
-								gamestartFunction();
+								JSGAME.SHARED.raf_id=requestAnimationFrame( gamestartFunction );
+								// gamestartFunction();
 							} );
 						},125);
 					},

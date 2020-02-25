@@ -15,6 +15,7 @@
 	<title>JS GAME</title>
 
 	<!-- JS GAME styling -->
+	<!-- <link rel="preload" href="index.css" as="style"> -->
 	<link rel="stylesheet" type="text/css" href="index.css">
 
 </head>

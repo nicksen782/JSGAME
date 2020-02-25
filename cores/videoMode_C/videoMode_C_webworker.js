@@ -3,8 +3,11 @@ self.postMessage = self.postMessage || self.webkitPostMessage;
 
 self.onmessage = function(event) {
 	switch( event.data.function ){
-		// imgData manipulation for color swaps.
+		// imgData manipulation for color swaps of the provided array buffer (Image Data.)
 		case "colorswaps" : { colorswaps(event); break; }
+
+		// Handles fading of the provided array buffer (Image Data.)
+		case "fade"       : { fade(event); break; }
 
 		// Unmatched function.
 		default     : { break; }
@@ -17,19 +20,16 @@ function colorswaps(event){
 	let finished_newVRAM_entries = [];
 	let transferList = [];
 
-	let hasColorSwaps=false;
-
 	for(let img=0; img<event.data.img_buffers_arr.length; img+=1){
 		let VRAM_entry = event.data.newVRAM_entries[img] ;
 		let flags      = VRAM_entry.flags ;
 
 		// Only operate if there are colorSwaps to do.
 		if(flags.colorSwaps.length){
-			hasColorSwaps=true;
 			//  Get handle to the provided image buffer.
 			let img_buff = event.data.img_buffers_arr[img] ;
 
-			//  Create a view.
+			//  Create views.
 			let img_view8  = new Uint8ClampedArray(img_buff) ;
 			var img_view32 = new Uint32Array(img_buff);
 
@@ -130,9 +130,100 @@ function colorswaps(event){
 		"finished_img_buffers_arr" : finished_img_buffers_arr ,
 		"finished_newVRAM_entries" : finished_newVRAM_entries ,
 		"length"                   : event.data.img_buffers_arr.length ,
-		"hasColorSwaps"            : hasColorSwaps ,
 	};
 
 	// Return the data.
 	self.postMessage(msg, transferList);
+};
+
+function testFunction(){
+	setInterval(function(){
+		if(core.GRAPHICS.WORKERS.w_fade.fadeDirection==1){
+			core.GRAPHICS.WORKERS.w_fade.fadeLevel=12;
+			core.GRAPHICS.WORKERS.w_fade.fadeDirection = -1;
+		}
+		else{
+			core.GRAPHICS.WORKERS.w_fade.fadeLevel=1;
+			core.GRAPHICS.WORKERS.w_fade.fadeDirection = 1;
+		}
+	}, 3000);
+}
+
+function fade(event){
+	// Get the dimensions.
+	let x = event.data.x ;
+	let y = event.data.y ;
+	let w = event.data.w ;
+	let h = event.data.h ;
+
+	// Get the max for red, green, and blue from the passed fade_record.
+	let maxRed   = event.data["maxRed"];
+	let maxGreen = event.data["maxGreen"];
+	let maxBlue  = event.data["maxBlue"];
+
+	// console.log(event.data);
+
+	//  Get handle to the provided image buffer.
+	let img_buff = event.data.img_buff ;
+
+	//  Create views.
+	let img_view8  = new Uint8ClampedArray(img_buff) ;
+	var img_view32 = new Uint32Array(img_buff);
+
+	// Get the number of bytes to read through.
+	let len = (w * h) * 4;
+
+	let i_32=0;
+	for(let i=0; i<len; i+=4){
+		// Get the new color values for this pixel.
+		let new_red   = (img_view8[i+0] * (maxRed   / 100) ) << 0 ;
+		let new_green = (img_view8[i+1] * (maxGreen / 100) ) << 0 ;
+		let new_blue  = (img_view8[i+2] * (maxBlue  / 100) ) << 0 ;
+		let new_alpha = (img_view8[i+3]) ;
+
+		// Replace the colors. (8-bit) (slower)
+		// img_view8[i+0] = new_red   ;
+		// img_view8[i+1] = new_green ;
+		// img_view8[i+2] = new_blue  ;
+		// img_view8[i+3] = new_alpha ;
+
+		// Replace the colors. (32-bit) (faster)
+		img_view32[i_32] =
+			(new_alpha  << 24) | // alpha
+			(new_blue   << 16) | // blue
+			(new_green  <<  8) | // green
+			(new_red         )   // red
+		;
+
+		//
+		i_32+=1;
+	}
+
+	let msg = {
+		"function"          : "fade"   ,
+		"finished_img_buff" : img_buff ,
+		"x"                 : x ,
+		"y"                 : y ,
+		"w"                 : w ,
+		"h"                 : h ,
+	};
+
+	// console.log(
+		// "\n function" , "fade"   ,
+		// "\n x"        , x        ,
+		// "\n y"        , y        ,
+		// "\n w"        , w        ,
+		// "\n h"        , h        ,
+		// "\n maxRed"   , maxRed   ,
+		// "\n maxGreen" , maxGreen ,
+		// "\n maxBlue"  , maxBlue  ,
+	// );
+
+	let transferList = [];
+	// let transferList = [img_buff];
+	// let transferList = img_buff;
+
+	// Return the data.
+	self.postMessage(msg, transferList);
+
 };
