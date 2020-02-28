@@ -2,6 +2,8 @@
 // ==== FILE START: SHARED.js ====
 // ===============================
 
+'use strict';
+
 // These functions can be used by JSGAME, the cores, and the game.
 JSGAME.SHARED={
 	// *** PERFORMANCE ***
@@ -41,6 +43,8 @@ JSGAME.SHARED={
 			let _TOTALTIME = 0;
 			let perf={ "INDIVIDUAL":{}, "GROUP":{}, "GROUP_ALL":0 };
 			let keys;
+			let keys2;
+			let keys3;
 
 			//
 			if(keyArray=="ALL_KEYS" || !keyArray){ keys = Object.keys(JSGAME.SHARED.PERFORMANCE.key_times); keys.sort(); }
@@ -143,18 +147,19 @@ JSGAME.SHARED={
 	// Calculates the average frames per second.
 	fps : {
 		// colxi: https://stackoverflow.com/a/55644176/2731377
-		sampleSize : 60    ,
+		sampleSize : 20    ,
 		value      : 0     ,
 		_sample_   : []    ,
 		_index_    : 0     ,
 		_lastTick_ : false ,
 
-		tick: function() {
+		tick : function() {
 			// if is first tick, just set tick timestamp and return
 			if (!this._lastTick_) {
 				this._lastTick_ = performance.now();
 				return 0;
 			}
+
 			// calculate necessary values to obtain current tick FPS
 			let now = performance.now();
 			let delta = (now - this._lastTick_) / 1000;
@@ -165,8 +170,9 @@ JSGAME.SHARED={
 
 			// iterate samples to obtain the average
 			let average = 0;
-			for (let i = 0; i < this._sample_.length; i++) average += this._sample_[i];
-			average = Math.round(average / this._sample_.length);
+			let sampleLength = this._sample_.length;
+			for (let i = 0; i < sampleLength; i++) { average += this._sample_[i]; }
+			average = Math.round(average / sampleLength);
 
 			// set new FPS
 			this.value = average;
@@ -181,8 +187,6 @@ JSGAME.SHARED={
 			return this.value;
 		}
 	},
-	// Holds the value for the game-specified frames per second.
-	curFPS : 0 ,
 	// Keeps the requestAnimationFrame id of the currently requested animation frame.
 	raf_id : null ,
 
@@ -484,7 +488,7 @@ JSGAME.SHARED={
 		// );
 
 		let extraText="NOTE: View the dev console for more detail.";
-
+		let str;
 		// Try to do the normal error output.
 		try{
 			let link = (event.filename || "")+":"+(event.lineno || "")+":"+(event.colno || "");
@@ -638,8 +642,7 @@ JSGAME.SHARED={
 		// At this point the game needs to pause so as not to rack up tons of identical errors.
 		JSGAME.FLAGS.paused         = true;
 		JSGAME.FLAGS.manuallyPaused = true;
-		window.cancelAnimationFrame( JSGAME.SHARED.raf_id );
-		JSGAME.SHARED.raf_id=null;
+		JSGAME.SHARED.cancel_gameloop();
 
 		// Show the error indicator.
 		JSGAME.DOM["indicator"].classList.add("show");
@@ -773,6 +776,22 @@ JSGAME.SHARED={
 
 		return (in_num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	},
+
+	//
+	cancel_gameloop   : function(){
+		// JSGAME.SHARED.cancel_gameloop();
+
+		window.cancelAnimationFrame( JSGAME.SHARED.raf_id );
+		JSGAME.SHARED.raf_id=null;
+	},
+
+	//
+	schedule_gameloop : function(){
+		// JSGAME.SHARED.schedule_gameloop();
+
+		JSGAME.SHARED.raf_id = requestAnimationFrame( game.gameloop );
+	},
+
 	// *** MISC ***
 
 	// This is the highest volume allowed.

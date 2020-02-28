@@ -1,3 +1,5 @@
+'use strict';
+
 // core.GRAPHICS = {};
 core.GRAPHICS.DATA         = {} ;
 core.GRAPHICS.DATA.FLAGS   = {} ;

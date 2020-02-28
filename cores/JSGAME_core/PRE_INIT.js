@@ -2,6 +2,8 @@
 // ==== FILE START: PRE_INIT.js ====
 // =================================
 
+'use strict';
+
 // window.location.origin
 var thisPath   = window.location.pathname;
 var parentPath = thisPath.split("/");

@@ -2,6 +2,8 @@
 // ==== FILE START: DOM.js ====
 // ============================
 
+'use strict';
+
 JSGAME.DOM={
 };
 

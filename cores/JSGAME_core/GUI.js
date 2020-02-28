@@ -2,6 +2,8 @@
 // ==== FILE START: GUI.js ====
 // ============================
 
+'use strict';
+
 JSGAME.GUI={
 	// *** GUI NAV ***
 
@@ -247,8 +249,7 @@ JSGAME.GUI={
 				let title = document.title.replace(/\(P\) /g, "");
 				document.title = "(P) " + title;
 
-				window.cancelAnimationFrame( JSGAME.SHARED.raf_id );
-				JSGAME.SHARED.raf_id=null;
+				JSGAME.SHARED.cancel_gameloop();
 			}
 		}
 	},
@@ -289,8 +290,7 @@ JSGAME.GUI={
 			JSGAME.FLAGS.manuallyPaused = true;
 
 			// Cancel the current requestAnimationFrame.
-			window.cancelAnimationFrame( JSGAME.SHARED.raf_id );
-			JSGAME.SHARED.raf_id=null;
+			JSGAME.SHARED.cancel_gameloop();
 
 			JSGAME.DOM["indicator"].classList.add("show");
 			JSGAME.DOM["indicator_extraText"].classList.remove("show");

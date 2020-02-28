@@ -2,6 +2,8 @@
 // ==== FILE START: INIT.js ====
 // =============================
 
+'use strict';
+
 //
 JSGAME.INIT={
 	// Detects little or big endianness for the browser.

@@ -2,6 +2,8 @@
 // ==== FILE START: GAMEPADS.js ====
 // =================================
 
+'use strict';
+
 JSGAME.GAMEPADS = {
 	// *** CONFIG MENU FUNCTIONS ***
 

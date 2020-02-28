@@ -2,6 +2,8 @@
 // ==== FILE START: PRESETUP.js ====
 // =================================
 
+'use strict';
+
 window.onload=function(){
 	window.onload=null;
 

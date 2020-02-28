@@ -304,6 +304,7 @@
 	<!-- Also includes the window.onload function. -->
 	<script>
 		(function(){
+			'use strict';
 			let indicator_preGame = document.getElementById("indicator_preGame");
 			indicator_preGame.classList.add("show");
 			indicator_preGame.innerText="... STARTING ...";

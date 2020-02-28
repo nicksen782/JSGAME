@@ -2,6 +2,8 @@
 // ==== FILE START: FLAGS.js ====
 // ==============================
 
+'use strict';
+
 JSGAME.FLAGS={
 	//
 	windowIsFocused               : true  ,

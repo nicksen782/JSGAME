@@ -221,6 +221,7 @@ function init(){
 	$outputText        = "";
 	$outputText_errors = "";
 
+	$outputText .= "'use strict'; \n";
 	$outputText .= "// ******************************************** \n";
 	$outputText .= "// -------------------------------------------- \n";
 	$outputText .= "\n";

@@ -1,3 +1,5 @@
+'use strict';
+
 /*
 TO DO:
 

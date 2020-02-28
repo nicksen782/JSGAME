@@ -1,3 +1,5 @@
+'use strict';
+
 // KEYS
 core.ASSETS  .graphics       = {} ; // Unchanging assets.
 core.FUNCS   .graphics       = {} ; // Functions for handling graphics.
