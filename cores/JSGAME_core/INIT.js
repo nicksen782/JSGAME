@@ -14,13 +14,13 @@ JSGAME.INIT={
 	// Detects if the user has performed actions capable of allowing audio autoplay.
 	detectUserInteraction : function(){
 		return new Promise(function(resolve,reject){
-			var audio = document.createElement("audio");
+			let audio = document.createElement("audio");
 			audio.src="snd/tick.mp3";
 			audio.volume=0.0;
 
 			audio.load();
 
-			var promise = audio.play();
+			let promise = audio.play();
 			if (promise !== undefined) {
 				promise.then(res => {
 					// console.log("AUDIO AUTOPLAY AVAILABLE:", res);
@@ -119,7 +119,11 @@ JSGAME.INIT={
 	},
 	// Check endianness, canloadgame, autoplay availability, provide some basic feedback on errors.
 	__PRE_INIT : function(){
-		console.log("\n=======================================");
+		console.log("=======================================\n");
+		console.log( "JSGAME: file_lastUpdate      : ", JSGAME.PRELOAD.PHP_VARS.file_lastUpdate      );
+		console.log( "JSGAME: file_lastUpdate_name : ", JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name );
+		console.log( "JSGAME: age                  : ", JSGAME.PRELOAD.PHP_VARS.age                  );
+		console.log("=======================================\n");
 		console.log("INIT JS GAME...");
 
 		// Handle errors (centralized.)
@@ -156,44 +160,44 @@ JSGAME.INIT={
 		document.onmouseenter=JSGAME.SHARED.toggleDocumentHidden;
 
 		// DOM cache.
-		JSGAME.DOM["entireBodyDiv"]          = document.getElementById("entireBodyDiv")         ;
+		JSGAME.DOM.entireBodyDiv          = document.getElementById("entireBodyDiv")         ;
 
-		JSGAME.DOM["bottom_bar_gamepadDetected"]          = document.getElementById("bottom_bar_gamepadDetected")         ;
+		JSGAME.DOM.bottom_bar_gamepadDetected          = document.getElementById("bottom_bar_gamepadDetected")         ;
 
-		JSGAME.DOM["gameSelector"]          = document.getElementById("gameSelector")         ;
-		JSGAME.DOM["gameControls"]          = document.getElementById("gameControls")         ;
-		JSGAME.DOM["gameControls_br"]       = document.getElementById("gameControls_br")      ;
+		JSGAME.DOM.gameSelector          = document.getElementById("gameSelector")         ;
+		JSGAME.DOM.gameControls          = document.getElementById("gameControls")         ;
+		JSGAME.DOM.gameControls_br       = document.getElementById("gameControls_br")      ;
 
-		JSGAME.DOM["siteContainerDiv"]      = document.getElementById("siteContainerDiv1")    ;
-		JSGAME.DOM["mainCenter"]            = document.getElementById("mainCenter")           ;
-		JSGAME.DOM["topBar"]                = document.getElementById("topBar")           ;
-		JSGAME.DOM["botBar"]                = document.getElementById("botBar")           ;
+		JSGAME.DOM.siteContainerDiv      = document.getElementById("siteContainerDiv1")    ;
+		JSGAME.DOM.mainCenter            = document.getElementById("mainCenter")           ;
+		JSGAME.DOM.topBar                = document.getElementById("topBar")           ;
+		JSGAME.DOM.botBar                = document.getElementById("botBar")           ;
 
-		JSGAME.DOM["sideDiv"]               = document.getElementById("sideDiv")              ;
-		JSGAME.DOM["debug_mode"]            = document.getElementById("debug_mode")           ;
-		JSGAME.DOM["hidden_mode"]           = document.getElementById("hidden_mode")          ;
-		JSGAME.DOM["panel_config_gamepads"] = document.getElementById("panel_config_gamepads");
+		JSGAME.DOM.sideDiv               = document.getElementById("sideDiv")              ;
+		JSGAME.DOM.debug_mode            = document.getElementById("debug_mode")           ;
+		JSGAME.DOM.hidden_mode           = document.getElementById("hidden_mode")          ;
+		JSGAME.DOM.panel_config_gamepads = document.getElementById("panel_config_gamepads");
 
 		// DOM cache.
-		JSGAME.DOM["gamepads"]               = document.querySelectorAll("#gameControls .gamepad");
-		JSGAME.DOM["gamepads_svg"]           = document.querySelectorAll("#gameControls .gamepad svg");
+		JSGAME.DOM.gamepads               = document.querySelectorAll("#gameControls .gamepad");
+		JSGAME.DOM.gamepads_svg           = document.querySelectorAll("#gameControls .gamepad svg");
 
-		JSGAME.DOM["masterVolumeSlider_row"] = document.getElementById  ("masterVolumeSlider_row");
-		JSGAME.DOM["masterVolumeSlider"]     = document.getElementById  ("masterVolumeSlider");
+		JSGAME.DOM.masterVolumeSlider_row = document.getElementById  ("masterVolumeSlider_row");
+		JSGAME.DOM.masterVolumeSlider     = document.getElementById  ("masterVolumeSlider");
 
-		JSGAME.DOM["canvasScaleSlider_row"]  = document.getElementById  ("canvasScaleSlider_row");
-		JSGAME.DOM["canvasScaleSlider"]      = document.getElementById  ("canvasScaleSlider");
+		JSGAME.DOM.canvasScaleSlider_row  = document.getElementById  ("canvasScaleSlider_row");
+		JSGAME.DOM.canvasScaleSlider      = document.getElementById  ("canvasScaleSlider");
 
-		JSGAME.DOM["gameCanvas_DIV"]         = document.getElementById  ("gameCanvas_DIV");
-		JSGAME.DOM["indicator_preGame"]      = document.getElementById  ("indicator_preGame");
-		JSGAME.DOM["indicator"]              = document.getElementById  ("indicator");
-		JSGAME.DOM["indicator_extraText"]    = document.getElementById  ("indicator_extraText");
+		JSGAME.DOM.gameCanvas_DIV         = document.getElementById  ("gameCanvas_DIV");
+		JSGAME.DOM.indicator_preGame      = document.getElementById  ("indicator_preGame");
+		JSGAME.DOM.indicator              = document.getElementById  ("indicator");
+		JSGAME.DOM.indicator_extraText    = document.getElementById  ("indicator_extraText");
 
-		JSGAME.DOM["btn_toggleGamepads"]     = document.getElementById  ("btn_toggleGamepads");
-		JSGAME.DOM["btn_togglePause"]        = document.getElementById  ("btn_togglePause");
-		JSGAME.DOM["btn_toggleFullscreen"]   = document.getElementById  ("btn_toggleFullscreen");
+		JSGAME.DOM.btn_toggleGamepads     = document.getElementById  ("btn_toggleGamepads");
+		JSGAME.DOM.btn_togglePause        = document.getElementById  ("btn_togglePause");
+		JSGAME.DOM.btn_toggleFullscreen   = document.getElementById  ("btn_toggleFullscreen");
 
-		if(JSGAME.DOM["debug_mode"].checked){
+		if(JSGAME.DOM.debug_mode.checked){
 			// try{
 			// 	let debug_navButtons = document.getElementById("debug_navButtons");
 			// 	debug_navButtons.classList.remove("hidden");
@@ -230,7 +234,7 @@ JSGAME.INIT={
 		}
 		// Game not loaded.
 		else{
-			let numGames = JSGAME.DOM["gameSelector"].options.length -1;
+			let numGames = JSGAME.DOM.gameSelector.options.length -1;
 
 			// Are there entries in the game selector drop-down?
 			if(!numGames){
@@ -253,54 +257,54 @@ JSGAME.INIT={
 		// JSGAME.GUI.preGame_indicator("loadingGame", "ON");
 
 		// Gamepad buttons
-		JSGAME.consts["BTN_NOBUTTONS"] = 0    ; // NOBUTTONS  decimal: 0   , binary: 0000000000000000, HEX: 0x0000, bitWise:  0 << 0
-		JSGAME.consts["BTN_B"]         = 1    ; // BTN_B      decimal: 1   , binary: 0000000000000001, HEX: 0x0001, bitWise:  1 << 0
-		JSGAME.consts["BTN_Y"]         = 2    ; // BTN_Y      decimal: 2   , binary: 0000000000000010, HEX: 0x0002, bitWise:  1 << 1
-		JSGAME.consts["BTN_SELECT"]    = 4    ; // BTN_SELECT decimal: 4   , binary: 0000000000000100, HEX: 0x0004, bitWise:  1 << 2
-		JSGAME.consts["BTN_START"]     = 8    ; // BTN_START  decimal: 8   , binary: 0000000000001000, HEX: 0x0008, bitWise:  1 << 3
-		JSGAME.consts["BTN_UP"]        = 16   ; // BTN_UP     decimal: 16  , binary: 0000000000010000, HEX: 0x0010, bitWise:  1 << 4
-		JSGAME.consts["BTN_DOWN"]      = 32   ; // BTN_DOWN   decimal: 32  , binary: 0000000000100000, HEX: 0x0020, bitWise:  1 << 5
-		JSGAME.consts["BTN_LEFT"]      = 64   ; // BTN_LEFT   decimal: 64  , binary: 0000000001000000, HEX: 0x0040, bitWise:  1 << 6
-		JSGAME.consts["BTN_RIGHT"]     = 128  ; // BTN_RIGHT  decimal: 128 , binary: 0000000010000000, HEX: 0x0080, bitWise:  1 << 7
-		JSGAME.consts["BTN_A"]         = 256  ; // BTN_A      decimal: 256 , binary: 0000000100000000, HEX: 0x0100, bitWise:  1 << 8
-		JSGAME.consts["BTN_X"]         = 512  ; // BTN_X      decimal: 512 , binary: 0000001000000000, HEX: 0x0200, bitWise:  1 << 9
-		JSGAME.consts["BTN_SL"]        = 1024 ; // BTN_SL     decimal: 1024, binary: 0000010000000000, HEX: 0x0400, bitWise:  1 << 10
-		JSGAME.consts["BTN_SR"]        = 2048 ; // BTN_SR     decimal: 2048, binary: 0000100000000000, HEX: 0x0800, bitWise:  1 << 11
+		JSGAME.consts.BTN_NOBUTTONS = 0    ; // NOBUTTONS  decimal: 0   , binary: 0000000000000000, HEX: 0x0000, bitWise:  0 << 0
+		JSGAME.consts.BTN_B         = 1    ; // BTN_B      decimal: 1   , binary: 0000000000000001, HEX: 0x0001, bitWise:  1 << 0
+		JSGAME.consts.BTN_Y         = 2    ; // BTN_Y      decimal: 2   , binary: 0000000000000010, HEX: 0x0002, bitWise:  1 << 1
+		JSGAME.consts.BTN_SELECT    = 4    ; // BTN_SELECT decimal: 4   , binary: 0000000000000100, HEX: 0x0004, bitWise:  1 << 2
+		JSGAME.consts.BTN_START     = 8    ; // BTN_START  decimal: 8   , binary: 0000000000001000, HEX: 0x0008, bitWise:  1 << 3
+		JSGAME.consts.BTN_UP        = 16   ; // BTN_UP     decimal: 16  , binary: 0000000000010000, HEX: 0x0010, bitWise:  1 << 4
+		JSGAME.consts.BTN_DOWN      = 32   ; // BTN_DOWN   decimal: 32  , binary: 0000000000100000, HEX: 0x0020, bitWise:  1 << 5
+		JSGAME.consts.BTN_LEFT      = 64   ; // BTN_LEFT   decimal: 64  , binary: 0000000001000000, HEX: 0x0040, bitWise:  1 << 6
+		JSGAME.consts.BTN_RIGHT     = 128  ; // BTN_RIGHT  decimal: 128 , binary: 0000000010000000, HEX: 0x0080, bitWise:  1 << 7
+		JSGAME.consts.BTN_A         = 256  ; // BTN_A      decimal: 256 , binary: 0000000100000000, HEX: 0x0100, bitWise:  1 << 8
+		JSGAME.consts.BTN_X         = 512  ; // BTN_X      decimal: 512 , binary: 0000001000000000, HEX: 0x0200, bitWise:  1 << 9
+		JSGAME.consts.BTN_SL        = 1024 ; // BTN_SL     decimal: 1024, binary: 0000010000000000, HEX: 0x0400, bitWise:  1 << 10
+		JSGAME.consts.BTN_SR        = 2048 ; // BTN_SR     decimal: 2048, binary: 0000100000000000, HEX: 0x0800, bitWise:  1 << 11
 
 		// *** DOM init (event listeners, etc.) ***
 
 		// If the volume change function is available then show the volume controls.
 		if(core.FUNCS.audio && core.FUNCS.audio.changeMasterVolume){
-			JSGAME.DOM["masterVolumeSlider_row"].classList.remove("hide");
+			JSGAME.DOM.masterVolumeSlider_row.classList.remove("hide");
 
-			JSGAME.DOM["masterVolumeSlider"].addEventListener("input", function(){
+			JSGAME.DOM.masterVolumeSlider.addEventListener("input", function(){
 				core.FUNCS.audio.changeMasterVolume(this.value);
 			}, false);
 		}
 		// Otherwise hide the volume controls.
 		else{
-			JSGAME.DOM["masterVolumeSlider_row"].classList.add("hide");
+			JSGAME.DOM.masterVolumeSlider_row.classList.add("hide");
 		}
 
 		// Configure the canvas resize slider.
-		JSGAME.DOM["canvasScaleSlider"]     .addEventListener("input", function(){
+		JSGAME.DOM.canvasScaleSlider     .addEventListener("input", function(){
 			JSGAME.SHARED.canvasResize(this.value);
 		}, false);
 
 		//
-		JSGAME.DOM["btn_togglePause"]      .addEventListener("click"    , JSGAME.GUI.togglePause     , false);
-		JSGAME.DOM["btn_toggleFullscreen"] .addEventListener("click"    , JSGAME.GUI.togglefullscreen, false);
-		JSGAME.DOM["gameCanvas_DIV"]       .addEventListener("dblclick" , JSGAME.GUI.togglefullscreen, true );
-		JSGAME.DOM["btn_toggleGamepads"]   .addEventListener("click"    , JSGAME.GUI.toggleGamepads  , false);
+		JSGAME.DOM.btn_togglePause      .addEventListener("click"    , JSGAME.GUI.togglePause     , false);
+		JSGAME.DOM.btn_toggleFullscreen .addEventListener("click"    , JSGAME.GUI.togglefullscreen, false);
+		JSGAME.DOM.gameCanvas_DIV       .addEventListener("dblclick" , JSGAME.GUI.togglefullscreen, true );
+		JSGAME.DOM.btn_toggleGamepads   .addEventListener("click"    , JSGAME.GUI.toggleGamepads  , false);
 
 		// DETECT WINDOW FOCUS/UNFOCUS
 		// If available, add the event listener for visibility change.
-		if( document['hidden'] !== undefined ){
+		if( document.hidden !== undefined ){
 			// Add the event listener for visibility change.
 			document.addEventListener("visibilitychange", JSGAME.GUI.visibilityChange, false);
 
 			// Set some flags here.
-			if( document['hidden'] == false ){
+			if( document.hidden == false ){
 				JSGAME.FLAGS.windowIsFocused = true;
 				JSGAME.FLAGS.paused          = false;
 				// JSGAME.FLAGS.manuallyPaused  = false;
@@ -319,7 +323,7 @@ JSGAME.INIT={
 		}
 
 		// Fix the onscreen gamepad attributes/text
-		JSGAME.DOM["gamepads"].forEach(
+		JSGAME.DOM.gamepads.forEach(
 			function(d){
 				// Get DOM handles.
 				let pad  = d.getAttribute("pad");

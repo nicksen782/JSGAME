@@ -141,7 +141,7 @@ JSGAME.SHARED={
 			JSGAME.SHARED.timing.now      = null                   ;
 			JSGAME.SHARED.timing._then    = performance.now()      ;
 			JSGAME.SHARED.timing.interval = 1000/core.SETTINGS.fps ; // 1000/30 == 33.333, 1000/60 == 16.666
-			JSGAME.SHARED.timing.delta    = null
+			JSGAME.SHARED.timing.delta    = null;
 		}
 	},
 	// Calculates the average frames per second.
@@ -183,7 +183,7 @@ JSGAME.SHARED={
 			// increase sample index counter, and reset it
 			// to 0 if exceded maximum sampleSize limit
 			this._index_++;
-			if (this._index_ === this.sampleSize) this._index_ = 0;
+			if (this._index_ === this.sampleSize) { this._index_ = 0; }
 			return this.value;
 		}
 	},
@@ -233,10 +233,10 @@ JSGAME.SHARED={
 
 		let ctx = canvas.getContext("2d");
 		// ctx['mozImageSmoothingEnabled']    = false; // Depreciated. Use imageSmoothingEnabled instead.
-		ctx['imageSmoothingEnabled']       = false; //
-		ctx['oImageSmoothingEnabled']      = false; //
-		ctx['webkitImageSmoothingEnabled'] = false; //
-		ctx['msImageSmoothingEnabled']     = false; //
+		ctx.imageSmoothingEnabled       = false; //
+		ctx.oImageSmoothingEnabled      = false; //
+		ctx.webkitImageSmoothingEnabled = false; //
+		ctx.msImageSmoothingEnabled     = false; //
 
 		// image-rendering: crisp-edges;
 		// image-rendering: -moz-crisp-edges;
@@ -246,7 +246,7 @@ JSGAME.SHARED={
 	// Get a file as-is via a url (optional compression.)
 	getFile_fromUrl                  : function(url, useGzip, responseType){
 		return new Promise(function(resolve, reject) {
-			var finished = function(data) {
+			let finished = function(data) {
 
 				let resp;
 				switch( this.responseType ){
@@ -260,7 +260,7 @@ JSGAME.SHARED={
 
 				resolve( resp );
 			};
-			var error    = function(data) {
+			let error    = function(data) {
 				console.log("getFile_fromUrl: error:", "\nthis:", this, "\ndata", data);
 				reject({
 					type: data.type,
@@ -269,7 +269,7 @@ JSGAME.SHARED={
 			};
 
 			let method = "GET";
-			var xhr = new XMLHttpRequest();
+			let xhr = new XMLHttpRequest();
 
 			xhr.addEventListener("load", finished);
 			xhr.addEventListener("error", error);
@@ -280,9 +280,9 @@ JSGAME.SHARED={
 				// console.log("using gzip");
 
 				// Create the form.
-				var fd = new FormData();
-				var o = "gzip_getFile";
-				var filename = url;
+				let fd = new FormData();
+				let o = "gzip_getFile";
+				let filename = url;
 				fd.append("o" , o );
 				fd.append("filename" , filename );
 
@@ -298,8 +298,9 @@ JSGAME.SHARED={
 
 			xhr.open(
 				method,  // Type of method (GET/POST)
-				url      // Destination
-			, true);
+				url   ,   // Destination
+				true
+			);
 
 			// Set the responseType.
 			switch( responseType ){
@@ -319,10 +320,10 @@ JSGAME.SHARED={
 	arrayBufferToBase64_datauri : function( buffer, type, callback ) {
 		// Works as a promise or with a callback function.
 		return new Promise(function(res,rej){
-			var blob = new Blob([buffer],{type:type});
-			var reader = new FileReader();
+			let blob = new Blob([buffer],{type:type});
+			let reader = new FileReader();
 			reader.onload = function(evt){
-				var dataurl = evt.target.result;
+				let dataurl = evt.target.result;
 				// console.log(dataurl);
 				res(dataurl);
 				if(callback){ callback(dataurl); }
@@ -342,30 +343,30 @@ JSGAME.SHARED={
 		let new_cont_height = (canvas_height * scale) << 0 ;
 
 		// Set the new dimensions to the container.
-		core.DOM['gameCanvas_DIV'].style.width  = new_cont_width  + "px" ;
-		core.DOM['gameCanvas_DIV'].style.height = new_cont_height + "px" ;
+		core.DOM.gameCanvas_DIV.style.width  = new_cont_width  + "px" ;
+		core.DOM.gameCanvas_DIV.style.height = new_cont_height + "px" ;
 
 		// Set the new dimensions to the container.
-		// JSGAME.DOM["mainCenter"].style.width  = new_cont_width  + "px" ;
-		// JSGAME.DOM["mainCenter"].style.height = new_cont_height + "px" ;
+		// JSGAME.DOM.mainCenter.style.width  = new_cont_width  + "px" ;
+		// JSGAME.DOM.mainCenter.style.height = new_cont_height + "px" ;
 
 		// Adjust the hover title on the scale slider.
-		JSGAME.DOM["canvasScaleSlider"].title=scale;
+		JSGAME.DOM.canvasScaleSlider.title=scale;
 	},
 
 	// Uses the canvas to establish aspect ratio, resizes the gameCanvas_DIV to fit mainCenter.
 	canvasResize_autofit : function(){
 		let dims1 = {
-			"siteContainerDiv" : JSGAME.DOM["siteContainerDiv"].getBoundingClientRect() ,
-			"topBar"           : JSGAME.DOM["topBar"]          .getBoundingClientRect() ,
-			"mainCenter"       : JSGAME.DOM["mainCenter"]      .getBoundingClientRect() ,
-			"botBar"           : JSGAME.DOM["botBar"]          .getBoundingClientRect() ,
+			"siteContainerDiv" : JSGAME.DOM.siteContainerDiv.getBoundingClientRect() ,
+			"topBar"           : JSGAME.DOM.topBar          .getBoundingClientRect() ,
+			"mainCenter"       : JSGAME.DOM.mainCenter      .getBoundingClientRect() ,
+			"botBar"           : JSGAME.DOM.botBar          .getBoundingClientRect() ,
 		};
 
-		let dimsA = window.getComputedStyle(JSGAME.DOM["siteContainerDiv"], null) ;
-		let dimsB = window.getComputedStyle(JSGAME.DOM["topBar"]          , null) ;
-		let dimsC = window.getComputedStyle(JSGAME.DOM["mainCenter"]      , null) ;
-		let dimsD = window.getComputedStyle(JSGAME.DOM["botBar"]          , null) ;
+		let dimsA = window.getComputedStyle(JSGAME.DOM.siteContainerDiv, null) ;
+		let dimsB = window.getComputedStyle(JSGAME.DOM.topBar          , null) ;
+		let dimsC = window.getComputedStyle(JSGAME.DOM.mainCenter      , null) ;
+		let dimsD = window.getComputedStyle(JSGAME.DOM.botBar          , null) ;
 
 		let test = {
 			"siteContainerDiv" : { width:parseInt(dimsA.width,10), height:parseInt(dimsA.height,10) } ,
@@ -395,8 +396,8 @@ JSGAME.SHARED={
 		let reduced_new_cont_height = ( (new_cont_height) - (new_cont_height*0.05) ) << 0;
 
 		// Set the new dimensions to the container.
-		core.DOM['gameCanvas_DIV'].style.width  = reduced_new_cont_width  + "px" ;
-		core.DOM['gameCanvas_DIV'].style.height = reduced_new_cont_height + "px" ;
+		core.DOM.gameCanvas_DIV.style.width  = reduced_new_cont_width  + "px" ;
+		core.DOM.gameCanvas_DIV.style.height = reduced_new_cont_height + "px" ;
 	},
 
 	// (unused)
@@ -428,12 +429,12 @@ JSGAME.SHARED={
 
 			// Only do this if currently in full screen mode.
 			if((
-				document.fullscreen              // Chrome
-			 || document.fullscreenElement       // Chrome
-			 || document.webkitFullscreenElement // Chrome
-			 || document.msFullscreenElement     // Edge/IE
-			 || document.mozFullScreenElement    // Firefox
-			 || window  .fullScreen              // Firefox
+				document.fullscreen              || // Chrome
+				document.fullscreenElement       || // Chrome
+				document.webkitFullscreenElement || // Chrome
+				document.msFullscreenElement     || // Edge/IE
+				document.mozFullScreenElement    || // Firefox
+				window  .fullScreen                 // Firefox
 			))
 			{
 				// Add a delay for doing the change.
@@ -456,7 +457,7 @@ JSGAME.SHARED={
 		let type = e.type;
 
 		// Get a DOM handle to the hidden_mode checkbox.
-		let hidden_mode = JSGAME.DOM["hidden_mode"];
+		let hidden_mode = JSGAME.DOM.hidden_mode;
 
 		// Act only if the checkbox is checked.
 		if(hidden_mode.checked){
@@ -487,6 +488,8 @@ JSGAME.SHARED={
 		// 	""
 		// );
 
+		// console.log("event.type:", event.type);
+
 		let extraText="NOTE: View the dev console for more detail.";
 		let str;
 		// Try to do the normal error output.
@@ -510,15 +513,25 @@ JSGAME.SHARED={
 			if( (event instanceof URIError      ) ){ str+="\n -=> instanceof : URIError      "; }
 
 			// MAIN INFO
-			if(event.message){ str+="\n -=> message    : " + event.message; } else { str+="\n -=> message    : " + "<UNAVAILABLE>"; }
-			if(link.length>5){ str+="\n -=> link       : " + link;          } else { str+="\n -=> link       : " + "<UNAVAILABLE>"; }
-			if(event.lineno) { str+="\n -=> lineno     : " + event.lineno;  } else { str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }
-			if(event.colno)  { str+="\n -=> colno      : " + event.colno;   } else { str+="\n -=> colno      : " + "<UNAVAILABLE>"; }
+			if(event.type=="unhandledrejection"){
+				if(event.reason.message){ str+="\n -=> message    : " + event.reason.message; } else { str+="\n -=> message    : " + "<UNAVAILABLE>"; }
+				if(link.length>5){ str+="\n -=> link       : " + link;                        } else { str+="\n -=> link       : " + "<UNAVAILABLE>"; }
+				if(event.lineno) { str+="\n -=> lineno     : " + event.lineno;                } else { str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }
+				if(event.colno)  { str+="\n -=> colno      : " + event.colno;                 } else { str+="\n -=> colno      : " + "<UNAVAILABLE>"; }
+			}
+			else {
+				if(event.message){ str+="\n -=> message    : " + event.message; } else { str+="\n -=> message    : " + "<UNAVAILABLE>"; }
+				if(link.length>5){ str+="\n -=> link       : " + link;          } else { str+="\n -=> link       : " + "<UNAVAILABLE>"; }
+				if(event.lineno) { str+="\n -=> lineno     : " + event.lineno;  } else { str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }
+				if(event.colno)  { str+="\n -=> colno      : " + event.colno;   } else { str+="\n -=> colno      : " + "<UNAVAILABLE>"; }
+			}
 
 			// STACK (if available.)
 			let stack;
-			if     ( event && event.error && event.error.stack ) { stack = event.error.stack; }
-			else if( event && event.reason && event.reason.stack ) { stack = event.reason.stack;  }
+			if     ( event && event.error  && event.error.stack  ) { stack = event.error.stack ; }
+			else if( event && event.reason && event.reason.stack ) {
+				stack = event.reason.stack.replace("at ", "-----");
+			}
 			else{ console.error(".stack was not available."); }
 
 			if( stack ) {
@@ -545,7 +558,7 @@ JSGAME.SHARED={
 							// Remove the "(" and ")" from the right. (first and last chars.)
 							right=right.substring(1, right.length-1);
 
-							let len = left.length + middle.length
+							let len = left.length + middle.length;
 
 							// Update the max length.
 							if(len >= max_left_len){ max_left_len = len; }
@@ -645,13 +658,13 @@ JSGAME.SHARED={
 		JSGAME.SHARED.cancel_gameloop();
 
 		// Show the error indicator.
-		JSGAME.DOM["indicator"].classList.add("show");
-		JSGAME.DOM["indicator"].innerText="-- ERROR DETECTED --";
+		JSGAME.DOM.indicator.classList.add("show");
+		JSGAME.DOM.indicator.innerText="-- ERROR DETECTED --";
 
 		// Show the extra error text if it has been set.
 		if(extraText){
-			JSGAME.DOM["indicator_extraText"].classList.add("show");
-			JSGAME.DOM["indicator_extraText"].innerText=""+""+extraText;
+			JSGAME.DOM.indicator_extraText.classList.add("show");
+			JSGAME.DOM.indicator_extraText.innerText=""+""+extraText;
 		}
 
 		// Turn the preGame indicator off in case it is on since it overlaps the error indicator.
@@ -667,7 +680,7 @@ JSGAME.SHARED={
 				case 38 : { e.preventDefault(); break; } // Up arrow
 				case 39 : { e.preventDefault(); break; } // Right arrow
 				case 40 : { e.preventDefault(); break; } // Down arrow
-			};
+			}
 		}
 	},
 

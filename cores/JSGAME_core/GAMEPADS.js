@@ -221,14 +221,14 @@ JSGAME.GAMEPADS = {
 								case "NO_BUTTON"        : {                                                 requestAnimationFrame(iterate); break; }
 								case "MULTIPLE_BUTTONS" : {                                                 requestAnimationFrame(iterate); break; }
 								case "USER_CANCEL"      : { btn.classList.remove("yellowHighlight"); i=len; requestAnimationFrame(iterate); break; }
-							};
+							}
 						},
 
 						// If rejected.
 						function(data){ console.log("ERR:", data); }
 					);
 				}
-			};
+			}
 			iterate();
 		},
 		// (SAVE) Add button mappings for a gamepad.
@@ -299,7 +299,7 @@ JSGAME.GAMEPADS = {
 			let newObj = {
 				"name":mapkey.name,
 				"btnMap":data ,
-			}
+			};
 
 			// Update the in-RAM copy.
 			JSGAME.GAMEPADS.gp_config_mappings[mapkey.map_key] = newObj ;
@@ -325,7 +325,7 @@ JSGAME.GAMEPADS = {
 			// Add the data to the in-RAM gp mappings.
 			for(let i=0; i<keys.length; i+=1){
 				// Get the key.
-				var key = keys[i];
+				let key = keys[i];
 
 				// Set that key (overwrite if it already exists) with the new data.
 				JSGAME.GAMEPADS.gp_config_mappings[key] = newJSON[key];
@@ -418,7 +418,7 @@ JSGAME.GAMEPADS = {
 							"padnum" : d.getAttribute("padnum") ,
 							"name"   : d.getAttribute("name")   ,
 							"text"   : d.innerText              ,
-						})
+						});
 					});
 
 					res( arr );
@@ -593,7 +593,7 @@ JSGAME.GAMEPADS = {
 					// };
 
 					// return button;
-				};
+				}
 
 				let table = document.createElement("table");
 				table.setAttribute("padNum", padNum);
@@ -601,10 +601,10 @@ JSGAME.GAMEPADS = {
 
 				// Create header row.
 				for(let i=0; i<1; i+=1){
-					var temp_tr   = document.createElement("tr");
-					var temp_th1  = document.createElement("th"); temp_tr.appendChild(temp_th1); //
-					var temp_th2  = document.createElement("th"); temp_tr.appendChild(temp_th2); //
-					var temp_th3  = document.createElement("th"); temp_tr.appendChild(temp_th3); //
+					let temp_tr   = document.createElement("tr");
+					let temp_th1  = document.createElement("th"); temp_tr.appendChild(temp_th1); //
+					let temp_th2  = document.createElement("th"); temp_tr.appendChild(temp_th2); //
+					let temp_th3  = document.createElement("th"); temp_tr.appendChild(temp_th3); //
 
 					temp_th1.innerHTML="BUTTON";
 					temp_th2.innerHTML="ACTION";
@@ -615,10 +615,10 @@ JSGAME.GAMEPADS = {
 
 				// Create button rows.
 				for(let i=0; i<btn_strings.length; i+=1){
-					var temp_tr   = document.createElement("tr");
-					var temp_td1  = document.createElement("td"); temp_tr.appendChild(temp_td1); //
-					var temp_td2  = document.createElement("td"); temp_tr.appendChild(temp_td2); //
-					var temp_td3  = document.createElement("td"); temp_tr.appendChild(temp_td3); //
+					let temp_tr   = document.createElement("tr");
+					let temp_td1  = document.createElement("td"); temp_tr.appendChild(temp_td1); //
+					let temp_td2  = document.createElement("td"); temp_tr.appendChild(temp_td2); //
+					let temp_td3  = document.createElement("td"); temp_tr.appendChild(temp_td3); //
 
 					temp_td1.innerHTML=btn_strings[i].split("_")[1];
 					temp_td2.appendChild( createActionButton( btn_strings[i], temp_tr ) ) ;
@@ -692,7 +692,7 @@ JSGAME.GAMEPADS = {
 
 				let DOM_listeners=function(){
 					// Init the DOM EVENT LISTENERS
-				}
+				};
 
 				JSGAME.GAMEPADS.CONFIG.DOM_init();
 				DOM_listeners();
@@ -845,10 +845,10 @@ JSGAME.GAMEPADS = {
 				for(let i2=0; i2<keys2.length; i2+=1){
 					let key2 = keys2[i2];
 					let thisButtonMap = mapping.btnMap[key2];
-					let prop_type  = '"type" : '  + '"' + thisButtonMap["type"]  + '"' ; // 14
-					let prop_index = '"index" : ' + ''  + thisButtonMap["index"] + ' ' ; // 10
-					let prop_true  = '"true" : '  + ''  + thisButtonMap["true"]  + ' ' ; // 9
-					let prop_sign  = '"sign" : '  + '"' + thisButtonMap["sign"]  + '"' ; // 8
+					let prop_type  = '"type" : '  + '"' + thisButtonMap.type  + '"' ; // 14
+					let prop_index = '"index" : ' + ''  + thisButtonMap.index + ' ' ; // 10
+					let prop_true  = '"true" : '  + ''  + thisButtonMap.true  + ' ' ; // 9
+					let prop_sign  = '"sign" : '  + '"' + thisButtonMap.sign  + '"' ; // 8
 
 					output += "\t\t\t"+'"'+key2+'" '+( ''.padEnd(10-key2.length, ' '))+': { ' ;
 					output += prop_type .padEnd(19, ' ' )  + ", ";
@@ -869,7 +869,7 @@ JSGAME.GAMEPADS = {
 			if(downloadFile){
 				let finish = function(){
 					// Create the data blob.
-					var blob3 = new Blob(  [output]  , {type: "text/plain;charset=utf-8"});
+					let blob3 = new Blob(  [output]  , {type: "text/plain;charset=utf-8"});
 
 					// Send the file to the user.
 					saveAs(blob3, "gp_mappings_json.json");
@@ -1029,15 +1029,15 @@ JSGAME.GAMEPADS = {
 			let thisPad = src_gamepads[i];
 
 			// Make sure that the gamepad is actually there.
-			try{ thisPad.index; }
-			catch(e){ console.log(i, "ERROR:", e); continue;}
+			// try{ thisPad.index; }
+			// catch(e){ console.log(i, "ERROR:", e); continue;}
 
 			// NEW GAMEPAD: Is this an unconfigured gamepad? Configure it.
 			if(
 				!JSGAME.GAMEPADS.gamepads[thisPad.index] && // No data entry at this index.
 				thisPad.id                               // And the src has data.
 			){
-				let newMapping=undefined;
+				let newMapping;
 				let map_obj  = JSGAME.GAMEPADS.generateGamepadKey(thisPad);
 				let map_key  = map_obj.map_key;
 				let map_name = map_obj.name;
@@ -1093,7 +1093,7 @@ JSGAME.GAMEPADS = {
 						"prevActive"    : 1         ,
 					};
 
-					let newPlayerNumber = undefined;
+					let newPlayerNumber ;
 
 					// Configure the displayed gamepad statuses.
 					if      (JSGAME.GAMEPADS.totalNumGamepadsReady==0){
@@ -1210,7 +1210,7 @@ JSGAME.GAMEPADS = {
 	analogToDigital_withDeadzone : function(number, deadzone){
 		let sign       = Math.sign(number) ; // Will be -1, 0, or 1.
 		let abs        = Math.abs(number) ;
-		let inDeadzone = ! (0 + abs > deadzone) ? true : false ;
+		let inDeadzone = (0 + abs > deadzone) ? false : true ;
 
 		// No value or value within the deadzone?
 		if( abs==0 || inDeadzone){ return 0; }
@@ -1223,7 +1223,7 @@ JSGAME.GAMEPADS = {
 		// gp_obj provides the custom values as well as the gamepad state.
 		let map     = gp_obj.btnMap.btnMap;
 		let axes    = gp_obj.gamepad.axes;
-		let buttons = gp_obj.gamepad.buttons.map(function(d){ return d.value });
+		let buttons = gp_obj.gamepad.buttons.map(function(d){ return d.value; });
 
 		// Return these after populating them.
 		let uzeBin      = 0;
@@ -1319,15 +1319,15 @@ JSGAME.GAMEPADS = {
 
 		// Show/hide the gamepad config button based on the presence of a real gamepad.
 		if(srcGamepads.length){
-			if(! JSGAME.DOM["bottom_bar_gamepadDetected"].classList.contains("show")){
+			if(! JSGAME.DOM.bottom_bar_gamepadDetected.classList.contains("show")){
 				// console.log("system sees a gamepad!");
-				JSGAME.DOM["bottom_bar_gamepadDetected"].classList.add("show");
+				JSGAME.DOM.bottom_bar_gamepadDetected.classList.add("show");
 			}
 		}
 		else{
-			if(JSGAME.DOM["bottom_bar_gamepadDetected"].classList.contains("show")){
+			if(JSGAME.DOM.bottom_bar_gamepadDetected.classList.contains("show")){
 				// console.log("system does not see a gamepad!");
-				JSGAME.DOM["bottom_bar_gamepadDetected"].classList.remove("show");
+				JSGAME.DOM.bottom_bar_gamepadDetected.classList.remove("show");
 			}
 		}
 

@@ -5,18 +5,18 @@
 'use strict';
 
 // window.location.origin
-var thisPath   = window.location.pathname;
-var parentPath = thisPath.split("/");
+let thisPath   = window.location.pathname;
+let parentPath = thisPath.split("/");
 parentPath.pop(); parentPath.pop();
 parentPath = window.location.origin + (parentPath.join("/")) + "/" ;
 // console.log( parentPath );
 
-var requestAnimationFrame = window.requestAnimationFrame       || window.mozRequestAnimationFrame ||
+let requestAnimationFrame = window.requestAnimationFrame       || window.mozRequestAnimationFrame ||
 							window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
-var cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+let cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
 
-var app = {};
-var JSGAME={
+let app = {};
+let JSGAME={
 	PRELOAD    : {} ,
 	FLAGS      : {} ,
 	SHARED     : {} ,
@@ -31,7 +31,7 @@ var JSGAME={
 		"times"  : {} ,
 	},
 };
-var core = {
+let core = {
 	SETTINGS   : {} , // Core kernel settings.
 	DOM        : {} , // DOM cache.
 	debug      : {} , // Holds DOM specific to debugging.
@@ -44,7 +44,7 @@ var core = {
 };
 core.FUNCS.graphics = {};
 
-var game={};
+let game={};
 
 JSGAME.PRELOAD.PHP_VARS = {
 	"gamelist_json"     : null ,

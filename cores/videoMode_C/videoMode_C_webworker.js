@@ -14,7 +14,7 @@ self.onmessage = function(event) {
 		// Unmatched function.
 		default     : { break; }
 	}
-}
+};
 
 function colorswaps(event){
 	//
@@ -33,7 +33,7 @@ function colorswaps(event){
 
 			//  Create views.
 			let img_view8  = new Uint8ClampedArray(img_buff) ;
-			var img_view32 = new Uint32Array(img_buff);
+			let img_view32 = new Uint32Array(img_buff);
 
 			// Get the number of bytes to read through.
 			let len = (VRAM_entry.w * VRAM_entry.h) * 4;
@@ -58,10 +58,10 @@ function colorswaps(event){
 
 					// Color match?
 					let match = (
-						red      == lookFor_red
-						&& green == lookFor_green
-						&& blue  == lookFor_blue
-						&& alpha == lookFor_alpha
+						red   == lookFor_red &&
+						green == lookFor_green &&
+						blue  == lookFor_blue  &&
+						alpha == lookFor_alpha
 					) ? true : false;
 
 					// Act upon matches.
@@ -136,7 +136,7 @@ function colorswaps(event){
 
 	// Return the data.
 	self.postMessage(msg, transferList);
-};
+}
 
 function fade(event){
 	// Get the dimensions.
@@ -146,16 +146,16 @@ function fade(event){
 	let h = event.data.h ;
 
 	// Get the max for red, green, and blue from the passed fade_record.
-	let maxRed   = event.data["maxRed"]   / 100;
-	let maxGreen = event.data["maxGreen"] / 100;
-	let maxBlue  = event.data["maxBlue"]  / 100;
+	let maxRed   = event.data.maxRed   / 100;
+	let maxGreen = event.data.maxGreen / 100;
+	let maxBlue  = event.data.maxBlue  / 100;
 
 	//  Get handle to the provided image buffer.
 	let img_buff = event.data.img_buff ;
 
 	//  Create views.
 	let img_view8  = new Uint8ClampedArray(img_buff) ;
-	var img_view32 = new Uint32Array(img_buff);
+	let img_view32 = new Uint32Array(img_buff);
 
 	// Get the number of bytes to read through.
 	let len = (w * h) * 4;
@@ -210,9 +210,10 @@ function fade(event){
 		"h"                 : h ,
 	};
 
+	// let transferList = [];
 	let transferList = [ img_buff ];
 
 	// Return the data.
 	self.postMessage(msg, transferList);
 
-};
+}

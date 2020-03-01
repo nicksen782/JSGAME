@@ -213,6 +213,40 @@ function combineFiles_typeByKey($keys){
 	else             { return $output;     }
 }
 
+function getLastUpdate(){
+	$latestVersion = trim( shell_exec(" find . -type f -printf '%CY-%Cm-%Cd %CH:%CM:00 (%CZ) %p\n'| sort -n | tail -n1 ") );
+	// 2020-02-28 19:21:00 (EST) ./index_p.php
+
+	$data = explode(" ", $latestVersion);
+	$date     = trim( $data[0] ) ;
+	$time     = trim( $data[1] ) ;
+	$tz       = trim( $data[2] ) ;
+	$file     = trim( $data[3] ) ;
+	$datetime = ($date . " " . $time) ;
+	$today      = date_create( date("Y-m-d H:i:s") );
+	$lastUpdate = date_create( date("Y-m-d H:i:s", strtotime( $datetime )) );
+
+	$file_lastUpdate      = $date . " " . $time . " " . $tz;
+	$file_lastUpdate_name = $file ;
+
+	$age=date_diff($today, $lastUpdate);
+	$age =
+		( ($age->y !=0) ? ($age->y . " Years, "  ) : "") .
+		( ($age->m !=0) ? ($age->m . " Months, " ) : "") .
+		( ($age->d !=0) ? ($age->d . " Days, "   ) : "") .
+		( ($age->h !=0) ? ($age->h . " Hours, "  ) : "") .
+		( ($age->i !=0) ? ($age->i . " Minutes, ") : "") .
+		( ($age->s !=0) ? ($age->s . " Seconds"  ) : "")
+	;
+
+	//
+	return [
+		"file_lastUpdate"      => $file_lastUpdate      ,
+		"file_lastUpdate_name" => $file_lastUpdate_name ,
+		"age"                  => $age                  ,
+	];
+};
+
 // Used when JSGAME loads.
 function init(){
 	global $_appdir;
@@ -222,6 +256,13 @@ function init(){
 	$outputText_errors = "";
 
 	$outputText .= "'use strict'; \n";
+
+	// Get the data for the last updated file.
+	$data = getLastUpdate();
+	$file_lastUpdate      = $data["file_lastUpdate"] ;
+	$file_lastUpdate_name = $data["file_lastUpdate_name"] ;
+	$age                  = $data["age"] ;
+
 	$outputText .= "// ******************************************** \n";
 	$outputText .= "// -------------------------------------------- \n";
 	$outputText .= "\n";
@@ -291,11 +332,14 @@ function init(){
 	foreach($qs as $k => $v){ $qs[$k] = correctDataTypes($qs[$k]); }
 
 	// These values will be copied to JavaScript. (There will be more.)
-	$PHP_VARS["queryString"]  = $qs                   ; // The query string provided.
-	$PHP_VARS['gamename']     = $qs['game']           ;
+	$PHP_VARS["queryString"]  = $qs                    ; // The query string provided.
+	$PHP_VARS['gamename']     = $qs['game']            ;
 	$PHP_VARS['debug']        = $debug  ? true : false ;
 	$PHP_VARS['hidden']       = $hidden ? true : false ;
-	$PHP_VARS['combine']      = $combine              ;
+	$PHP_VARS['combine']      = $combine               ;
+	$PHP_VARS['file_lastUpdate']      = trim("$file_lastUpdate"     ) ;
+	$PHP_VARS['file_lastUpdate_name'] = trim("$file_lastUpdate_name") ;
+	$PHP_VARS['age']                  = trim("$age"                 ) ;
 
 	// ***************************************
 	//  FIND AND LOAD THE gamelist.json FILE.

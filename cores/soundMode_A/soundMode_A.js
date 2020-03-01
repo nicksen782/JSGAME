@@ -9,7 +9,7 @@ core.FUNCS.audio.TODO_pauseAllSounds
 
 */
 
-core.ASSETS.audio     = {} , // Audio lookup to the audio elements and some extra data.
+core.ASSETS.audio     = {} ; // Audio lookup to the audio elements and some extra data.
 core.FUNCS.audio      = {} ; // Functions for audio.
 core.AUDIO            = {} ; // Audio elements and some extra data.
 
@@ -30,22 +30,22 @@ core.FUNCS.audio.init = function(){
 
 					// let gamedir     = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'].replace("../", "");
 					let audio_proms = [];
-					core.AUDIO['elems']          = {};
-					core.ASSETS.audio['lookups'] = {};
+					core.AUDIO.elems          = {};
+					core.ASSETS.audio.lookups = {};
 
-					let mp3_files_len = JSGAME.PRELOAD.gamesettings_json['mp3_files'].length;
+					let mp3_files_len = JSGAME.PRELOAD.gamesettings_json.mp3_files.length;
 					for(let i=0; i<mp3_files_len; i+=1){
-						let d = JSGAME.PRELOAD.gamesettings_json['mp3_files'][i];
-						let rel_url = JSGAME.PRELOAD.gameselected_json['gamedir'] + "/"+ d.fileurl;
+						let d = JSGAME.PRELOAD.gamesettings_json.mp3_files[i];
+						let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ d.fileurl;
 						// console.log("+--------- mp3 file:", rel_url, JSGAME.PRELOAD.gameselected_json['gamedir'], d);
 
 						// Add entry to the lookup table.
-						d['names'].forEach(function(dd){
+						d.names.forEach(function(dd){
 							let audioLookup = {
 								"key"  : d.key  ,
 								"type" : d.type ,
-							}
-							core.ASSETS.audio['lookups'][ dd ] = audioLookup;
+							};
+							core.ASSETS.audio.lookups[ dd ] = audioLookup;
 						});
 
 						// Get the audio file as-is.
@@ -82,12 +82,12 @@ core.FUNCS.audio.init = function(){
 										let str = ["rej_in: ", JSON.stringify(err)];
 										throw Error(str);
 									}
-								)
+								);
 							})
 						);
 
 						// audioElem.src = gamedir + "/" + d['fileurl'];
-						core.AUDIO['elems'][ d.key ] = audioElem;
+						core.AUDIO.elems[ d.key ] = audioElem;
 					}
 
 					Promise.all(audio_proms)
@@ -95,8 +95,8 @@ core.FUNCS.audio.init = function(){
 							function(){
 								JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_soundsSetup_mp3","END");
 								res_soundsSetup_mp3("RESOLVED: soundsSetup_mp3");
-							}
-							,function(err){
+							},
+							function(err){
 								console.error("ERROR: Some promises may not have resolved. ", err);
 								JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_soundsSetup_mp3","END");
 								rej_soundsSetup_mp3("REJECTED: soundsSetup_mp3");
@@ -230,7 +230,7 @@ core.FUNCS.audio.init = function(){
 				JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_load_midi_bin"   , "START");
 
 				// Determine the relative filepath to the file.
-				let rel_url = JSGAME.PRELOAD.gameselected_json['gamedir'] + "/"+ JSGAME.PRELOAD.gamesettings_json['midi_bin'];
+				let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ JSGAME.PRELOAD.gamesettings_json.midi_bin;
 
 				// Each file download is a promise. Keep an array of the promises.
 				let proms = [];
@@ -253,9 +253,9 @@ core.FUNCS.audio.init = function(){
 								throw Error(str);
 							}
 						)
-						.finally(function(){  });;
-					}
-					,function(err){
+						.finally(function(){  });
+					},
+					function(err){
 						rej_load_midi_bin();
 
 						let str = ["rej_load_midi_bin: ", JSON.stringify(err)];
@@ -305,7 +305,7 @@ core.FUNCS.audio.init = function(){
 
 				let midi_synths;
 
-				if(JSGAME.PRELOAD.gamesettings_json['midi_synths']){ midi_synths = Object.keys( JSGAME.PRELOAD.gamesettings_json['midi_synths'] ); }
+				if(JSGAME.PRELOAD.gamesettings_json.midi_synths){ midi_synths = Object.keys( JSGAME.PRELOAD.gamesettings_json.midi_synths ); }
 				else{ midi_synths = []; }
 
 				// new WebAudioTinySynth( { "quality":0, "useReverb":false, "voices":16 } ) ;
@@ -317,7 +317,7 @@ core.FUNCS.audio.init = function(){
 							// Get the key.
 							let key = midi_synths[i];
 							// Get the record.
-							let rec = JSGAME.PRELOAD.gamesettings_json['midi_synths'][key];
+							let rec = JSGAME.PRELOAD.gamesettings_json.midi_synths[key];
 							// Get the used value.
 							let used = rec.used;
 							// Will this be used or skipped?
@@ -361,8 +361,8 @@ core.FUNCS.audio.init = function(){
 
 						// Resolve the outer Promise.
 						res_setup_tinysynth();
-					}
-					,function(err){
+					},
+					function(err){
 						rej_setup_tinysynth();
 
 						let str = ["rej_setup_tinysynth: ", JSON.stringify(err)];
@@ -418,8 +418,8 @@ core.FUNCS.audio.init = function(){
 		};
 
 		let outerProms = [];
-		if( JSGAME.PRELOAD.gamesettings_json['mp3_files'] ){ outerProms.push( sounds_mp3 .soundsSetup_mp3 () ); }
-		if( JSGAME.PRELOAD.gamesettings_json['midi_bin']  ){ outerProms.push( sounds_midi.soundsSetup_midi() ); }
+		if( JSGAME.PRELOAD.gamesettings_json.mp3_files ){ outerProms.push( sounds_mp3 .soundsSetup_mp3 () ); }
+		if( JSGAME.PRELOAD.gamesettings_json.midi_bin  ){ outerProms.push( sounds_midi.soundsSetup_midi() ); }
 
 		Promise.all(outerProms)
 		.then(
@@ -460,7 +460,7 @@ core.FUNCS.audio.cancelAllSounds_mp3 = function(type){
 		return ;
 	}
 
-	let keys = Object.keys( core.AUDIO['elems'] );
+	let keys = Object.keys( core.AUDIO.elems );
 
 	let d;
 	let len = keys.length;
@@ -471,13 +471,13 @@ core.FUNCS.audio.cancelAllSounds_mp3 = function(type){
 		// Turn off either the specified type or all depending on what was specified.
 		if(d.type==type || type=="all"){
 			// Abort if the sound was never used ...
-			if(core.AUDIO['elems'][d].elem==undefined){ return; }
+			if(core.AUDIO.elems[d].elem==undefined){ return; }
 
 			// Pause the sound.
-			core.AUDIO['elems'][d].pause();
+			core.AUDIO.elems[d].pause();
 
 			// Reset the time index.
-			core.AUDIO['elems'][d].elem.currentTime=0;
+			core.AUDIO.elems[d].elem.currentTime=0;
 		}
 	}
 
@@ -487,11 +487,11 @@ core.FUNCS.audio.playSound_mp3 = function(soundKey, retrigger, volume){
 	// core.FUNCS.audio.playSound_mp3("payfee1", true, 1.0);
 
 	// If volume or retrigger where not specified then provide default values.
-	if(volume    == undefined){ volume=1.0;     };
-	if(retrigger == undefined){ retrigger=true; };
+	if(volume    == undefined){ volume=1.0;     }
+	if(retrigger == undefined){ retrigger=true; }
 
 	// Actual audio elements are found here:
-	// core.AUDIO['elems']
+	// core.AUDIO.elems
 
 	// Available sounds are setup here: core.ASSETS.audio.lookups.
 	// This function uses different names that are unlikely to change in the code.
@@ -499,7 +499,7 @@ core.FUNCS.audio.playSound_mp3 = function(soundKey, retrigger, volume){
 
 	let playSound = function(soundKey, retrigger, volume){
 		// Get the src value.
-		let elem = core.AUDIO['elems'][soundKey];
+		let elem = core.AUDIO.elems[soundKey];
 
 		// If the src is invalid, bail out.
 		if(!elem) {
@@ -558,7 +558,7 @@ core.FUNCS.audio.resume_midi = function(synthKey){
 
 	let synth = core.AUDIO.midiSynths[synthKey];
 	if(! synth.getPlayStatus().play ){ synth.playMIDI(); }
-}
+};
 // (MIDI)
 core.FUNCS.audio.stop_midi = function(synthKey, resetPosition){
 	if(synthKey==""){ return; }
@@ -568,7 +568,7 @@ core.FUNCS.audio.stop_midi = function(synthKey, resetPosition){
 		if(resetPosition){ synth.locateMIDI(0); }
 		synth.stopMIDI();
 	}
-}
+};
 // (MIDI)
 core.FUNCS.audio.play_midi = function(synthKey, soundKey, loop, vol){
 	if(synthKey==""){ return; }
@@ -577,13 +577,13 @@ core.FUNCS.audio.play_midi = function(synthKey, soundKey, loop, vol){
 	if(vol  == undefined){ vol  = 1.0; }
 
 	let synth    = core.AUDIO.midiSynths[synthKey];
-	let midiData = core.AUDIO.midiData[soundKey]["data"]
+	let midiData = core.AUDIO.midiData[soundKey].data;
 
 	synth.masterVol=vol;
 	synth.setLoop(loop);
 	synth.loadMIDI( midiData );
 	synth.playMIDI();
-}
+};
 
 // (MIDI) Cancel all sounds (can also reset the position to 0.)
 core.FUNCS.audio.stopAllSounds_midi = function(resetPosition){
@@ -610,8 +610,8 @@ core.FUNCS.audio.stopAllSounds_midi = function(resetPosition){
 core.FUNCS.audio.changeMasterVolume = function(newVol){
 	// Change the master volume value.
 	JSGAME.SHARED.masterVolume=newVol;
-	JSGAME.DOM["masterVolumeSlider"].value=newVol;
-	JSGAME.DOM["masterVolumeSlider"].title=newVol;
+	JSGAME.DOM.masterVolumeSlider.value=newVol;
+	JSGAME.DOM.masterVolumeSlider.title=newVol;
 
 	// MP3 volume is already handled whenever a sound is started.
 
@@ -636,10 +636,10 @@ core.FUNCS.audio.TODO_pauseAllSounds = function(){
 	let keys2 = Object.keys(core.AUDIO.elems);
 	for(let i=0; i<keys2.length; i+=1){
 		let elem = core.AUDIO.elems[ keys2[i] ];
-		// core.AUDIO['elems'].tick.readyState
-		// core.AUDIO['elems'].tick.duration
-		// core.AUDIO['elems'].tick.currentTime
-		// core.AUDIO['elems'].tick.paused
+		// core.AUDIO.elems.tick.readyState
+		// core.AUDIO.elems.tick.duration
+		// core.AUDIO.elems.tick.currentTime
+		// core.AUDIO.elems.tick.paused
 	}
 
 };
@@ -662,9 +662,9 @@ core.FUNCS.audio.TODO_resumeAllSounds = function(){
 	let keys2 = Object.keys(core.AUDIO.elems);
 	for(let i=0; i<keys2.length; i+=1){
 		let elem = core.AUDIO.elems[ keys2[i] ];
-		// core.AUDIO['elems'].tick.readyState
-		// core.AUDIO['elems'].tick.duration
-		// core.AUDIO['elems'].tick.currentTime
-		// core.AUDIO['elems'].tick.paused
+		// core.AUDIO.elems.tick.readyState
+		// core.AUDIO.elems.tick.duration
+		// core.AUDIO.elems.tick.currentTime
+		// core.AUDIO.elems.tick.paused
 	}
 };

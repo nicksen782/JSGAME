@@ -21,7 +21,7 @@ JSGAME.GUI={
 			specifiedPanel.classList.add("show");
 
 			// Dim the background.
-			JSGAME.DOM["entireBodyDiv"].classList.add("show");
+			JSGAME.DOM.entireBodyDiv.classList.add("show");
 
 			// Set the clicked button as active.
 			if(elem){ elem.classList.add("active"); }
@@ -34,7 +34,7 @@ JSGAME.GUI={
 	// Hide all panels and deselect the debug buttons.
 	hideModals : function(){
 		// Undim the background.
-		JSGAME.DOM["entireBodyDiv"].classList.remove("show");
+		JSGAME.DOM.entireBodyDiv.classList.remove("show");
 
 		// Hide panels.
 		let modals = document.querySelectorAll('.modals');
@@ -51,7 +51,7 @@ JSGAME.GUI={
 	// Change the game.
 	changeGame : function(gamestring){
 		// Read in some values from RAM/DOM.
-		let gamepads  = ! JSGAME.DOM["gameControls"].classList.contains("hide") ;
+		let gamepads  = ! JSGAME.DOM.gameControls.classList.contains("hide") ;
 		let debug     = document.getElementById("debug_mode").checked ? true : false;
 		let qsFromPHP = JSGAME.PRELOAD.PHP_VARS.queryString;
 
@@ -63,7 +63,7 @@ JSGAME.GUI={
 			"mastervol" : debug && [undefined, "undefined"].indexOf(qsFromPHP.mastervol) == -1 ? qsFromPHP.mastervol                      : "" ,
 			"combine"   : debug && [undefined, "undefined"].indexOf(qsFromPHP.combine)   == -1 ? JSON.stringify(qsFromPHP.combine,null,0) : "" ,
 		};
-		keys = Object.keys(vals);
+		let keys = Object.keys(vals);
 
 		// Create the querystring.
 		let qs="";
@@ -84,7 +84,7 @@ JSGAME.GUI={
 	},
 	// Reload the game (whole page.)
 	reloadGame : function(){
-		JSGAME.GUI.changeGame( JSGAME.DOM["gameSelector"].value );
+		JSGAME.GUI.changeGame( JSGAME.DOM.gameSelector.value );
 	},
 
 	// *** USER GAME INPUT ***
@@ -92,39 +92,39 @@ JSGAME.GUI={
 	// Show/hide the on-screen gamepads.
 	toggleGamepads      : function(){
 		// The gameControls.
-		let gameControls_hidden = JSGAME.DOM["gameControls"].classList.contains("hide") ;
+		let gameControls_hidden = JSGAME.DOM.gameControls.classList.contains("hide") ;
 		let DEBUG_DIV           = document.getElementById("DEBUG_DIV");
 
-		JSGAME.DOM["gameControls"].classList.add("top");
+		JSGAME.DOM.gameControls.classList.add("top");
 
 		// Are the game controls hidden?
 		if(gameControls_hidden){
 			// Make sure the inline_block class is applied to the site container.
-			JSGAME.DOM["siteContainerDiv"].classList.add("inline_block");
+			JSGAME.DOM.siteContainerDiv.classList.add("inline_block");
 
 			// Remove the vertical alignment of the body.
 			// document.body.classList.remove("verticalCenter");
 
 			// Show the game controls.
-			JSGAME.DOM["gameControls"].classList.remove("hide");
+			JSGAME.DOM.gameControls.classList.remove("hide");
 
 			// Show the side div
-			JSGAME.DOM["sideDiv"].classList.remove("hide");
+			JSGAME.DOM.sideDiv.classList.remove("hide");
 
 		}
 		// Are the game controls visible?
 		else         {
 			// Do we remove the inline_block class from the site container?
-			if(!DEBUG_DIV){ JSGAME.DOM["siteContainerDiv"].classList.remove("inline_block"); }
+			if(!DEBUG_DIV){ JSGAME.DOM.siteContainerDiv.classList.remove("inline_block"); }
 
 			// Add the vertical alignment of the body.
 			// document.body.classList.add("verticalCenter");
 
 			// Hide the game controls.
-			JSGAME.DOM["gameControls"].classList.add("hide");
+			JSGAME.DOM.gameControls.classList.add("hide");
 
 			// Do we hide the side div?
-			if(!DEBUG_DIV){ JSGAME.DOM["sideDiv"].classList.add("hide"); }
+			if(!DEBUG_DIV){ JSGAME.DOM.sideDiv.classList.add("hide"); }
 		}
 
 	},
@@ -133,7 +133,7 @@ JSGAME.GUI={
 		// JSGAME.DOM["gamepads"]
 
 		// Add a listener for each gamepad button.
-		JSGAME.DOM["gamepads_svg"].forEach(
+		JSGAME.DOM.gamepads_svg.forEach(
 			function(d){
 				// Get DOM handles.
 				let buttons = d.querySelectorAll(".hover_group");
@@ -158,7 +158,7 @@ JSGAME.GUI={
 		document.addEventListener('keyup'  , JSGAME.GUI.document_keyup            , false);
 
 		// For mobile devices, convert touchend to click. (This will disable the double-tap to zoom feature.)
-		JSGAME.DOM["gameControls"].addEventListener("touchend", function(e){ e.preventDefault(); this.click(); }, true) ;
+		JSGAME.DOM.gameControls.addEventListener("touchend", function(e){ e.preventDefault(); this.click(); }, true) ;
 	},
 	// Used for user input when clicking on the gamepad buttons.
 	userInput           : function( type, btn, pad ){
@@ -219,7 +219,7 @@ JSGAME.GUI={
 		if(!JSGAME.FLAGS.gameReady){ return ; }
 
 		// Window is longer hidden.
-		if( document['hidden'] == false ){
+		if( document.hidden == false ){
 			// Run the normal gameloop (It should have been cancelled on pause.
 			// if(JSGAME.SHARED.raf_id == null && !JSGAME.FLAGS.manuallyPaused){
 			if(JSGAME.SHARED.raf_id == null){
@@ -227,25 +227,25 @@ JSGAME.GUI={
 					document.title = document.title.replace(/\(P\) /g, "");
 					JSGAME.FLAGS.windowIsFocused = true;
 					JSGAME.FLAGS.paused=false;
-					JSGAME.DOM["indicator"].classList.remove("show");
-					JSGAME.DOM["indicator_extraText"].classList.remove("show");
-					JSGAME.DOM["indicator"].innerText="";
+					JSGAME.DOM.indicator.classList.remove("show");
+					JSGAME.DOM.indicator_extraText.classList.remove("show");
+					JSGAME.DOM.indicator.innerText="";
 					game.gameloop();
 				}, 500);
 			}
 		}
 
 		// Window is now hidden.
-		else if( document['hidden'] == true ){
+		else if( document.hidden == true ){
 			// if(JSGAME.FLAGS.paused){ return; }
 
 			// Cancel the current requestAnimationFrame.
 			if(JSGAME.SHARED.raf_id != null){
 				JSGAME.FLAGS.windowIsFocused = false;
 				JSGAME.FLAGS.paused=true;
-				JSGAME.DOM["indicator"].classList.add("show");
-				JSGAME.DOM["indicator_extraText"].classList.remove("show");
-				JSGAME.DOM["indicator"].innerText="PAUSED";
+				JSGAME.DOM.indicator.classList.add("show");
+				JSGAME.DOM.indicator_extraText.classList.remove("show");
+				JSGAME.DOM.indicator.innerText="PAUSED";
 				let title = document.title.replace(/\(P\) /g, "");
 				document.title = "(P) " + title;
 
@@ -271,13 +271,13 @@ JSGAME.GUI={
 		};
 
 		if(newState=="OFF"){
-			JSGAME.DOM["indicator_preGame"].classList.remove("show");
-			JSGAME.DOM["indicator_preGame"].innerText="";
+			JSGAME.DOM.indicator_preGame.classList.remove("show");
+			JSGAME.DOM.indicator_preGame.innerText="";
 
 		}
 		if(newState=="ON"){
-			JSGAME.DOM["indicator_preGame"].classList.add("show");
-			JSGAME.DOM["indicator_preGame"].innerText=textObj[msgKey];
+			JSGAME.DOM.indicator_preGame.classList.add("show");
+			JSGAME.DOM.indicator_preGame.innerText=textObj[msgKey];
 		}
 
 	},
@@ -292,9 +292,9 @@ JSGAME.GUI={
 			// Cancel the current requestAnimationFrame.
 			JSGAME.SHARED.cancel_gameloop();
 
-			JSGAME.DOM["indicator"].classList.add("show");
-			JSGAME.DOM["indicator_extraText"].classList.remove("show");
-			JSGAME.DOM["indicator"].innerText="PAUSED";
+			JSGAME.DOM.indicator.classList.add("show");
+			JSGAME.DOM.indicator_extraText.classList.remove("show");
+			JSGAME.DOM.indicator.innerText="PAUSED";
 
 			// if( app.GUI.settings.debug ){
 				// app.game.code._DEBUG_.populateDebugData_funcs.displayVars();
@@ -306,9 +306,9 @@ JSGAME.GUI={
 			JSGAME.FLAGS.paused         = false;
 			JSGAME.FLAGS.manuallyPaused = false;
 
-			JSGAME.DOM["indicator"].classList.remove("show");
-			JSGAME.DOM["indicator_extraText"].classList.remove("show");
-			JSGAME.DOM["indicator"].innerText="";
+			JSGAME.DOM.indicator.classList.remove("show");
+			JSGAME.DOM.indicator_extraText.classList.remove("show");
+			JSGAME.DOM.indicator.innerText="";
 
 			// Run the normal gameloop.
 			game.gameloop();
@@ -323,21 +323,21 @@ JSGAME.GUI={
 
 		// Choose the output canvas to display fullscreen. If it is not available then use the gameCanvas_DIV.
 		try{
-			elem = JSGAME.DOM["siteContainerDiv"];
+			elem = JSGAME.DOM.siteContainerDiv;
 			// elem = core.DOM['gameCanvas_DIV'];
 			// elem = core.GRAPHICS.canvas.OUTPUT;
-			if(!elem){ elem = core.DOM['gameCanvas_DIV']; }
+			if(!elem){ elem = core.DOM.gameCanvas_DIV; }
 		}
-		catch(e){ elem = core.DOM['gameCanvas_DIV']; }
+		catch(e){ elem = core.DOM.gameCanvas_DIV; }
 
 		// Go to fullscreen.
 		if(!(
-			   document.fullscreen              // Chrome
-			|| document.fullscreenElement       // Chrome
-			|| document.webkitFullscreenElement // Chrome
-			|| document.msFullscreenElement     // Edge/IE
-			|| document.mozFullScreenElement    // Firefox
-			|| window  .fullScreen              // Firefox
+			document.fullscreen              || // Chrome
+			document.fullscreenElement       || // Chrome
+			document.webkitFullscreenElement || // Chrome
+			document.msFullscreenElement     || // Edge/IE
+			document.mozFullScreenElement    || // Firefox
+			window  .fullScreen                 // Firefox
 		))
 		{
 			let prom_res=function(res){
@@ -352,18 +352,18 @@ JSGAME.GUI={
 				throw Error(str);
 			};
 
-			if      (elem.requestFullscreen      ) { elem.requestFullscreen()      .then( prom_res, prom_err );       ; } // Standard
-			else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen().then( prom_res, prom_err ); ; } // Chrome
-			else if (elem.mozRequestFullScreen   ) { elem.mozRequestFullScreen()   .then( prom_res, prom_err );    ; } // Firefox
-			else if (elem.msRequestFullscreen    ) { elem.msRequestFullscreen()    .then( prom_res, prom_err );     ; } // IE11
+			if      (elem.requestFullscreen      ) { elem.requestFullscreen()      .then( prom_res, prom_err ); } // Standard
+			else if (elem.webkitRequestFullscreen) { elem.webkitRequestFullscreen().then( prom_res, prom_err ); } // Chrome
+			else if (elem.mozRequestFullScreen   ) { elem.mozRequestFullScreen()   .then( prom_res, prom_err ); } // Firefox
+			else if (elem.msRequestFullscreen    ) { elem.msRequestFullscreen()    .then( prom_res, prom_err ); } // IE11
 		}
 
 		// Exit fullscreen.
 		else{
 			let prom_res=function(res){
 				setTimeout(function(){
-					console.log("full screen complete. Now returning canvas scale.")
-					JSGAME.SHARED.canvasResize( JSGAME.DOM["canvasScaleSlider"].value );
+					console.log("full screen complete. Now returning canvas scale.");
+					JSGAME.SHARED.canvasResize( JSGAME.DOM.canvasScaleSlider.value );
 				},75);
 			};
 			let prom_err=function(err){

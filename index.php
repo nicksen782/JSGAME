@@ -4,6 +4,9 @@
 <head>
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="description" content="Gaming with JavaScript and Canvas.">
+	<meta name="author" content="Nickolas Andersen (nicksen782)">
 
 	<!-- <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" /> -->
 	<!-- <meta http-equiv="Pragma" content="no-cache" /> -->

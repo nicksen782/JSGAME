@@ -35,14 +35,14 @@ window.onload=function(){
 		};
 		let addHTML = function(src, elem){
 			return new Promise(function(res,rej){
-				var finished = function(data) {
+				let finished = function(data) {
 					finished=null;
 					error=null;
 					let resp = this.responseText ;
 					elem.innerHTML+=resp;
 					res( resp );
 				};
-				var error    = function(data) {
+				let error    = function(data) {
 					finished=null;
 					error=null;
 					console.log("getFile_fromUrl: error:", this, data);
@@ -51,14 +51,14 @@ window.onload=function(){
 						xhr: xhr
 					});
 				};
-				var xhr = new XMLHttpRequest();
-				xhr.responseType = "text"
+				let xhr = new XMLHttpRequest();
+				xhr.responseType = "text";
 				xhr.addEventListener("load", finished);
 				xhr.addEventListener("error", error);
 				xhr.open(
 					"GET", // Type of method (GET/POST)
-					src    // Destination
-				, true);
+					src,    // Destination
+					true);
 				xhr.send();
 			});
 		};
@@ -154,7 +154,7 @@ window.onload=function(){
 					let target = this.getAttribute("target");
 					console.log(href, target);
 					window.open(href, target);
-				}
+				};
 
 				// Create the left column (title)
 				let navrow_left_div  = document.createElement("div");
@@ -267,12 +267,12 @@ window.onload=function(){
 		}
 
 		// Add the author information:
-		if( JSGAME.PRELOAD.PHP_VARS["authors"] ){
+		if( JSGAME.PRELOAD.PHP_VARS.authors ){
 			let bot_authors = document.querySelector("#bot_authors table");
 			let frag=document.createDocumentFragment();
 			// console.log( JSGAME.PRELOAD.PHP_VARS["authors"] );
-			for(let i=0; i<JSGAME.PRELOAD.PHP_VARS["authors"].length; i+=1){
-				let rec = JSGAME.PRELOAD.PHP_VARS["authors"][i];
+			for(let i=0; i<JSGAME.PRELOAD.PHP_VARS.authors.length; i+=1){
+				let rec = JSGAME.PRELOAD.PHP_VARS.authors[i];
 				if(!rec.show){ continue; }
 				let tr=document.createElement("tr");
 				let td0=document.createElement("td"); tr.appendChild(td0);
@@ -308,10 +308,10 @@ window.onload=function(){
 		}
 		// Do these if a game was selected.
 		if(gamename && combine.v   == 0){
-			proms.push(addScript(JSGAME.PRELOAD.PHP_VARS["videokernel"]) );
+			proms.push(addScript(JSGAME.PRELOAD.PHP_VARS.videokernel) );
 		}
 		if(gamename && combine.a   == 0){
-			proms.push(addScript(JSGAME.PRELOAD.PHP_VARS["soundkernel"]) );
+			proms.push(addScript(JSGAME.PRELOAD.PHP_VARS.soundkernel) );
 		}
 		if(gamename && combine.gjs == 0){
 			// These need to be in order.
@@ -366,7 +366,7 @@ window.onload=function(){
 						proms.push(addHTML  (url, debug_container) ); break;
 					}
 					default     : { break; }
-				};
+				}
 			}
 		}
 
@@ -392,7 +392,7 @@ window.onload=function(){
 			function(err){ console.log("ERR:", err); }
 		);
 
-	})()
+	})();
 };
 
 // ===============================
