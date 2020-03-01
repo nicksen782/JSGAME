@@ -4,6 +4,11 @@
 
 'use strict';
 
+/**
+ * DOM cache.
+ * @summary DOM cache.
+ * @namespace JSGAME.DOM
+*/
 JSGAME.DOM={
 };
 

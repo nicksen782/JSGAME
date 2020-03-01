@@ -4,11 +4,23 @@
 
 'use strict';
 
+/**
+ * JSGAME GUI.
+ * @summary JSGAME GUI.
+ * @namespace JSGAME.GUI
+*/
 JSGAME.GUI={
 	// *** GUI NAV ***
 
-	// Show the indicated panel and select the indicated debug button.
-	showModal : function(panel_id, elem){
+	/**
+	 * @summary   Show the indicated panel and select the indicated debug button.
+	 * @memberof JSGAME.GUI
+	 * @param    {number} panel_id
+	 * @param    {DOM} elem
+	 *
+	 * @example JSGAME.GUI.showModal(panel_id, elem);
+	*/
+	showModal           : function(panel_id, elem){
 		// Attempt to get a DOM handle to the specified panel.
 		let specifiedPanel = document.getElementById(panel_id);
 
@@ -31,8 +43,14 @@ JSGAME.GUI={
 			console.log("panel not found!");
 		}
 	},
-	// Hide all panels and deselect the debug buttons.
-	hideModals : function(){
+
+	/**
+	 * @summary   Hide all panels and deselect the debug buttons.
+	 * @memberof JSGAME.GUI
+	 *
+	 * @example JSGAME.GUI.hideModals();
+	*/
+	hideModals          : function(){
 		// Undim the background.
 		JSGAME.DOM.entireBodyDiv.classList.remove("show");
 
@@ -48,8 +66,14 @@ JSGAME.GUI={
 		// 	debug_navButtons[i].classList.remove("active");
 		// }
 	},
-	// Change the game.
-	changeGame : function(gamestring){
+
+	/**
+	 * @summary Change the game.
+	 * @memberof JSGAME.GUI
+	 * @param {string} gamestring
+	 * @example JSGAME.GUI.changeGame(gamestring);
+	*/
+	changeGame          : function(gamestring){
 		// Read in some values from RAM/DOM.
 		let gamepads  = ! JSGAME.DOM.gameControls.classList.contains("hide") ;
 		let debug     = document.getElementById("debug_mode").checked ? true : false;
@@ -82,14 +106,23 @@ JSGAME.GUI={
 		// Redirect to the new game URL.
 		window.location.href = window.location.origin + window.location.pathname + qs;
 	},
-	// Reload the game (whole page.)
-	reloadGame : function(){
+
+	/**
+	 * @summary Reload the game (whole page.)
+	 * @memberof JSGAME.GUI
+	 * @example JSGAME.GUI.reloadGame();
+	*/
+	reloadGame          : function(){
 		JSGAME.GUI.changeGame( JSGAME.DOM.gameSelector.value );
 	},
 
 	// *** USER GAME INPUT ***
 
-	// Show/hide the on-screen gamepads.
+	/**
+	 * @summary Show/hide the on-screen gamepads.
+	 * @memberof JSGAME.GUI
+	 * @example JSGAME.GUI.toggleGamepads();
+	*/
 	toggleGamepads      : function(){
 		// The gameControls.
 		let gameControls_hidden = JSGAME.DOM.gameControls.classList.contains("hide") ;
@@ -128,7 +161,12 @@ JSGAME.GUI={
 		}
 
 	},
-	// On-screen gamepad/keyboard button listeners.
+
+	/**
+	 * @summary On-screen gamepad/keyboard button listeners.
+	 * @memberof JSGAME.GUI
+	 * @example JSGAME.GUI.gameInputListeners();
+	*/
 	gameInputListeners  : function(){
 		// JSGAME.DOM["gamepads"]
 
@@ -160,7 +198,15 @@ JSGAME.GUI={
 		// For mobile devices, convert touchend to click. (This will disable the double-tap to zoom feature.)
 		JSGAME.DOM.gameControls.addEventListener("touchend", function(e){ e.preventDefault(); this.click(); }, true) ;
 	},
-	// Used for user input when clicking on the gamepad buttons.
+
+	/**
+	 * @summary Used for user input when clicking on the gamepad buttons.
+	 * @memberof JSGAME.GUI
+	 * @param {*} type
+	 * @param {*} btn
+	 * @param {*} pad
+	 * @example JSGAME.GUI.userInput(type, btn, pad);
+	*/
 	userInput           : function( type, btn, pad ){
 		let thisButton;
 
@@ -190,7 +236,13 @@ JSGAME.GUI={
 		}
 
 	},
-	// Listen for a key to be pressed.
+
+	/**
+	 * @summary Listen for a key to be pressed.
+	 * @memberof JSGAME.GUI
+	 * @param {*} e
+	 * @example JSGAME.GUI.document_keydown(e);
+	*/
 	document_keydown    : function(e){
 		let index = JSGAME.consts.allowedKeys.indexOf(e.code) ;
 		if( index == -1){ return; }
@@ -198,7 +250,12 @@ JSGAME.GUI={
 			JSGAME.GUI.userInput("keydown", JSGAME.consts.allowedButtons[index] , 1);
 		}
 	},
-	// Listen for a key to be released.
+	/**
+	 * @summary Listen for a key to be released.
+	 * @memberof JSGAME.GUI
+	 * @param {*} e
+	 * @example JSGAME.GUI.document_keyup(e);
+	*/
 	document_keyup      : function(e){
 		let index = JSGAME.consts.allowedKeys.indexOf(e.code) ;
 		if( index == -1){ return; }
@@ -208,8 +265,11 @@ JSGAME.GUI={
 	},
 
 	// *** PAUSING ***
-
-	// Used to pause the game logic and drawing when the browser tab loses the focus.
+	/**
+	 * @summary Used to pause the game logic and drawing when the browser tab loses the focus.
+	 * @memberof JSGAME.GUI
+	 * @example JSGAME.GUI.visibilityChange();
+	*/
 	visibilityChange    : function(){
 		//
 		// BUG: If paused and then switched from tab... This doesn't unpause.
@@ -254,7 +314,14 @@ JSGAME.GUI={
 		}
 	},
 
-	preGame_indicator : function(msgKey, newState){
+	/**
+	 * @summary --
+	 * @memberof JSGAME.GUI
+	 * @param {*} msgKey
+	 * @param {*} newState
+	 * @example JSGAME.GUI.preGame_indicator(msgKey, newState);
+	*/
+	preGame_indicator   : function(msgKey, newState){
 		// JSGAME.GUI.preGame_indicator("jsgamesetup"  , "ON");
 		// JSGAME.GUI.preGame_indicator("nogame"       , "ON");
 		// JSGAME.GUI.preGame_indicator("loadingGame"  , "ON");
@@ -282,7 +349,11 @@ JSGAME.GUI={
 
 	},
 
-	// Sets the app.GUI.settings.manuallyPaused flag and cancels the requestAnimationFrame... or it restarts the game loop.
+	/**
+	 * @summary Sets the app.GUI.settings.manuallyPaused flag and cancels the requestAnimationFrame... or it restarts the game loop.
+	 * @memberof JSGAME.GUI
+	 * @example JSGAME.GUI.togglePause();
+	*/
 	togglePause         : function(){
 		// Pause if unpaused.
 		if(JSGAME.FLAGS.manuallyPaused==false){
@@ -315,9 +386,11 @@ JSGAME.GUI={
 		}
 	},
 
-	// *** FULLSCREEN ***
-
-	// Toggles full screen.
+	/**
+	 * @summary Toggles full screen.
+	 * @memberof JSGAME.GUI
+	 * @example JSGAME.GUI.togglefullscreen();
+	*/
 	togglefullscreen    : function(){
 		let elem;
 

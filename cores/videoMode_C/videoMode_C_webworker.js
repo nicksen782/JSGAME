@@ -36,7 +36,7 @@ function colorswaps(event){
 			let img_view32 = new Uint32Array(img_buff);
 
 			// Get the number of bytes to read through.
-			let len = (VRAM_entry.w * VRAM_entry.h) * 4;
+			let len = img_view8.byteLength;
 
 			// Go through the bytes of the view.
 			let i_32=0;
@@ -139,12 +139,6 @@ function colorswaps(event){
 }
 
 function fade(event){
-	// Get the dimensions.
-	let x = event.data.x ;
-	let y = event.data.y ;
-	let w = event.data.w ;
-	let h = event.data.h ;
-
 	// Get the max for red, green, and blue from the passed fade_record.
 	let maxRed   = event.data.maxRed   / 100;
 	let maxGreen = event.data.maxGreen / 100;
@@ -158,7 +152,8 @@ function fade(event){
 	let img_view32 = new Uint32Array(img_buff);
 
 	// Get the number of bytes to read through.
-	let len = (w * h) * 4;
+	// let len = (w * h) * 4;
+	let len = img_view8.byteLength;
 
 	let i_32=0;
 	for(let i=0; i<len; i+=4){
@@ -204,10 +199,10 @@ function fade(event){
 	let msg = {
 		"function"          : "fade"   ,
 		"finished_img_buff" : img_buff ,
-		"x"                 : x ,
-		"y"                 : y ,
-		"w"                 : w ,
-		"h"                 : h ,
+		"x"                 : event.data.x ,
+		"y"                 : event.data.y ,
+		"w"                 : event.data.w ,
+		"h"                 : event.data.h ,
 	};
 
 	// let transferList = [];

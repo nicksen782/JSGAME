@@ -4,15 +4,24 @@
 
 'use strict';
 
-//
+/**
+ * JSGAME INIT.
+ * @summary JSGAME INIT.
+ * @namespace JSGAME.INIT
+*/
 JSGAME.INIT={
 	// Detects little or big endianness for the browser.
 	endianness : {
 		isBigEndian    : new Uint8Array(new Uint32Array([0x12345678]).buffer)[0] === 0x12 ? true : false,
 		isLittleEndian : new Uint8Array(new Uint32Array([0x12345678]).buffer)[0] === 0x78 ? true : false,
 	},
-	// Detects if the user has performed actions capable of allowing audio autoplay.
-	detectUserInteraction : function(){
+	/**
+	 * @summary   Detects if the user has performed actions capable of allowing audio autoplay.
+	 * @memberof JSGAME.INIT
+	 *
+	 * @example JSGAME.INIT.detectUserInteraction();
+	*/
+	detectUserInteraction            : function(){
 		return new Promise(function(resolve,reject){
 			let audio = document.createElement("audio");
 			audio.src="snd/tick.mp3";
@@ -35,8 +44,14 @@ JSGAME.INIT={
 			}
 		});
 	},
-	// Add wait until user gesture restriction is removed.
-	addUserInteractionRestriction : function(){
+
+	/**
+	 * @summary   Add wait until user gesture restriction is removed.
+	 * @memberof JSGAME.INIT
+	 *
+	 * @example JSGAME.INIT.addUserInteractionRestriction();
+	*/
+	addUserInteractionRestriction    : function(){
 		// JSGAME.GUI.showPanel_internal("panel_gestureNeeded");
 		JSGAME.GUI.preGame_indicator("gestureNeeded", "ON");
 		JSGAME.FLAGS.hasUserInteractionRestriction=true;
@@ -59,7 +74,13 @@ JSGAME.INIT={
 		document.addEventListener('touchstart' , JSGAME.INIT.removeUserInteractionRestriction);
 		document.addEventListener('touchend'   , JSGAME.INIT.removeUserInteractionRestriction);
 	},
-	// Remove wait-until-gesture restriction.
+
+	/**
+	 * @summary   Remove wait-until-gesture restriction.
+	 * @memberof JSGAME.INIT
+	 * @param    {*} e
+	 * @example JSGAME.INIT.removeUserInteractionRestriction(e);
+	*/
 	removeUserInteractionRestriction : function(e){
 		if(!JSGAME.FLAGS.hasUserInteractionRestriction){ return; }
 
@@ -117,8 +138,13 @@ JSGAME.INIT={
 		);
 
 	},
-	// Check endianness, canloadgame, autoplay availability, provide some basic feedback on errors.
-	__PRE_INIT : function(){
+
+	/**
+	 * @summary   Check endianness, canloadgame, autoplay availability, provide some basic feedback on errors.
+	 * @memberof JSGAME.INIT
+	 * @example JSGAME.INIT.__PRE_INIT();
+	*/
+	__PRE_INIT                       : function(){
 		console.log("=======================================\n");
 		console.log( "JSGAME: file_lastUpdate      : ", JSGAME.PRELOAD.PHP_VARS.file_lastUpdate      );
 		console.log( "JSGAME: file_lastUpdate_name : ", JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name );
@@ -250,8 +276,13 @@ JSGAME.INIT={
 			}
 		}
 	},
-	// Configures JSGAME GUI for use and then starts the game code.
-	__LOADJSGAME : function() {
+
+	/**
+	 * @summary   Configures JSGAME GUI for use and then starts the game code.
+	 * @memberof JSGAME.INIT
+	 * @example JSGAME.INIT.__LOADJSGAME();
+	*/
+	__LOADJSGAME                     : function() {
 		console.log("LOADING JSGAME...");
 		// JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
 		// JSGAME.GUI.preGame_indicator("loadingGame", "ON");
@@ -360,8 +391,13 @@ JSGAME.INIT={
 		// When done.
 		JSGAME.INIT.__GAMESTART();
 	},
-	// Start the game.
-	__GAMESTART : function(){
+
+	/**
+	 * @summary  Start the game.
+	 * @memberof JSGAME.INIT
+	 * @example  JSGAME.INIT.__GAMESTART();
+	*/
+	__GAMESTART                      : function(){
 		console.log("LOADING GAME...");
 		// JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
 		JSGAME.GUI.preGame_indicator("loadingGame", "ON");

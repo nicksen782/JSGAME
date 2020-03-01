@@ -4,8 +4,27 @@
 
 'use strict';
 
+/**
+ * JSGAME SHARED.
+ * @summary JSGAME SHARED.
+ * @namespace JSGAME.SHARED
+*/
+
 // These functions can be used by JSGAME, the cores, and the game.
 JSGAME.SHARED={
+	// Holds the current button states for the gamepads.
+	buttons : {
+		// JSGAME.SHARED.buttons.btnHeld1
+		btnPrev1 : 0 , btnHeld1 : 0 , btnPressed1 : 0 , btnReleased1 : 0 ,
+		btnPrev2 : 0 , btnHeld2 : 0 , btnPressed2 : 0 , btnReleased2 : 0 ,
+	},
+
+	masterVolume : 75 , // This is the highest volume allowed.
+
+	// Last input states as read by JS Game.
+	LASTINPUT_P1 : 0 , // 0000000000000000
+	LASTINPUT_P2 : 0 , // 0000000000000000
+
 	// *** PERFORMANCE ***
 
 	// Function for handling time testing.
@@ -120,6 +139,7 @@ JSGAME.SHARED={
 			}, 500);
 		},
 	},
+
 	// Sets a new Frame Rate per Second value. Also calculates the average frames per second.
 	timing :{
 		delta    : 0 ,
@@ -144,6 +164,7 @@ JSGAME.SHARED={
 			JSGAME.SHARED.timing.delta    = null;
 		}
 	},
+
 	// Calculates the average frames per second.
 	fps : {
 		// colxi: https://stackoverflow.com/a/55644176/2731377
@@ -187,10 +208,16 @@ JSGAME.SHARED={
 			return this.value;
 		}
 	},
+
 	// Keeps the requestAnimationFrame id of the currently requested animation frame.
 	raf_id : null ,
 
-	// Parses the queryString in the url and returns the data as an object of key:value pairs.
+	/**
+	 * @summary   Parses the queryString in the url and returns the data as an object of key:value pairs.
+	 * @memberof JSGAME.SHARED
+	 *
+	 * @example JSGAME.SHARED.getQueryStringAsObj();
+	*/
 	getQueryStringAsObj              : function() {
 		// Nickolas Andersen (nicksen782)
 		// NOTE: May fail for values that are JSON encoded and/or also include "=" or "&" in the value.
@@ -226,7 +253,13 @@ JSGAME.SHARED={
 
 	// *** DISPLAY AND FILES ***
 
-	// Set the pixelated settings for a canvas.
+	/**
+	 * @summary   Set the pixelated settings for a canvas.
+	 * @memberof JSGAME.SHARED
+	 * @param    {canvas} canvas
+	 *
+	 * @example JSGAME.SHARED.setpixelated(canvas);
+	*/
 	setpixelated       : function(canvas){
 		// https://stackoverflow.com/a/13294650
 		// https://stackoverflow.com/a/32798277
@@ -243,7 +276,16 @@ JSGAME.SHARED={
 		// image-rendering: -webkit-optimize-contrast;
 		// -ms-interpolation-mode: nearest-neighbor;
 	},
-	// Get a file as-is via a url (optional compression.)
+
+	/**
+	 * @summary   Get a file as-is via a url (optional compression.)
+	 * @memberof JSGAME.SHARED
+	 * @param    {string} url
+	 * @param    {boolean} useGzip
+	 * @param    {string} responseType
+	 *
+	 * @example JSGAME.SHARED.getFile_fromUrl(url, useGzip, responseType);
+	*/
 	getFile_fromUrl                  : function(url, useGzip, responseType){
 		return new Promise(function(resolve, reject) {
 			let finished = function(data) {
@@ -316,7 +358,16 @@ JSGAME.SHARED={
 
 		});
 	},
-	// Converts an array buffer to data uri.
+
+	/**
+	 * @summary   Converts an array buffer to data uri.
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} buffer
+	 * @param    {*} type
+	 * @param    {*} callback
+	 *
+	 * @example JSGAME.SHARED.arrayBufferToBase64_datauri(buffer, type, callback);
+	*/
 	arrayBufferToBase64_datauri : function( buffer, type, callback ) {
 		// Works as a promise or with a callback function.
 		return new Promise(function(res,rej){
@@ -332,7 +383,13 @@ JSGAME.SHARED={
 		});
 	},
 
-	// Changes the dimensions of the containing DIV for the game canvas (Canvas has CSS dims at 100%.)
+	/**
+	 * @summary   Changes the dimensions of the containing DIV for the game canvas (Canvas has CSS dims at 100%.)
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} scale
+	 *
+	 * @example JSGAME.SHARED.canvasResize(scale);
+	*/
 	canvasResize : function(scale){
 		// Get the dimensions of the canvas.
 		let canvas_width  = core.GRAPHICS.canvas.OUTPUT.width  ;
@@ -354,7 +411,12 @@ JSGAME.SHARED={
 		JSGAME.DOM.canvasScaleSlider.title=scale;
 	},
 
-	// Uses the canvas to establish aspect ratio, resizes the gameCanvas_DIV to fit mainCenter.
+	/**
+	 * @summary   Uses the canvas to establish aspect ratio, resizes the gameCanvas_DIV to fit mainCenter.
+	 * @memberof JSGAME.SHARED
+	 *
+	 * @example JSGAME.SHARED.canvasResize_autofit();
+	*/
 	canvasResize_autofit : function(){
 		let dims1 = {
 			"siteContainerDiv" : JSGAME.DOM.siteContainerDiv.getBoundingClientRect() ,
@@ -400,29 +462,12 @@ JSGAME.SHARED={
 		core.DOM.gameCanvas_DIV.style.height = reduced_new_cont_height + "px" ;
 	},
 
-	// (unused)
-	autoAdjustVerticalCenter : function(){
-		if(!JSGAME.FLAGS.autoAdjustVerticalCenter_throttled){
-			// Set the "throttled" flag.
-			JSGAME.FLAGS.autoAdjustVerticalCenter_throttled = true;
-
-			// Set a timeout to clear the "throttled" flag.
-			setTimeout(function() { JSGAME.FLAGS.autoAdjustVerticalCenter_throttled = false; }, 500);
-
-			// Is there a vertical scroll bar?
-			let hasVScroll=window.innerHeight < document.body.clientHeight;
-
-			// Remove vertical centering.
-			if(hasVScroll){
-				document.body.classList.remove("verticalCenter");
-			}
-			// Add vertical centering.
-			else{
-				document.body.classList.add("verticalCenter");
-			}
-
-		}
-	},
+	/**
+	 * @summary   --
+	 * @memberof JSGAME.SHARED
+	 *
+	 * @example JSGAME.SHARED.canvasResize_autofit_onFullscreenResize();
+	*/
 	canvasResize_autofit_onFullscreenResize : function(){
 		if(!JSGAME.FLAGS.autoAdjustVerticalCenter_throttled){
 			let timeout = 250;
@@ -451,7 +496,13 @@ JSGAME.SHARED={
 		}
 	},
 
-	// Shows or hides the document based on mouseenter/mouseleave and the hidden setting.
+	/**
+	 * @summary   Shows or hides the document based on mouseenter/mouseleave and the hidden setting.
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} e
+	 *
+	 * @example JSGAME.SHARED.toggleDocumentHidden(e);
+	*/
 	toggleDocumentHidden : function(e){
 		// Get the event type.
 		let type = e.type;
@@ -466,7 +517,13 @@ JSGAME.SHARED={
 		}
 	},
 
-	// Global Error Handler - listener function.
+	/**
+	 * @summary   Global Error Handler - listener function.
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} event
+	 *
+	 * @example JSGAME.SHARED.listenerFunction(event);
+	*/
 	listenerFunction(event){
 		console.log("event.type:", event.type);
 		if(!JSGAME.FLAGS.errorThrown_stopReporting){
@@ -476,7 +533,18 @@ JSGAME.SHARED={
 		return false;
 	},
 
-	// Global Error Handler
+	/**
+	 * @summary   Global Error Handler
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} event
+	 * @param    {*} msg
+	 * @param    {*} url
+	 * @param    {*} lineNo
+	 * @param    {*} columnNo
+	 * @param    {*} error
+	 *
+	 * @example JSGAME.SHARED.GlobalErrorHandler(event, msg, url, lineNo, columnNo, error);
+	*/
 	GlobalErrorHandler : function(event, msg, url, lineNo, columnNo, error){
 		// console.log(
 		// 	"\n event   :", event    ,
@@ -649,6 +717,13 @@ JSGAME.SHARED={
 		event.preventDefault();
 	},
 
+	/**
+	 * @summary   Global Error Handler
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} extraText
+	 *
+	 * @example JSGAME.SHARED.stopGameAndshowErrorNotification(extraText);
+	*/
 	stopGameAndshowErrorNotification : function(extraText){
 		console.error("\nTHE GAME WAS STOPPED DUE TO ERROR!");
 
@@ -671,7 +746,13 @@ JSGAME.SHARED={
 		JSGAME.GUI.preGame_indicator("", "OFF");
 	},
 
-	// Prevent certain keys from shifting the window view.
+	/**
+	 * @summary   Prevent certain keys from shifting the window view.
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} e
+	 *
+	 * @example JSGAME.SHARED.preventScroll(e);
+	*/
 	preventScroll : function(e){
 		if(e.target==document.body){
 			switch(e.keyCode){
@@ -684,12 +765,12 @@ JSGAME.SHARED={
 		}
 	},
 
-	// *** INPUT ***
-
-	// Last input states as read by JS Game.
-	LASTINPUT_P1 : 0 , // 0000000000000000
-	LASTINPUT_P2 : 0 , // 0000000000000000
-	// Updates the real gamepads, and the onscreen/keyboard keypads.
+	/**
+	 * @summary   Updates the real gamepads, and the onscreen/keyboard keypads.
+	 * @memberof JSGAME.SHARED
+	 *
+	 * @example JSGAME.SHARED.getUserInputs();
+	*/
 	getUserInputs : function(){
 		let arrayRef = JSGAME.SHARED.buttons;
 
@@ -723,7 +804,15 @@ JSGAME.SHARED={
 		}
 
 	},
-	// Convenience function for checking button state.
+
+	/**
+	 * @summary   Convenience function for checking button state.
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} btnConst1
+	 * @param    {*} btnConst2
+	 *
+	 * @example JSGAME.SHARED.checkButton(btnConst1, btnConst2);
+	*/
 	checkButton : function(btnConst1, btnConst2){
 		// EXAMPLE USAGE: if( game.chkBtn              ("BTN_UP" , "btnPressed1") ) {}
 		// EXAMPLE USAGE: if( game.chkBtn              ("ANY"    , "btnPressed1") ) {}
@@ -739,30 +828,47 @@ JSGAME.SHARED={
 			return JSGAME.SHARED.buttons[btnConst2] ? true : false ;
 		}
 	},
-	// Holds the current button states for the gamepads.
-	buttons : {
-		// JSGAME.SHARED.buttons.btnHeld1
-		btnPrev1 : 0 , btnHeld1 : 0 , btnPressed1 : 0 , btnReleased1 : 0 ,
-		btnPrev2 : 0 , btnHeld2 : 0 , btnPressed2 : 0 , btnReleased2 : 0 ,
-	},
 
 	// *** UTILITY FUNCTIONS ***
 
-	// Accepts seconds (decimal or int). Returns number of frames for that quanity of seconds (rounded up) .
+	/**
+	 * @summary   Accepts seconds (decimal or int). Returns number of frames for that quanity of seconds (rounded up) .
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} seconds
+	 * @param    {*} rounding
+	 *
+	 * @example JSGAME.SHARED.secondsToFrames(seconds, rounding);
+	*/
 	secondsToFrames : function(seconds, rounding){
 		if(!rounding){ rounding="up"; }
 		if     (rounding=="up")  { return Math.ceil((core.SETTINGS.fps) * seconds); }
 		else if(rounding=="down"){ return Math.ceil((core.SETTINGS.fps) * seconds); }
 
 	},
-	// Get a random integer in the specified range.
+
+	/**
+	 * @summary   Get a random integer in the specified range.
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} min
+	 * @param    {*} max
+	 *
+	 * @example JSGAME.SHARED.getRandomInt_inRange(min, max);
+	*/
 	getRandomInt_inRange : function (min, max) {
 		min = (min << 0);
 		max = (max << 0);
 		return ((Math.random() * (max - min + 1)) + min) << 0;
 	},
 
-	// Update a value using a bit mask. (Per call can only turn "ON" or "OFF" bits. Not both.)
+	/**
+	 * @summary   Update a value using a bit mask. (Per call can only turn "ON" or "OFF" bits. Not both.)
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} src
+	 * @param    {*} mask
+	 * @param    {*} value
+	 *
+	 * @example JSGAME.SHARED.get_new_bitMask(src, mask, value);
+	*/
 	get_new_bitMask : function(src, mask, value){
 		// Example usage:
 		//  # To set an updated flags value (SPRITE_OFF set) for a sprite:
@@ -778,7 +884,17 @@ JSGAME.SHARED={
 		return newValue;
 	},
 
-	// Map number in one range into another range.
+	/**
+	 * @summary   Map number in one range into another range.
+	 * @memberof JSGAME.SHARED
+	 * @param    {*} in_num
+	 * @param    {*} in_min
+	 * @param    {*} in_max
+	 * @param    {*} out_min
+	 * @param    {*} out_max
+	 *
+	 * @example JSGAME.SHARED.map_range(in_num, in_min, in_max, out_min, out_max);
+	*/
 	map_range : function(in_num, in_min, in_max, out_min, out_max) {
 		// https://gist.github.com/xposedbones/75ebaef3c10060a3ee3b246166caab56
 
@@ -790,7 +906,12 @@ JSGAME.SHARED={
 		return (in_num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 	},
 
-	//
+	/**
+	 * @summary   --
+	 * @memberof JSGAME.SHARED
+	 *
+	 * @example JSGAME.SHARED.cancel_gameloop();
+	*/
 	cancel_gameloop   : function(){
 		// JSGAME.SHARED.cancel_gameloop();
 
@@ -798,17 +919,17 @@ JSGAME.SHARED={
 		JSGAME.SHARED.raf_id=null;
 	},
 
-	//
+	/**
+	 * @summary   --
+	 * @memberof JSGAME.SHARED
+	 *
+	 * @example JSGAME.SHARED.schedule_gameloop();
+	*/
 	schedule_gameloop : function(){
 		// JSGAME.SHARED.schedule_gameloop();
 
 		JSGAME.SHARED.raf_id = requestAnimationFrame( game.gameloop );
 	},
-
-	// *** MISC ***
-
-	// This is the highest volume allowed.
-	masterVolume : 75 ,
 };
 
 // =============================

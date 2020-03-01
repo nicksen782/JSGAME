@@ -96,7 +96,7 @@ core.GRAPHICS.WORKERS      = {
 						);
 
 						// Rotation? FLIP_X? FLIP_Y? (or none of those.)
-						let obj = core.GRAPHICS.FUNCS.INTERNAL.ROT_FLIPX_FLIPY(src_canvas, newVRAM);
+						let obj = _CGFI.ROT_FLIPX_FLIPY(src_canvas, newVRAM);
 						let dst_canvas = obj.canvas;
 						let dst_ctx    = obj.ctx   ;
 						let newX       = obj.newX  ;
@@ -126,7 +126,7 @@ core.GRAPHICS.WORKERS      = {
 						newVRAM.imgData        = undefined ;
 
 						// Place the tile.
-						core.GRAPHICS.FUNCS.INTERNAL.placeTile({
+						_CGFI.placeTile({
 							"mapWidth"      : (newVRAM.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
 							"mapHeight"     : (newVRAM.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
 							"newVRAM_entry" : newVRAM ,
@@ -175,6 +175,7 @@ core.GRAPHICS.WORKERS      = {
 	"w_colorswaps" :{
 		"queue"       : [] , // An array of arrays. Each outer array is for the same indexed worker.
 		"queuedCount" : 0  ,
+		"proms"       : [] ,
 	},
 
 	// Object for controlling whole-screen fades.
@@ -212,6 +213,8 @@ core.GRAPHICS.WORKERS      = {
 			{ b: 100, g: 100 , r: 100 } , // 12    11 111 111  3 7 7  , 255 , 0xFF
 			{ b: 100, g: 100 , r: 100 } , // 13    11 111 111  3 7 7  , 255 , 0xFF
 		],
+
+		"proms"       : [] ,
 	}
 };
 
@@ -237,27 +240,23 @@ core.GRAPHICS.performance  = {
 	"output_timings"  : [] ,
 };
 
-/**
- * @summary   Holds the core functions to this video mode.
- * @namespace "core.GRAPHICS.FUNCS"
-*/
 core.GRAPHICS.FUNCS        = {
 	/**
 	 * USER-ACCESSIBLE DRAW FUNCTIONS.
 	 * @summary   USER-ACCESSIBLE DRAW FUNCTIONS.
-	 * @namespace "core.GRAPHICS.FUNCS.USER"
+	 * @namespace core.GRAPHICS.FUNCS.USER
 	*/
 	USER : {
 		/**
 		 * @summary   Used to specify the draw position coords on the OUTPUT canvas.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
+		 * @memberof core.GRAPHICS.FUNCS.USER
 		 * @param    {number} x_offset Offset the drawing x position by this many pixels.
 		 * @param    {number} y_offset Offset the drawing y position by this many pixels.
 		 *
 		 * @example _CGFU.adjustOutputOffsets(8,8);   // Draw the OUTPUT down and to the right by 8 pixels.
 		 * @example _CGFU.adjustOutputOffsets(0,0);   // Return offsets to the default position.
 		 * @example _CGFU.adjustOutputOffsets(-8,-8); // Draw the OUTPUT up and to the left by 8 pixels.
-		 */
+		*/
 		adjustOutputOffsets : function(x_offset, y_offset){
 			core.GRAPHICS.DATA.FLAGS.OUTPUT.x_offset = x_offset ;
 			core.GRAPHICS.DATA.FLAGS.OUTPUT.y_offset = y_offset ;
@@ -265,13 +264,13 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Clears the SPRITE data and clears the existing canvas layers.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
+		 * @memberof core.GRAPHICS.FUNCS.USER
 		 * @param    {string} layer Specify the layer to clear.
 		 *
 		 * @example _CGFU.ClearSprites("BG1"); // Clear one layer.
 		 * @example _CGFU.ClearSprites();      // Clear all layers.
-		 */
-		ClearSprites     : function(layer){
+		*/
+		ClearSprites        : function(layer){
 			let layersToClear=[];
 
 			// If a layer was not specifed then clear all layers.
@@ -312,13 +311,13 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Clears the VRAM data and clears the existing canvas layers.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
-		 * @param    {string} layer
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {string} layer Specify the layer to clear.
 		 *
 		 * @example _CGFU.ClearVram("BG1"); // Clear one layer.
 		 * @example _CGFU.ClearVram();      // Clear all layers.
-		 */
-		ClearVram        : function(layer){
+		*/
+		ClearVram           : function(layer){
 			let layersToClear=[];
 
 			// If a layer was not specifed then clear all layers.
@@ -352,7 +351,7 @@ core.GRAPHICS.FUNCS        = {
 						for(let i=0; i<core.GRAPHICS.DATA.VRAM[layer].length; i+=1){
 							if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
 							if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
-							core.GRAPHICS.DATA.VRAM[layer][i] = core.GRAPHICS.FUNCS.INTERNAL.returnNewTile_obj();
+							core.GRAPHICS.DATA.VRAM[layer][i] = _CGFI.returnNewTile_obj();
 
 							// Set the index within the tileObj.
 							let addr = (y*_CS.VRAM_TILES_H)+x;
@@ -374,7 +373,7 @@ core.GRAPHICS.FUNCS        = {
 						for(let i=0; i<core.GRAPHICS.DATA.VRAM[layer].length; i+=1){
 							if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
 							if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
-							core.GRAPHICS.DATA.VRAM[layer][i] = core.GRAPHICS.FUNCS.INTERNAL.returnNewTile_obj();
+							core.GRAPHICS.DATA.VRAM[layer][i] = _CGFI.returnNewTile_obj();
 
 							// Set the index within the tileObj.
 							let addr = (y*_CS.VRAM_TILES_H)+x;
@@ -409,22 +408,22 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Clear the OUTPUT canvas.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
+		 * @memberof core.GRAPHICS.FUNCS.USER
 		 *
 		 * @example _CGFU.ClearOUTPUT();
-		 */
-		ClearOUTPUT      : function(){
+		*/
+		ClearOUTPUT         : function(){
 			let canvas = core.GRAPHICS.canvas.OUTPUT;
 			core.GRAPHICS.ctx.OUTPUT.clearRect(0,0,canvas.w,canvas.h);
 		},
 
 		/**
 		 * @summary  Clear all canvas layers and their data.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
+		 * @memberof core.GRAPHICS.FUNCS.USER
 		 *
 		 * @example _CGFU.clearAllCanvases();
-		 */
-		clearAllCanvases : function(){
+		*/
+		clearAllCanvases    : function(){
 			// Clear the VRAM, SPRITE, and OUTPUT layers and DATA.
 			_CGFU.ClearSprites();
 			_CGFU.ClearVram();
@@ -441,17 +440,17 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Draws a canvas tile to the indicated area.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
-		 * @param    {number} x
-		 * @param    {number} y
-		 * @param    {string} tileset
-		 * @param    {number} tileindex
-		 * @param    {string} layer
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {number} x X position to draw tile.
+		 * @param    {number} y Y position to draw tile.
+		 * @param    {string} tileset Which tileset to use.
+		 * @param    {number} tileindex Which tileindex to use.
+		 * @param    {string} layer Which layer to draw on.
 		 * @param    {object} flags
 		 *
 		 * @example _CGFU.DrawTile(1, 0, "tilesBG1", 2, "BG1" , {} );
-		 */
-		DrawTile         : function(x, y, tileset, tileindex, layer, flags){
+		*/
+		DrawTile            : function(x, y, tileset, tileindex, layer, flags){
 			// Confirm that all arguments were provided.
 			if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
 			if(layer     == undefined){ let str = ["=E= DrawTile: layer is undefined."    ]; throw Error(str); }
@@ -465,7 +464,7 @@ core.GRAPHICS.FUNCS        = {
 
 			let imgObj = _CGA.tilesets[tileset][tileindex];
 
-			core.GRAPHICS.FUNCS.INTERNAL.Adjust_NewTile_obj({
+			_CGFI.Adjust_NewTile_obj({
 				"__calledBy": "DrawTile",
 				"x"         : x         ,
 				"y"         : y         ,
@@ -480,17 +479,17 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Draws a canvas tilemap to the indicated area.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
-		 * @param    {number} x
-		 * @param    {number} y
-		 * @param    {string} tileset
-		 * @param    {string} tilemap
-		 * @param    {string} layer
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {number} x X position to draw tile.
+		 * @param    {number} y Y position to draw tile.
+		 * @param    {string} tileset Which tileset to use.
+		 * @param    {string} tilemap Which tilemap to use.
+		 * @param    {string} layer Which layer to draw on.
 		 * @param    {object} flags
 		 *
 		 * @example _CGFU.DrawMap(7, 0, "tilesBG1", "main_bg_pattern2", "BG1" , {} );
-		 */
-		DrawMap          : function(x, y, tileset, tilemap , layer, flags){
+		*/
+		DrawMap             : function(x, y, tileset, tilemap , layer, flags){
 			// Confirm that all arguments were provided.
 			if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
 			if(layer     == undefined){ let str = ["=E= DrawTile: layer is undefined."    ]; throw Error(str); }
@@ -504,7 +503,7 @@ core.GRAPHICS.FUNCS        = {
 
 			let imgObj = _CGA.tilemaps[tileset][tilemap];
 			// console.log(imgObj, "----", x, y, tileset, tilemap , layer, flags);
-			core.GRAPHICS.FUNCS.INTERNAL.Adjust_NewTile_obj({
+			_CGFI.Adjust_NewTile_obj({
 				"__calledBy": "DrawMap" ,
 				"x"         : x         ,
 				"y"         : y         ,
@@ -519,19 +518,19 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Fill a region with a tile.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
-		 * @param    {number} x
-		 * @param    {number} y
-		 * @param    {number} w
-		 * @param    {number} h
-		 * @param    {string} tileset
-		 * @param    {number} tileindex
-		 * @param    {string} layer
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {number} x X position to draw.
+		 * @param    {number} y Y position to draw.
+		 * @param    {number} w New width to draw.
+		 * @param    {number} h New height to draw.
+		 * @param    {string} tileset Which tileset to use.
+		 * @param    {number} tileindex Which tileindex to use.
+		 * @param    {string} layer Which layer to draw on.
 		 * @param    {object} flags
 		 *
 		 * @example _CGFU.TileFill(4, 0, 2, 2, "tilesBG1", 1, "BG1" , {} );
-		 */
-		TileFill         : function(x, y, w, h, tileset, tileindex, layer, flags){
+		*/
+		TileFill            : function(x, y, w, h, tileset, tileindex, layer, flags){
 			// Confirm that all arguments were provided.
 			if(tileset   == undefined){ let str = ["=E= TileFill: tileset is undefined."  ]; throw Error(str); }
 			if(layer     == undefined){ let str = ["=E= TileFill: layer is undefined."    ]; throw Error(str); }
@@ -577,19 +576,19 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Draw a tilemap to cover a region of varying dimensions. (Each dimension being a multiple of w and h.)
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
-		 * @param    {number} sx
-		 * @param    {number} sy
-		 * @param    {number} nw
-		 * @param    {number} nh
-		 * @param    {string} tileset
-		 * @param    {string} tilemap
-		 * @param    {string} layer
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {number} startx Starting X position.
+		 * @param    {number} starty Starting Y position.
+		 * @param    {number} nw New width.
+		 * @param    {number} nh New height.
+		 * @param    {string} tileset Which tileset to use.
+		 * @param    {string} tilemap Which tilemap to use.
+		 * @param    {string} layer Which layer to draw on.
 		 * @param    {object} flags
 		 *
 		 * @example _CGFU.MapFill(28, 0 , 4 , 2 , "tilesBG1", "main_bg_pattern2", "BG1" , {}   );
-		 */
-		MapFill          : function(sx, sy, nw, nh, tileset, tilemap, layer, flags){
+		*/
+		MapFill             : function(startx, starty, nw, nh, tileset, tilemap, layer, flags){
 			// Confirm that all arguments were provided.
 			if(tileset   == undefined){ let str = ["=E= DrawTile: tileset is undefined."  ]; throw Error(str); }
 			if(layer     == undefined){ let str = ["=E= DrawTile: layer is undefined."    ]; throw Error(str); }
@@ -616,7 +615,7 @@ core.GRAPHICS.FUNCS        = {
 
 			for(let y=0; y<nh; y+=mapHeight){
 				for(let x=0; x<nw; x+=mapWidth){
-					_CGFU.DrawMap( (x+sx), (y+sy), tileset, tilemap, layer, flags);
+					_CGFU.DrawMap( (x+startx), (y+starty), tileset, tilemap, layer, flags);
 				}
 			}
 
@@ -624,21 +623,21 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Draw a text string to the screen (one tile at a time.)
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
-		 * @param    {number} x
-		 * @param    {number} y
-		 * @param    {string} string
-		 * @param    {string} tileset
-		 * @param    {string} tilemap
-		 * @param    {string} layer
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {number} x Starting X position.
+		 * @param    {number} y Starting Y position.
+		 * @param    {string} string Text string to print.
+		 * @param    {string} tileset Which tileset to use.
+		 * @param    {string} tilemap Which font tilemap to use.
+		 * @param    {string} layer Which layer to draw on.
 		 * @param    {string} flags
 		 *
 		 * @example // Print a line of test. (Includes color swaps.)
 			* _CGFU.Print(4, 11, "FONT TEST 0 ABCD1234.", "tilesTX1", "font1", "TEXT", { "colorSwaps":[ ["#FFFFFF", "#FF2400"] ] }  );
 		 * @example // Print a line of test.
 			* _CGFU.Print(4, 12, "FONT TEST 1 ABCD1234.", "tilesTX1", "font1", "TEXT", { }  );
-		 */
-		Print            : function(x, y, string, tileset, tilemap, layer, flags){
+		*/
+		Print               : function(x, y, string, tileset, tilemap, layer, flags){
 			// Font maps should be 64 characters (plus 2 for the width/height of the map.)
 			// Font tiles are expected to be in the following order in the fontmap:
 			//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
@@ -713,7 +712,7 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Draw a text string to the screen (using multiple fonts.) (one tile at a time.)
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
+		 * @memberof core.GRAPHICS.FUNCS.USER
 		 * @param    {object} data
 		 *
 		 * @example	// Pass in a completed object.
@@ -732,8 +731,8 @@ core.GRAPHICS.FUNCS        = {
 			*	"layer"   : "TEXT",
 			* }
 			* );
-		 */
-		Print_multiFont  : function(data){
+		*/
+		Print_multiFont     : function(data){
 			// Font maps should be 64 characters (plus 2 for the width/height of the map.)
 			// Font tiles are expected to be in the following order in the fontmap:
 			//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
@@ -808,10 +807,10 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Allows a full fade in or full fade out of the OUTPUT screen.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
-		 * @param    {string} fadeDirection
-		 * @param    {number} speed
-		 * @param    {boolean} stayBlack
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {string} fadeDirection Direction of the fade. ("UP" or "DOWN".)
+		 * @param    {number} speed The delay between fade level changes (in milliseconds.)
+		 * @param    {boolean} stayBlack If the fade direction is down this indicates if the screen should stay black.
 		 *
 		 * @example // Fade up from black to full color.
 			 * _CGFU.chainFade('UP'  , 0, false);
@@ -820,7 +819,7 @@ core.GRAPHICS.FUNCS        = {
 		 * @example // Fade down from full color to black. (Once completed, remain at full black.)
 			 * _CGFU.chainFade('DOWN', 0, true );
 		*/
-		chainFade : function(fadeDirection, speed, stayBlack){
+		chainFade           : function(fadeDirection, speed, stayBlack){
 			// _CGFU.chainFade("UP", 0, false);
 			// _CGFU.chainFade("DOWN", 0, true);
 
@@ -884,8 +883,8 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Applies the specified fade level to the OUTPUT.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
-		 * @param    {number} fadeLevel
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {number} fadeLevel The new fade level.
 		 *
 		 * @example // Set to full off (black) and remain.
 			* _CGFU.setFade(0 );
@@ -893,8 +892,8 @@ core.GRAPHICS.FUNCS        = {
 			* _CGFU.setFade(6);
 		 * @example // Set to full on and remain.
 			* _CGFU.setFade(13);
-		 */
-		setFade   : function(fadeLevel){
+		*/
+		setFade             : function(fadeLevel){
 			// _CGFU.setFade(6);
 
 			// Confirm that all arguments were provided.
@@ -940,11 +939,11 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Handles all graphical updates ot the OUTPUT canvas.
-		 * @memberof "core.GRAPHICS.FUNCS.USER"
+		 * @memberof core.GRAPHICS.FUNCS.USER
 		 *
 		 * @example _CGFU.graphicsUpdate();
-		 */
-		graphicsUpdate       : function(){
+		*/
+		graphicsUpdate      : function(){
 
 			return new Promise(function(res_updateAllLayers, rej_updateAllLayers){
 				let gfx_start ;
@@ -966,7 +965,7 @@ core.GRAPHICS.FUNCS        = {
 				// Perform color swaps.
 				let doColorSwapping_start ;
 				if(JSGAME.FLAGS.debug) { doColorSwapping_start = performance.now(); }
-				core.GRAPHICS.FUNCS.INTERNAL.doColorSwapping().then(
+				_CGFI.doColorSwapping().then(
 					function(){
 						if(JSGAME.FLAGS.debug) { if(_CGP.doColorSwapping.length >=5){ _CGP.doColorSwapping.shift(); } _CGP.doColorSwapping.push(performance.now() - doColorSwapping_start); }
 
@@ -1033,18 +1032,18 @@ core.GRAPHICS.FUNCS        = {
 	/**
 	 * FUNCTIONS USED INTERNALLY
 	 * @summary   FUNCTIONS USED INTERNALLY.
-	 * @namespace "core.GRAPHICS.FUNCS.INTERNAL"
+	 * @namespace core.GRAPHICS.FUNCS.INTERNAL
 	*/
 	INTERNAL : {
 		// FUNCTIONS USED BY THE USER FUNCTIONS INTERNALLY.
 
 		/**
 		 * @summary  Returns a new VRAM tile object with default settings.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 * @returns  object
 		 *
 		 * @example _CGFI.returnNewTile_obj();
-		 */
+		*/
 		returnNewTile_obj   : function(){
 			let output = 	{
 				// Position and Dimension
@@ -1090,11 +1089,11 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Used by DrawTile and DrawMap to draw.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 * @param    {object} data
 		 *
 		 * @example _CGFI.Adjust_NewTile_obj(data);
-		 */
+		*/
 		Adjust_NewTile_obj  : function(data){
 			let x          = data.x          ;
 			let y          = data.y          ;
@@ -1124,7 +1123,7 @@ core.GRAPHICS.FUNCS        = {
 			}
 
 			// Get a new default tileObj.
-			let newVRAM_entry = core.GRAPHICS.FUNCS.INTERNAL.returnNewTile_obj();
+			let newVRAM_entry = _CGFI.returnNewTile_obj();
 
 			// Set the tileset, tileindex, layer values.
 			newVRAM_entry.tileset   = tileset   ;
@@ -1189,13 +1188,13 @@ core.GRAPHICS.FUNCS        = {
 
 				// Add to colorSwap queue?
 				if(flags.colorSwaps.length){
-					core.GRAPHICS.FUNCS.INTERNAL.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
+					_CGFI.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
 				}
 				// No colorswap, just rotation and/or flipping?
 				else if ( (flags.ROT !== false && flags.ROT !== 0) || flags.FLIP_X || flags.FLIP_Y ){
 
 					// Rotation? FLIP_X? FLIP_Y?
-					let obj = core.GRAPHICS.FUNCS.INTERNAL.ROT_FLIPX_FLIPY(imgObj.canvas, newVRAM_entry);
+					let obj = _CGFI.ROT_FLIPX_FLIPY(imgObj.canvas, newVRAM_entry);
 					let dst_canvas = obj.canvas;
 					let dst_ctx    = obj.ctx   ;
 					let newX       = obj.newX  ;
@@ -1221,7 +1220,7 @@ core.GRAPHICS.FUNCS        = {
 					newVRAM_entry.imgData        = undefined ;
 
 					// Place the tile.
-					core.GRAPHICS.FUNCS.INTERNAL.placeTile({
+					_CGFI.placeTile({
 						"mapWidth"      : (newVRAM_entry.w / _CS.TILE_WIDTH ) << 0 ,
 						"mapHeight"     : (newVRAM_entry.h / _CS.TILE_HEIGHT) << 0 ,
 						"newVRAM_entry" : newVRAM_entry ,
@@ -1257,10 +1256,10 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Reads from the colorswapping queue and performs the colorswaps with webworkers. Draws image AFTER colorswaps complete.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 *
 		 * @example _CGFI.doColorSwapping();
-		 */
+		*/
 		doColorSwapping     : function(){
 			return new Promise(function(res,rej){
 				// res(); return;
@@ -1271,8 +1270,12 @@ core.GRAPHICS.FUNCS        = {
 				let workers = core.GRAPHICS.WORKERS.WORKERS ;
 				let queues  = core.GRAPHICS.WORKERS.w_colorswaps.queue ;
 
-				let proms=[];
+				let proms=core.GRAPHICS.WORKERS.w_colorswaps.proms;
+				proms.length=0;
 
+				let img_buffers_arr = []                ;
+				let newVRAM_entries = []                ;
+				let transferList    = []                ;
 				for(let queueNum=0; queueNum<queues.length; queueNum+=1){
 
 					proms.push(
@@ -1280,9 +1283,9 @@ core.GRAPHICS.FUNCS        = {
 							function(res_inner, rej_inner){
 								let thisQueue       = queues[queueNum]  ;
 								let worker          = workers[queueNum] ;
-								let img_buffers_arr = []                ;
-								let newVRAM_entries = []                ;
-								let transferList    = []                ;
+								img_buffers_arr.length=0                ;
+								newVRAM_entries.length=0                ;
+								transferList   .length=0                ;
 
 								let queueLen=thisQueue.length;
 								for(let i=0; i<queueLen; i+=1){
@@ -1305,6 +1308,9 @@ core.GRAPHICS.FUNCS        = {
 										let prom = core.GRAPHICS.WORKERS.CALLBACK(e);
 										prom.then(
 											function(){
+												core.GRAPHICS.WORKERS.w_colorswaps.queue[queueNum].length=0;
+												// core.GRAPHICS.WORKERS.WORKERS[queueNum].onmessage = null;
+
 												// Reduce the queuedCount based on the number of items.
 												core.GRAPHICS.WORKERS.w_colorswaps.queuedCount -= img_buffers_arr.length;
 
@@ -1336,18 +1342,9 @@ core.GRAPHICS.FUNCS        = {
 
 				Promise.all(proms).then(
 					function(){
-						// Clear the queue and workers.
-						for(let queueNum=0; queueNum<core.GRAPHICS.WORKERS.w_colorswaps.queue.length; queueNum+=1){
-							// queues[queueNum].length = 0;
-							// core.GRAPHICS.WORKERS.w_colorswaps.queue[queueNum]=[];
-							core.GRAPHICS.WORKERS.w_colorswaps.queue[queueNum].length=0;
-							core.GRAPHICS.WORKERS.WORKERS[queueNum].onmessage = null;
-						}
-
 						// Resolve the outer promise.
 						if(1) { res(); }
 						else  { rej(); }
-
 					},
 					function(err){
 						console.log("err:", err);
@@ -1358,13 +1355,13 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Rotates, and/or Flips (X and or Y) a tile.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 * @param    {canvas} imgObj_canvas
 		 * @param    {object} newVRAM_entry
 		 * @returns  {object}
 		 *
 		 * @example _CGFI.ROT_FLIPX_FLIPY(imgObj_canvas, newVRAM_entry);
-		 */
+		*/
 		ROT_FLIPX_FLIPY     : function(imgObj_canvas, newVRAM_entry){
 			// Create the src canvas as a copy of the provided canvas.
 			let src_canvas    = document.createElement("canvas");
@@ -1436,12 +1433,12 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Queues the drawing of an image that has colorswaps specified in the flags.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 * @param    {ImageData} imgData
 		 * @param    {object} newVRAM_entry
 		 *
 		 * @example _CGFI.addColorSwapToQueue(imgData, newVRAM_entry);
-		 */
+		*/
 		addColorSwapToQueue : function(imgData, newVRAM_entry){
 			// Create the object.
 			let newObj = {
@@ -1479,15 +1476,23 @@ core.GRAPHICS.FUNCS        = {
 
 			//
 			core.GRAPHICS.WORKERS.w_colorswaps.queuedCount+=1;
+
+			// Immeditately perform the color swapping.
+			// _CGFI.doColorSwapping()
+				// .then(
+				// 	function(){ core.GRAPHICS.WORKERS.w_colorswaps.queuedCount-=1; },
+				// 	function(){}
+				// );
+			// ;
 		},
 
 		/**
 		 * @summary  Final function that places a tile in the VRAM/SPRITE array.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 * @param    {object} data
 		 *
 		 * @example _CGFI.placeTile();
-		 */
+		*/
 		placeTile           : function(data){
 			let newVRAM_entry = data.newVRAM_entry       ;
 			let layerType     = newVRAM_entry.layerType  ;
@@ -1574,10 +1579,10 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Handles drawing of VRAM and SPRITE layers.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 *
 		 * @example _CGFI.update_layers();
-		 */
+		*/
 		update_layers        : function(){
 			return new Promise(function(res,rej){
 				let drawOutput=false;
@@ -1739,10 +1744,10 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Combines the individual layers into the pre_OUTPUT.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 *
 		 * @example _CGFI.update_layer_COMBINE();
-		 */
+		*/
 		update_layer_COMBINE : function(){
 			return new Promise(function(res,rej){
 				// Get a handle to the temp output.
@@ -1777,10 +1782,10 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Writes the pre_OUTPUT to the OUTPUT canvas.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 *
 		 * @example _CGFI.update_layer_OUTPUT();
-		 */
+		*/
 		update_layer_OUTPUT  : function(){
 			return new Promise(function(res,rej){
 				// Get a handle to the temp output.
@@ -1806,10 +1811,10 @@ core.GRAPHICS.FUNCS        = {
 
 		/**
 		 * @summary  Performs the OUTPUT layer fade using webworkers.
-		 * @memberof "core.GRAPHICS.FUNCS.INTERNAL"
+		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 *
 		 * @example _CGFI.update_layer_FADE();
-		 */
+		*/
 		update_layer_FADE    : function(){
 			return new Promise(function(res,rej){
 				// core.GRAPHICS.WORKERS
@@ -1825,8 +1830,6 @@ core.GRAPHICS.FUNCS        = {
 				let fadeLevel              = WORKERS_OBJ[key].fadeLevel              ;
 				let fadeTable_fullOff      = WORKERS_OBJ[key].fadeTable_fullOff      ;
 				let fadeTable_fullOn       = WORKERS_OBJ[key].fadeTable_fullOn       ;
-				let levelChangeLatency     = WORKERS_OBJ[key].levelChangeLatency     ;
-				let levelChangeLatency_cnt = WORKERS_OBJ[key].levelChangeLatency_cnt ;
 				let stayBlack              = WORKERS_OBJ[key].stayBlack              ;
 
 				let msBeforeChange         = WORKERS_OBJ[key].msBeforeChange         ;
@@ -1925,8 +1928,8 @@ core.GRAPHICS.FUNCS        = {
 				core.GRAPHICS.imgData.pre_OUTPUT.whole = tempOutput_ctx.getImageData(0, 0, tempOutput.width, tempOutput.height);
 
 				// Slice up the full image.
-				let full_imgData_buf = core.GRAPHICS.imgData.pre_OUTPUT.whole.data.buffer ;
-				let blockSize        = Math.ceil(full_imgData_buf.byteLength / numWorkers);
+				// let full_imgData_buf = core.GRAPHICS.imgData.pre_OUTPUT.whole.data.buffer ;
+				// let blockSize        = Math.ceil(full_imgData_buf.byteLength / numWorkers);
 				// for(let w=0; w<numWorkers; w+=1){
 				// 	core.GRAPHICS.imgData.pre_OUTPUT.slices[w] =
 				// 		full_imgData_buf.slice(
@@ -1938,7 +1941,9 @@ core.GRAPHICS.FUNCS        = {
 				core.GRAPHICS.imgData.pre_OUTPUT.slices[0] = core.GRAPHICS.imgData.pre_OUTPUT.whole.data.buffer;
 				let slices = core.GRAPHICS.imgData.pre_OUTPUT.slices;
 
-				let proms=[];
+				let proms=core.GRAPHICS.WORKERS.w_fade.proms;
+				proms.length=0;
+
 				let transferList = [];
 				for(let w=0; w<numWorkers; w+=1){
 					let worker       = WORKERS[w] ;
@@ -1948,12 +1953,12 @@ core.GRAPHICS.FUNCS        = {
 								// Get start point for y.
 								y=height*w;
 
-								let img_buff = slices[w];
-								transferList[0] = img_buff;
+								// let img_buff = slices[w];
+								transferList[0] = slices[w];
 
 								let msg = {
 									"function" : "fade" ,
-									"img_buff" : img_buff     ,
+									"img_buff" : slices[w]     ,
 									"x"        : x            ,
 									"y"        : y            ,
 									"w"        : width        ,
@@ -1968,18 +1973,18 @@ core.GRAPHICS.FUNCS        = {
 									let prom = core.GRAPHICS.WORKERS.CALLBACK(e);
 									prom.then(
 										function(){ res_inner(); },
-										function(err) { console.log("err:", err);   rej_inner(); }
+										function(err) { console.log("err:", err); rej_inner(); }
 									);
 								};
 
 								// Send the data.
-								try{
+								// try{
 									worker.postMessage(msg, transferList);
-								}
-								catch(e){
-									console.log(e, msg, transferList);
-									throw "";
-								}
+								// }
+								// catch(e){
+									// console.log(e, msg, transferList);
+									// throw "";
+								// }
 							}
 						)
 					);
@@ -1989,7 +1994,7 @@ core.GRAPHICS.FUNCS        = {
 					function(){
 						// Clear the slices array.
 						core.GRAPHICS.imgData.pre_OUTPUT.slices.length=0;
-						core.GRAPHICS.imgData.pre_OUTPUT.whole=null;
+						// core.GRAPHICS.imgData.pre_OUTPUT.whole=null;
 
 						// Set new value for the active state of the fade.
 						core.GRAPHICS.WORKERS.w_fade.fadeActive = (fadeLevel!== fadeTable_fullOn) && (fadeLevel != fadeTable_fullOff) ;
@@ -2684,7 +2689,7 @@ core.GRAPHICS.init = {
 					if(x>=core.SETTINGS.VRAM_TILES_H){ x=0; y+=1; }
 					if(y>=core.SETTINGS.VRAM_TILES_V){ break;     }
 
-					core.GRAPHICS.DATA.VRAM[layer][i] = core.GRAPHICS.FUNCS.INTERNAL.returnNewTile_obj();
+					core.GRAPHICS.DATA.VRAM[layer][i] = _CGFI.returnNewTile_obj();
 
 					// Set the index within the tileObj.
 					let addr = (y*_CS.VRAM_TILES_H)+x;
@@ -2924,22 +2929,40 @@ core.GRAPHICS.init = {
 
 // *** SHORTHAND METHODS ***
 
-// _DOC_ | _CGF | Shortened way to access core.GRAPHICS.FUNCS
+/**
+ * @summary Shortened way to access core.GRAPHICS.FUNCS
+ * @global
+*/
 let _CGF  = core.GRAPHICS.FUNCS;
 
-// _DOC_ | _CGF | Shortened way to access core.GRAPHICS.FUNCS.USER
+/**
+ * @summary Shortened way to access core.GRAPHICS.FUNCS.USER
+ * @global
+*/
 let _CGFU = _CGF.USER;
 
-// _DOC_ | _CGFI | Shortened way to access _CGF.INTERNAL.
+/**
+ * @summary Shortened way to access _CGF.INTERNAL.
+ * @global
+*/
 let _CGFI = _CGF.INTERNAL;
 
-// _DOC_ | _CGA | Shortened way to access core.ASSETS.
+/**
+ * @summary Shortened way to access core.ASSETS.
+ * @global
+*/
 let _CGA  = core.GRAPHICS.ASSETS;
 
-// _DOC_ | _CGP | Shortened way to access core.GRAPHICS.performance.
+/**
+ * @summary Shortened way to access core.GRAPHICS.performance.
+ * @global
+*/
 let _CGP  = core.GRAPHICS.performance;
 
-// _DOC_ | _CS | Shortened way to access core.SETTINGS.
+/**
+ * @summary Shortened way to access core.SETTINGS.
+ * @global
+*/
 let _CS   = core.SETTINGS;
 
 

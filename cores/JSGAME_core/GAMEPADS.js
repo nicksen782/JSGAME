@@ -4,6 +4,11 @@
 
 'use strict';
 
+/**
+ * JSGAME GAMEPADS.
+ * @summary JSGAME GAMEPADS.
+ * @namespace JSGAME.GAMEPADS
+*/
 JSGAME.GAMEPADS = {
 	// *** CONFIG MENU FUNCTIONS ***
 
@@ -893,7 +898,12 @@ JSGAME.GAMEPADS = {
 		},
 	},
 
-	// * Returns an object with the unique identifiers for a specified gamepad instance.
+	/**
+	 * @summary Returns an object with the unique identifiers for a specified gamepad instance.
+	 * @memberof JSGAME.GAMEPADS
+	 * @param {*} thisPad
+	 * @returns --
+	 */
 	generateGamepadKey : function(thisPad){
 		// Get the vendor and product id.
 		let ff_id = thisPad.id.split("-").map(function(d,i,a){ return d.trim();} );
@@ -941,7 +951,12 @@ JSGAME.GAMEPADS = {
 		};
 
 	},
-	// * Gets a raw copy of navigator.gamepads() and strips out any null or blank values.
+
+	/**
+	 * @summary Gets a raw copy of navigator.gamepads() and strips out any null or blank values.
+	 * @memberof JSGAME.GAMEPADS
+	 * @returns --
+	 */
 	getSrcGamepads      : function(){
 		// Get the gamepad info. There are many different ways. Use the first one that returns data.
 		let raw_gamepads = navigator.getGamepads ? navigator.getGamepads() : [] ;
@@ -966,7 +981,14 @@ JSGAME.GAMEPADS = {
 		src_gamepads = src_gamepads.map(function(d,i,a){ return d; }).filter( JSGAME.GAMEPADS.utility.removeUndefines );
 		return src_gamepads;
 	},
-	// * Send the specified key from the specified player gamepad.
+
+	/**
+	 * @summary Send the specified key from the specified player gamepad.
+	 * @memberof JSGAME.GAMEPADS
+	 * @param {*} i
+	 * @param {*} btnPressed
+	 * @param {*} btnReleased
+	 */
 	sendNewKey : function(i, btnPressed, btnReleased){
 		// If the button was pressed or held then send a keydown event.
 		// If the button was released then send a keyup event.
@@ -1007,7 +1029,12 @@ JSGAME.GAMEPADS = {
 		if     ( btnPressed  & JSGAME.consts.BTN_UP    ) { JSGAME.GUI.userInput("keydown", "BTN_UP"     , i+1); }
 		else if( btnReleased & JSGAME.consts.BTN_UP    ) { JSGAME.GUI.userInput("keyup"  , "BTN_UP"     , i+1); }
 	},
+
 	// * Update the local cache of gamepad objects.
+	/**
+	 * @summary --
+	 *
+	 */
 	getNewGamepadStates : function(){
 		let src_gamepads = JSGAME.GAMEPADS.getSrcGamepads();
 
@@ -1206,7 +1233,14 @@ JSGAME.GAMEPADS = {
 			}
 		}
 	},
-	//
+
+	/**
+	 * @summary --
+	 * @memberof JSGAME.GAMEPADS
+	 * @param {*} number
+	 * @param {*} deadzone
+	 * @returns --
+	 */
 	analogToDigital_withDeadzone : function(number, deadzone){
 		let sign       = Math.sign(number) ; // Will be -1, 0, or 1.
 		let abs        = Math.abs(number) ;
@@ -1218,7 +1252,12 @@ JSGAME.GAMEPADS = {
 		// Value and outside of the deadzone.
 		else{ return sign; }
 	},
-	// * Reads gamepad instance. Uses the specified gamepad mapping and returns an Uzebox-compatible value for the gamepad button state.
+	/**
+	 * @summary Reads gamepad instance. Uses the specified gamepad mapping and returns an Uzebox-compatible value for the gamepad button state.
+	 * @memberof JSGAME.GAMEPADS
+	 * @param {*} gp_obj
+	 * @returns --
+	 */
 	findGpButtonsViaMapping : function(gp_obj){
 		// gp_obj provides the custom values as well as the gamepad state.
 		let map     = gp_obj.btnMap.btnMap;
@@ -1295,7 +1334,11 @@ JSGAME.GAMEPADS = {
 		};
 
 	},
-	// * Handles updating the local gamepad cache, determining pressed buttons, sending keyboard events.
+	/**
+	 * @summary Handles updating the local gamepad cache, determining pressed buttons, sending keyboard events.
+	 * @memberof JSGAME.GAMEPADS
+	 * @returns --
+	 */
 	handleInputs        : function(){
 		// Bail if there is not gamepad support.
 		if(!JSGAME.FLAGS.support_gamepadAPI){ return; }
