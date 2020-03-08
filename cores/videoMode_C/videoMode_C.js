@@ -32,6 +32,7 @@ core.GRAPHICS.DATA         = {
 		OUTPUT : {
 			"x_offset" : 0 , // Specifies the drawing x offset for the final OUTPUT layer draw.
 			"y_offset" : 0 , // Specifies the drawing y offset for the final OUTPUT layer draw.
+			"draw"     : false,
 		}
 	},
 	// Holds tile objects for each vram layer.
@@ -52,6 +53,7 @@ core.GRAPHICS.ASSETS       = {
 	"_original_data" : {}  // Original Uzebox format tilesets/tilemaps. (Tiles as raw Uzebox data, tilemaps as tileset indexes.)
 } ;
 
+
 /**
  * @summary Web workers.
  * @global
@@ -62,7 +64,7 @@ core.GRAPHICS.WORKERS      = {
 
 	// Shared error callback for workers.
 	"error_CALLBACK" : function(event){
-		console.log("something has went wrong with a webworker.", event);
+		console.log("something has went wrong with a webworker.", event, this);
 	},
 
 	// Shared finishing function for workers.
@@ -125,37 +127,24 @@ core.GRAPHICS.WORKERS      = {
 						newVRAM.canvas         = dst_canvas ;
 						newVRAM.imgData        = undefined ;
 
+						core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=true;
+
 						// Place the tile.
 						_CGFI.placeTile({
 							"mapWidth"      : (newVRAM.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
 							"mapHeight"     : (newVRAM.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
 							"newVRAM_entry" : newVRAM ,
 						});
+
+						// Decrement the queue count.
+						core.GRAPHICS.WORKERS.w_colorswaps.queuedCount -= 1 ;
+
+						// If the queue count is now 0 then set active to false.
+						if(core.GRAPHICS.WORKERS.w_colorswaps.queuedCount==0){
+							core.GRAPHICS.WORKERS.w_colorswaps.active=false;
+						}
+
 					}
-
-					// Resolve.
-					if(1){ callback_res(); }
-					else { callback_rej(); }
-
-					break;
-				}
-
-				// Whole-screen fade effect.
-				case "fade" : {
-					// Get values from the worker.
-					let x              = event.data.x              ;
-					let y              = event.data.y              ;
-					let w              = event.data.w              ;
-					let h              = event.data.h              ;
-					let imgData_buffer = event.data.finished_img_buff ;
-
-					// Convert the arraybuffer to ImageData.
-					let imgData_view8  = new Uint8ClampedArray(imgData_buffer) ;
-					let imgData        = new ImageData(imgData_view8, w, h) ;
-
-					// Use putImageData on the pre_OUTPUT.
-					let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
-					tempOutput_ctx.putImageData( imgData , x, y );
 
 					// Resolve.
 					if(1){ callback_res(); }
@@ -176,46 +165,24 @@ core.GRAPHICS.WORKERS      = {
 		"queue"       : [] , // An array of arrays. Each outer array is for the same indexed worker.
 		"queuedCount" : 0  ,
 		"proms"       : [] ,
+		"active"      : false ,
 	},
 
 	// Object for controlling whole-screen fades.
-	"w_fade" :{
-		"fadeTable_fullOff"      : 0     , // Index into fadeTable for full off.
-		"fadeTable_fullOn"       : 13    , // Index into fadeTable for full on.
-		"fadeLevel_min"          : 1     , // Min usable index into fadeTable.
-		"fadeLevel_max"          : 12    , // Max usable index into fadeTable.
-
-		"fadeLevel"              : 13    , // Index into fadeTable.
-
-		"msBeforeChange"         : 0       , // performance.now() milliseconds before the next change.
-		"lastChange"             : 0       , // performance.now() timestamp of the last change.
-
-		"fadeDirection"          : 1     , // 1 means go up fadeLevels. -1 means go down fadeLevels.
-		"stayBlack"              : false , // If true then on a fade down the output will remain black until cleared.
-
-		// The rgb values for each fade level.
-		"fadeTable": [
-			//                               INDEX BB GGG RRR  B G R    DEC   HEX
-			{ b: 0  , g: 0   , r: 0   } , // 0     00 000 000  0 0 0  , 0   , 0x00
-			{ b: 0  , g: 0   , r: 0   } , // 1     00 000 000  0 0 0  , 0   , 0x00
-
-			{ b: 33 , g: 0   , r: 0   } , // 2     01 000 000  1 0 0  , 64  , 0x40
-			{ b: 66 , g: 14  , r: 0   } , // 3     10 001 000  2 1 0  , 136 , 0x88
-			{ b: 66 , g: 28  , r: 14  } , // 4     10 010 001  2 2 1  , 145 , 0x91
-			{ b: 100, g: 28  , r: 28  } , // 5     11 010 010  3 2 2  , 210 , 0xD2
-			{ b: 100, g: 57  , r: 57  } , // 6     11 100 100  3 4 4  , 228 , 0xE4
-			{ b: 66 , g: 71  , r: 71  } , // 7     10 101 101  2 5 5  , 173 , 0xAD
-			{ b: 66 , g: 85  , r: 71  } , // 8     10 110 101  2 6 5  , 181 , 0xB5
-			{ b: 66 , g: 85  , r: 85  } , // 9     10 110 110  2 6 6  , 182 , 0xB6
-			{ b: 66 , g: 100 , r: 85  } , // 10    10 111 110  2 7 6  , 190 , 0xBE
-			{ b: 66 , g: 100 , r: 100 } , // 11    10 111 111  2 7 7  , 191 , 0xBF
-
-			{ b: 100, g: 100 , r: 100 } , // 12    11 111 111  3 7 7  , 255 , 0xFF
-			{ b: 100, g: 100 , r: 100 } , // 13    11 111 111  3 7 7  , 255 , 0xFF
+	"__fade" : {
+		"setFadeActive"     : false , //
+		"chainFadeActive"   : false , //
+		"alphas":[
+			0.00, 0.10, 0.20, 0.30, 0.40,
+			0.50, 0.60, 0.70, 0.80, 0.90,
+			1.00,
 		],
+		"alphaIndex"        : 10    , // Current index in the alphas array.
 
-		"proms"       : [] ,
-	}
+		"msBeforeChange"    : 0     , // performance.now() milliseconds before the next change.
+		"lastChange"        : 0     , // performance.now() timestamp of the last change.
+		"fadeDirection"     : 1     , // 1 means go up fadeLevels. -1 means go down fadeLevels.
+	},
 };
 
 /**
@@ -230,15 +197,44 @@ core.GRAPHICS.performance  = {
 		// TEXT : [ 0, 0, 0, 0, 0 ] , //
 		// SP1  : [ 0, 0, 0, 0, 0 ] , //
 	},
-
-	//
-	"gfx_timings"     : [] ,
-	"doColorSwapping" : [] ,
-	"update_layers"   : [] ,
-	"layer_combines"  : [] ,
-	"fade_timings"    : [] ,
-	"output_timings"  : [] ,
 };
+
+core.GRAPHICS.DEBUG = {
+	"keys":{
+	},
+
+	init : function(){
+		// In MAIN
+		this.gameloop_timings = { "start":0, "durs":[] } ;
+		this.logic_timings    = { "start":0, "durs":[] } ;
+		this.debug_timings    = { "start":0, "durs":[] } ;
+
+		// IN GRX UPDATE
+		this.gfx_timings      = { "start":0, "durs":[] } ;
+		this.doColorSwapping  = { "start":0, "durs":[] } ;
+		this.update_layers    = { "start":0, "durs":[] } ;
+		this.layer_combines   = { "start":0, "durs":[] } ;
+		this.fade_timings     = { "start":0, "durs":[] } ;
+		this.output_timings   = { "start":0, "durs":[] } ;
+	},
+	start : function(key){
+		try{
+			this[key].start=performance.now();
+		}
+		catch(e){
+			this[key] = { "start":0, "durs":[] } ;
+			this[key].start=performance.now();
+		}
+	},
+	end : function(key){
+		let newTime = performance.now() - this[key].start;
+		if(this[key].durs.length >=5 ){ this[key].durs.shift(); }
+		// if(this[key].durs.length >=20){ this[key].durs.shift(); }
+		this[key].durs.push(newTime);
+		return newTime;
+	}
+};
+
 
 core.GRAPHICS.FUNCS        = {
 	/**
@@ -336,10 +332,6 @@ core.GRAPHICS.FUNCS        = {
 			// Clear the specified VRAM(s).
 			for(let l=0; l<layersToClear.length; l+=1){
 				layer=layersToClear[l];
-				// let canvas = core.GRAPHICS.canvas[layer];
-				// let ctx    = core.GRAPHICS.ctx[layer];
-				// let w      = canvas.width;
-				// let h      = canvas.height;
 
 				// Determine how to clear the region.
 				let clearWith = core.GRAPHICS.DATA.FLAGS[layer].clearWith       ;
@@ -399,7 +391,7 @@ core.GRAPHICS.FUNCS        = {
 				core.GRAPHICS.DATA.FLAGS[layer].REDRAW=true;
 
 				// Clear the sprite layers.
-				_CGFU.ClearSprites();
+				// _CGFU.ClearSprites();
 
 				// Clear the output canvas.
 				_CGFU.ClearOUTPUT();
@@ -414,7 +406,7 @@ core.GRAPHICS.FUNCS        = {
 		*/
 		ClearOUTPUT         : function(){
 			let canvas = core.GRAPHICS.canvas.OUTPUT;
-			core.GRAPHICS.ctx.OUTPUT.clearRect(0,0,canvas.w,canvas.h);
+			core.GRAPHICS.ctx.OUTPUT.clearRect(0,0,canvas.width,canvas.height);
 		},
 
 		/**
@@ -434,7 +426,7 @@ core.GRAPHICS.FUNCS        = {
 			for(let i=0; i<layers.length; i+=1){
 				let canvas = core.GRAPHICS.canvas[layers[i]];
 				let ctx    = core.GRAPHICS.ctx[layers[i]];
-				ctx.clearRect(0,0,canvas.w,canvas.h);
+				ctx.clearRect(0,0,canvas.width,canvas.height);
 			}
 		},
 
@@ -502,7 +494,7 @@ core.GRAPHICS.FUNCS        = {
 			if(_CGA.tilemaps[tileset][tilemap] == undefined){ let str = ["=E= DrawTile: tilemap is invalid."  ]; throw Error(str); }
 
 			let imgObj = _CGA.tilemaps[tileset][tilemap];
-			// console.log(imgObj, "----", x, y, tileset, tilemap , layer, flags);
+
 			_CGFI.Adjust_NewTile_obj({
 				"__calledBy": "DrawMap" ,
 				"x"         : x         ,
@@ -605,14 +597,6 @@ core.GRAPHICS.FUNCS        = {
 			let mapWidth  = (imgObj.canvas.width   / _CS.TILE_WIDTH ) << 0;
 			let mapHeight = (imgObj.canvas.height  / _CS.TILE_HEIGHT) << 0;
 
-			// console.log(
-			// 	"\n tileset   :", tileset   ,
-			// 	"\n tilemap   :", tilemap   ,
-			// 	"\n mapWidth  :", mapWidth  ,
-			// 	"\n mapHeight :", mapHeight ,
-			// 	""
-			// );
-
 			for(let y=0; y<nh; y+=mapHeight){
 				for(let x=0; x<nw; x+=mapWidth){
 					_CGFU.DrawMap( (x+startx), (y+starty), tileset, tilemap, layer, flags);
@@ -637,7 +621,13 @@ core.GRAPHICS.FUNCS        = {
 		 * @example // Print a line of test.
 			* _CGFU.Print(4, 12, "FONT TEST 1 ABCD1234.", "tilesTX1", "font1", "TEXT", { }  );
 		*/
-		Print               : function(x, y, string, tileset, tilemap, layer, flags){
+		Print               : function(x, y, string, tileset, tilemap, layer, flags, drawAsMap){
+			// Skip this if the string does not have a length.
+			if(!string.length){ return; }
+
+			// The default of drawAsMap is true.
+			if(drawAsMap===undefined){ drawAsMap=true; }
+
 			// Font maps should be 64 characters (plus 2 for the width/height of the map.)
 			// Font tiles are expected to be in the following order in the fontmap:
 			//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
@@ -660,149 +650,156 @@ core.GRAPHICS.FUNCS        = {
 			x = (x) << 0;
 			y = (y) << 0;
 			let startx = x;
+			let starty = y;
 
 			// We need to use the original tilemap array for printing.
-			let fontmap = core.GRAPHICS.ASSETS._original_data.tilemaps[tileset][tilemap];
+			let fontmap = _CGA._original_data.tilemaps[tileset][tilemap];
 			let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
 
-			// Turn the string into an iterable array and draw each letter individually.
-			Array.from( string ).forEach(function(d){
-				// Move down a line if a line break is found.
-				if(d=="\n"){ x=startx; y+=1; return; }
+			// Convert the string to upper case.
+			string=string.toUpperCase();
 
-				// Get the tileid for this character.
-				let tileid;
-				tileid = d.toUpperCase().charCodeAt() - 32;
+			// Convert to tilemap and then draw?
+			if(drawAsMap){
+				// These will be the new tileset and tilemap names.
+				let NEW_tileset_name = "_textstrings"  ;
+				let NEW_map_name     = tilemap+"_"+string          ;
 
-				// Make sure this is a valid tile in the font map (bounds-check.)
-				if(tileid < fontmap_len){
-					// Do a bounds-check before drawing the tile.
-
-					// Out of bounds on x?
-					if(x >= _CS.VRAM_TILES_H)     {
-						// console.log("Out of bounds: x", "x:", x, "core.SETTINGS.VRAM_TILES_H:", core.SETTINGS.VRAM_TILES_H);
-						return;
-					}
-					// Out of bounds on y?
-					else if(y >= _CS.VRAM_TILES_V){
-						// console.log("Out of bounds: y", "y:", y, "core.SETTINGS.VRAM_TILES_V:", core.SETTINGS.VRAM_TILES_V);
-						return;
-					}
-					// Draw the tile.
-					else{
-						let tileindex = fontmap[ tileid+2 ];
-						_CGFU.DrawTile(x, y, tileset, tileindex, layer, flags);
-					}
-				}
-
-				// If it is out of bounds, (such as the "|" character) print a space.
-				else {
-					let tileindex = " ".toUpperCase().charCodeAt() - 32;
-					_CGFU.DrawTile(x, y, tileset, tileindex, layer, flags);
-				}
-
-				// Move the "cursor" over one to the right.
-				x+=1;
-
-				// No wrapping allowed.
-				if(x>=_CS.VRAM_TILES_H-0){ return; }
-				if(y>=_CS.VRAM_TILES_V-0){ return; }
-			});
-		},
-
-		/**
-		 * @summary  Draw a text string to the screen (using multiple fonts.) (one tile at a time.)
-		 * @memberof core.GRAPHICS.FUNCS.USER
-		 * @param    {object} data
-		 *
-		 * @example	// Pass in a completed object.
-			* _CGFU.Print_multiFont(data) ;
-		 * @example // Pass an object inline.
-			* _CGFU.Print_multiFont(
-			* {
-			*	"x"       : 4,
-			*	"y"       : 16,
-			*	"text"    : "MULTI FONT TEST 5 1234." ,
-			*	"font"    : "01010101010101010101010".split("").map(function(d){ return parseInt(d,10); }) ,
-			*	"maps"    : [
-			*		{ "tileset":"tilesTX1", "font":"font1", "flags":{ "colorSwaps":[ ["#484891", "#999999"] ] } },
-			*		{ "tileset":"tilesTX1", "font":"font1", "flags":{ "colorSwaps":[ ["#484891", "#444444"] ] } },
-			*	],
-			*	"layer"   : "TEXT",
-			* }
-			* );
-		*/
-		Print_multiFont     : function(data){
-			// Font maps should be 64 characters (plus 2 for the width/height of the map.)
-			// Font tiles are expected to be in the following order in the fontmap:
-			//    !  "  #  $  %  &  '  (  )  *  +  ,  -  .  /
-			// 0  1  2  3  4  5  6  7  8  9  :  ;  <  =  >  ?
-			// @  A  B  C  D  E  F  G  H  I  J  K  L  M  N  O
-			// P  Q  R  S  T  U  V  W  X  Y  Z  [  c  ]  ^  _
-
-			// Make sure that the specified tileset, tilemap, and layer exist.
-			data.maps.forEach(function(d){
-				let map = d.font;
-				let tileset = d.tileset;
-
-				// Valid tileset?
-				if(!_CGA.tilesets[tileset]){
-					let str = ["=E= Print_multiFont: Tilemap not valid: ", tileset, map ];
-					throw Error(str);
-				}
-
-				// Valid tilemap?
-				if(!_CGA._original_data.tilemaps[tileset][map]){
-					let str = ["=E= Print_multiFont: Map not valid: ", tileset, map ];
-					throw Error(str);
-				}
-			});
-			if(data.layer             == undefined){ let str = ["=E= Print_multiFont: layer is undefined." ]; throw Error(str); }
-			if(_CS.layers[data.layer] == undefined){ let str = ["=E= Print_multiFont: layer is invalid."   ]; throw Error(str); }
-
-			// Make sure that only a whole number makes it through.
-			let x = (data.x) << 0;
-			let y = (data.y) << 0;
-			let startx = x;
-
-			// Turn the string into an iterable array.
-			Array.from( data.text ).forEach(function(d,i){
-				// Move down a line if a line break is found.
-				if(d=="\n"){ x=startx; y+=1; return; }
-
-				// Determine which fontmap will be used.
-				// NOTE: We need to use the original tilemap array for printing.
-				let map_obj = data.maps[ data.font[i] ] ;
-				let flags   = map_obj.flags ;
-				let tileset = map_obj.tileset ;
-				let fontmap = core.GRAPHICS.ASSETS._original_data.tilemaps [tileset] [ data.maps[ data.font[i] ].font ] ;
-				if(flags   == undefined){ flags={}; }
-
-				// NOTE: Fontsets should all be the same length.
+				// Get the original tilemap for the specified tileset.
+				let fontmap = _CGA._original_data.tilemaps[tileset][tilemap];
 				let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
 
-				// Get the tileid for this character.
-				let tileid = d.toUpperCase().charCodeAt() - 32;
+				// Create the placeholders if they do not already exist.
+				if(_CGA.tilesets[NEW_tileset_name]===undefined){ _CGA.tilesets[NEW_tileset_name] = {}; }
+				if(_CGA.tilemaps[NEW_tileset_name]===undefined){ _CGA.tilemaps[NEW_tileset_name] = {}; }
 
-				// Make sure this is a valid tile in the font map (bounds-check.)
-				if(tileid < fontmap_len){
-					let tileindex = fontmap[ tileid+2 ];
-					_CGFU.DrawTile(x, y, tileset, tileindex, data.layer, flags);
+				// Check if the text tilemap already exists. If so, then use that.
+				if(_CGA.tilemaps[NEW_tileset_name][NEW_map_name] !== undefined){
+					// console.log("EXISTING CUSTOM TEXT MAP: ","_CGA.tilemaps['"+NEW_tileset_name+"']['"+NEW_map_name+"']");
+
+					// Now draw it!
+					_CGFU.DrawMap(x, y, NEW_tileset_name, NEW_map_name, layer, flags);
 				}
 
-				// If it is out of bounds, (such as the "|" character) print a space.
-				else {
-					let tileindex = " ".toUpperCase().charCodeAt() - 32;
-					_CGFU.DrawTile(x, y, tileset, tileindex, data.layer, flags);
+				// Otherwise, create the text tilemap and save it.
+				else{
+					// Count the longest line to get the width of the map. (In tiles.)
+					let mapWidth = 0 ;
+					let lines = string.split("\n");
+					for(let l=0; l<lines.length; l+=1){
+						let len = lines[l].length;
+						if(len > mapWidth){ mapWidth = len; }
+					}
+
+					// Count new lines to get the height of the map. (In tiles.)
+					let mapHeight = lines.length;
+
+					// Create the canvas container.
+					let canvas    = document.createElement("canvas");
+					canvas.width  = (mapWidth  * _CS.TILE_WIDTH ) ;
+					canvas.height = (mapHeight * _CS.TILE_HEIGHT) ;
+					let ctx       = canvas.getContext("2d");
+					JSGAME.SHARED.setpixelated( canvas );
+
+					// Draw the tiles (which are canvases) onto this canvas.
+					let _x=0      ;
+					let _y=0      ;
+					let tile      ;
+					let tileid    ;
+					let tileIndex ;
+					string=Array.from(string);
+					string.forEach(function(letter, charIndex){
+						// Get the tileid and tileIndex.
+						tileid    = string[charIndex].charCodeAt() - 32;
+						tileIndex = fontmap[tileid+2];
+
+						// Index within the font map?
+						if(tileIndex >= fontmap_len){ console.log("tile out of counds."); return; }
+
+						// New line char?
+						if(letter=="\n"){_x=0; _y+=1; return; }
+
+						// Get the tile.
+						tile = _CGA.tilesets[tileset][tileIndex];
+
+						// Draw the tile.
+						ctx.drawImage(
+							tile.canvas            , // image
+							(_x * _CS.TILE_WIDTH)  , // dx
+							(_y * _CS.TILE_HEIGHT)   // dy
+						);
+
+						// Increment _x.
+						_x+=1;
+					});
+
+					// Save the new object.
+					_CGA.tilemaps[NEW_tileset_name][NEW_map_name]={
+						"canvas"  : canvas,
+						"imgData" : ctx.getImageData(0, 0, canvas.width, canvas.height),
+						"ctx"     : ctx,
+						"numUsed" : 0,
+						"_textstrings" : true,
+					};
+
+					// console.log("NEW CUSTOM TEXT MAP:      ","_CGA.tilemaps['"+NEW_tileset_name+"']['"+NEW_map_name+"']");
+
+					_CGFU.DrawMap(x, y, NEW_tileset_name, NEW_map_name, layer, flags);
 				}
 
-				// Move the "cursor" over one to the right.
-				x+=1;
+			}
 
-				// No wrapping allowed.
-				if(x>=core.SETTINGS.VRAM_TILES_H-0){ return; }
-				if(y>=core.SETTINGS.VRAM_TILES_V-0){ return; }
-			});
+			// Draw each letter individually.
+			else{
+				console.log("OLD WAY!");
+				string=Array.from(string);
+
+				// Turn the string into an iterable array and draw each letter individually.
+				string.forEach(function(d){
+					// Move down a line if a line break is found.
+					if(d=="\n"){ x=startx; y+=1; return; }
+
+					// Get the tileid for this character.
+					let tileid;
+					// tileid = d.toUpperCase().charCodeAt() - 32;
+					tileid = d.charCodeAt() - 32;
+
+					// Make sure this is a valid tile in the font map (bounds-check.)
+					if(tileid < fontmap_len){
+						// Do a bounds-check before drawing the tile.
+
+						// Out of bounds on x?
+						if(x >= _CS.VRAM_TILES_H)     {
+							// console.log("Out of bounds: x", "x:", x, "core.SETTINGS.VRAM_TILES_H:", core.SETTINGS.VRAM_TILES_H);
+							return;
+						}
+						// Out of bounds on y?
+						else if(y >= _CS.VRAM_TILES_V){
+							// console.log("Out of bounds: y", "y:", y, "core.SETTINGS.VRAM_TILES_V:", core.SETTINGS.VRAM_TILES_V);
+							return;
+						}
+						// Draw the tile.
+						else{
+							let tileindex = fontmap[ tileid+2 ];
+							_CGFU.DrawTile(x, y, tileset, tileindex, layer, flags);
+						}
+					}
+
+					// If it is out of bounds, (such as the "|" character) print a space.
+					else {
+						let tileindex = " ".toUpperCase().charCodeAt() - 32;
+						_CGFU.DrawTile(x, y, tileset, tileindex, layer, flags);
+					}
+
+					// Move the "cursor" over one to the right.
+					x+=1;
+
+					// No wrapping allowed.
+					if(x>=_CS.VRAM_TILES_H-0){ return; }
+					if(y>=_CS.VRAM_TILES_V-0){ return; }
+				});
+			}
+
 		},
 
 		/**
@@ -819,14 +816,15 @@ core.GRAPHICS.FUNCS        = {
 		 * @example // Fade down from full color to black. (Once completed, remain at full black.)
 			 * _CGFU.chainFade('DOWN', 0, true );
 		*/
-		chainFade           : function(fadeDirection, speed, stayBlack){
+		chainFade           : function(fadeDirection, speed){
+			let stayBlack=false;
 			// _CGFU.chainFade("UP", 0, false);
 			// _CGFU.chainFade("DOWN", 0, true);
 
 			// Confirm that all arguments were provided.
 			if(fadeDirection == undefined){ let str = ["=E= chainFade: fadeDirection is undefined.",fadeDirection ]; throw Error(str); }
 			if(speed         == undefined){ let str = ["=E= chainFade: speed is undefined."        ,speed         ]; throw Error(str); }
-			if(stayBlack     == undefined){ let str = ["=E= chainFade: stayBlack is undefined."    ,stayBlack     ]; throw Error(str); }
+			// if(stayBlack     == undefined){ let str = ["=E= chainFade: stayBlack is undefined."    ,stayBlack     ]; throw Error(str); }
 
 			// Confirm that the speed is valid.
 			// if( [0,1,2].indexOf(speed) === -1 ){
@@ -835,9 +833,9 @@ core.GRAPHICS.FUNCS        = {
 			}
 
 			// Confirm that the stayBlack is valid.
-			if( [true, false].indexOf(stayBlack) === -1 ){
-				let str = ["=E= chainFade: stayBlack is invalid.", stayBlack ]; throw Error(str);
-			}
+			// if( [true, false].indexOf(stayBlack) === -1 ){
+			// 	let str = ["=E= chainFade: stayBlack is invalid.", stayBlack ]; throw Error(str);
+			// }
 
 			// Confirm that the fadeDirection is valid.
 			if( ["UP", "DOWN"].indexOf(fadeDirection) === -1 ){
@@ -851,34 +849,42 @@ core.GRAPHICS.FUNCS        = {
 				// Fade direction is invalid. This is not allowed with chainFade.
 				let str = ["=E= chainFade: fadeDirection is invalid.", fadeDirection ]; throw Error(str);
 			}
+
 			// Set the fade direction to the specifed value.
-			core.GRAPHICS.WORKERS.w_fade.fadeDirection=fadeDirection;
+			core.GRAPHICS.WORKERS.__fade.fadeDirection=fadeDirection;
+
+			// Get a handle to the alphas table.
+			let fade_alphas     = core.GRAPHICS.WORKERS.__fade.alphas;
 
 			// Fade direction up?
 			let newFadeLevel;
-			if     (core.GRAPHICS.WORKERS.w_fade.fadeDirection ==  1){
+			if     (core.GRAPHICS.WORKERS.__fade.fadeDirection ==  1){
 				// Set the fade level to the default value for this fade direction.
-				core.GRAPHICS.WORKERS.w_fade.fadeLevel=core.GRAPHICS.WORKERS.w_fade.fadeLevel_min;
-				newFadeLevel=core.GRAPHICS.WORKERS.w_fade.fadeLevel;
+				newFadeLevel=0;
+				core.GRAPHICS.WORKERS.__fade.alphaIndex=newFadeLevel;
 			}
 			// Fade direction down?
-			else if(core.GRAPHICS.WORKERS.w_fade.fadeDirection == -1){
+			else if(core.GRAPHICS.WORKERS.__fade.fadeDirection == -1){
 				// Set the fade level to the default value for this fade direction.
-				core.GRAPHICS.WORKERS.w_fade.fadeLevel=core.GRAPHICS.WORKERS.w_fade.fadeLevel_max;
-				newFadeLevel=core.GRAPHICS.WORKERS.w_fade.fadeLevel;
+				newFadeLevel=fade_alphas.length-1;
+				core.GRAPHICS.WORKERS.__fade.alphaIndex=newFadeLevel;
 			}
 
+			// Make the change to the output canvas globalAlpha.
+			core.GRAPHICS.ctx.OUTPUT.globalAlpha = fade_alphas[newFadeLevel] ;
+
+			// Set the flag to draw the canvas.
+			core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=true;
+
 			// Set stayBlack with the specified value.
-			core.GRAPHICS.WORKERS.w_fade.stayBlack=stayBlack;
+			// core.GRAPHICS.WORKERS.__fade.stayBlack=stayBlack;
 
 			// Set the new speed value.
-			core.GRAPHICS.WORKERS.w_fade.msBeforeChange=speed;
-			core.GRAPHICS.WORKERS.w_fade.lastChange=performance.now();
+			core.GRAPHICS.WORKERS.__fade.msBeforeChange=speed;
+			core.GRAPHICS.WORKERS.__fade.lastChange=performance.now();
 
-			// Set new value for the active state of the fade.
-			let fadeTable_fullOff = core.GRAPHICS.WORKERS.w_fade.fadeTable_fullOff ;
-			let fadeTable_fullOn  = core.GRAPHICS.WORKERS.w_fade.fadeTable_fullOn  ;
-			core.GRAPHICS.WORKERS.w_fade.fadeActive = (newFadeLevel!== fadeTable_fullOn) && (newFadeLevel != fadeTable_fullOff) ;
+			//
+			core.GRAPHICS.WORKERS.__fade.chainFadeActive=true;
 		},
 
 		/**
@@ -893,139 +899,71 @@ core.GRAPHICS.FUNCS        = {
 		 * @example // Set to full on and remain.
 			* _CGFU.setFade(13);
 		*/
-		setFade             : function(fadeLevel){
+		setFade             : function(alphaIndex){
 			// _CGFU.setFade(6);
+			core.GRAPHICS.DEBUG.start("fade_timings");
 
-			// Confirm that all arguments were provided.
-			if(fadeLevel == undefined){ let str = ["=E= setFade: fadeLevel is undefined.", fadeLevel ]; throw Error(str); }
+			if(alphaIndex >=0 && alphaIndex < core.GRAPHICS.WORKERS.__fade.alphas.length){
+				// Get a handle to the alphas table.
+				let fade_alphas     = core.GRAPHICS.WORKERS.__fade.alphas;
 
-			// Confirm that the fadeLevel is valid.
-			// let fadeLevel_min     = core.GRAPHICS.WORKERS.w_fade.fadeLevel_min     ;
-			// let fadeLevel_max     = core.GRAPHICS.WORKERS.w_fade.fadeLevel_max     ;
-			let fadeTable_fullOff = core.GRAPHICS.WORKERS.w_fade.fadeTable_fullOff ;
-			let fadeTable_fullOn  = core.GRAPHICS.WORKERS.w_fade.fadeTable_fullOn  ;
+				// Set the new alphaIndex.
+				core.GRAPHICS.WORKERS.__fade.alphaIndex = alphaIndex;
 
-			// Is the new fadeLevel valid?
-			if(
-				// Setting to value within range?
-				(! (fadeLevel >= fadeTable_fullOff && fadeLevel <= fadeTable_fullOn) )
-			){
-				let str = ["=E= setFade: fadeLevel is invalid.", fadeLevel ]; throw Error(str);
-			}
+				// Make the change to the output canvas globalAlpha.
+				core.GRAPHICS.ctx.OUTPUT.globalAlpha = fade_alphas[alphaIndex] ;
 
-			// Set the fade direction as to not be affected by the normal chain fading.
-			core.GRAPHICS.WORKERS.w_fade.fadeDirection=0;
-
-			// Set the fade level to the specified value.
-			core.GRAPHICS.WORKERS.w_fade.fadeLevel=fadeLevel;
-
-			// Will stayBlack be set?
-			if(fadeLevel==fadeTable_fullOff || fadeLevel == 0 || fadeLevel == 1){
-				// Set stayBlack.
-				core.GRAPHICS.WORKERS.w_fade.stayBlack=true;
+				// Set the flag to draw the canvas.
+				core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=true;
 			}
 			else{
-				// Clear stayBlack.
-				core.GRAPHICS.WORKERS.w_fade.stayBlack=false;
+				let str = ["=E= setFade: alphaIndex is invalid.", alphaIndex ];
+				throw Error(str);
+				return;
 			}
 
-			// Set the new speed value.
-			core.GRAPHICS.WORKERS.w_fade.msBeforeChange=0;
-			core.GRAPHICS.WORKERS.w_fade.lastChange=performance.now();
+			core.GRAPHICS.WORKERS.__fade.setFadeActive=true;
 
-			// Set new value for the active state of the fade.
-			core.GRAPHICS.WORKERS.w_fade.fadeActive = (fadeLevel!== fadeTable_fullOn) && (fadeLevel != fadeTable_fullOff) ;
+			core.GRAPHICS.DEBUG.end("fade_timings");
 		},
 
 		/**
-		 * @summary  Handles all graphical updates ot the OUTPUT canvas.
+		 * @summary  Handles all graphical updates of the OUTPUT canvas.
 		 * @memberof core.GRAPHICS.FUNCS.USER
 		 *
-		 * @example _CGFU.graphicsUpdate();
+		 * @example _CGFU.renderOutput();
 		*/
-		graphicsUpdate      : function(){
+		renderOutput : async function(){
+			core.GRAPHICS.DEBUG.start("gfx_timings");
 
-			return new Promise(function(res_updateAllLayers, rej_updateAllLayers){
-				let gfx_start ;
-				if(JSGAME.FLAGS.debug) { gfx_start = performance.now(); }
+			let drawFlag1=core.GRAPHICS.DATA.FLAGS.OUTPUT.draw;
+			let drawFlag2=core.GRAPHICS.WORKERS.__fade.chainFadeActive;
+			let drawFlag3=core.GRAPHICS.WORKERS.__fade.setFadeActive;
 
-				let errorHandler=function(name, err){
-					let str = ["=E= graphicsUpdate: ("+name+") rejected promise.", err ];
-					console.error("err: "+name+": ", err);
-					throw Error(str);
-				};
+			if( drawFlag1 || drawFlag2 || drawFlag3 ){
+				// Combine layers.
+				try{ await _CGFI.update_layer_COMBINE(); } catch(e){ _CGFI.errorHandler("update_layer_COMBINE", e); }
 
-				// Get fade values.
-				// let WORKERS_OBJ  = core.GRAPHICS.WORKERS  ;
-				// let fadeLevel         = WORKERS_OBJ.w_fade.fadeLevel ;
+				// Is there a chain fade in progress?
+				_CGFI.update_fadeValues();
 
-				let fade = core.GRAPHICS.WORKERS.w_fade.fadeActive ;
-				// core.GRAPHICS.WORKERS.w_fade.fadeLevel
+				// Draw the screen from memory.
+				_CGFI.update_layer_OUTPUT();
+				// try{ await _CGFI.update_layer_OUTPUT(); core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=false; } catch(e){ _CGFI.errorHandler("update_layer_OUTPUT", e); }
+			}
+			else{
+				// core.GRAPHICS.DEBUG.start("doColorSwapping"); core.GRAPHICS.DEBUG.end("doColorSwapping");
+				// core.GRAPHICS.DEBUG.start("update_layers");   core.GRAPHICS.DEBUG.end("update_layers");
+				// core.GRAPHICS.DEBUG.start("layer_BG1"       ); core.GRAPHICS.DEBUG.end("layer_BG1"       );
+				// core.GRAPHICS.DEBUG.start("layer_BG2"       ); core.GRAPHICS.DEBUG.end("layer_BG2"       );
+				// core.GRAPHICS.DEBUG.start("layer_TEXT"      ); core.GRAPHICS.DEBUG.end("layer_TEXT"      );
+				// core.GRAPHICS.DEBUG.start("layer_SP1"       ); core.GRAPHICS.DEBUG.end("layer_SP1"       );
+				core.GRAPHICS.DEBUG.start("layer_combines");  core.GRAPHICS.DEBUG.end("layer_combines");
+				core.GRAPHICS.DEBUG.start("fade_timings");    core.GRAPHICS.DEBUG.end("fade_timings");
+				core.GRAPHICS.DEBUG.start("output_timings");  core.GRAPHICS.DEBUG.end("output_timings");
+			}
 
-				// Perform color swaps.
-				let doColorSwapping_start ;
-				if(JSGAME.FLAGS.debug) { doColorSwapping_start = performance.now(); }
-				_CGFI.doColorSwapping().then(
-					function(){
-						if(JSGAME.FLAGS.debug) { if(_CGP.doColorSwapping.length >=5){ _CGP.doColorSwapping.shift(); } _CGP.doColorSwapping.push(performance.now() - doColorSwapping_start); }
-
-						// Update layers.
-						let update_layers_timings_start ;
-						if(JSGAME.FLAGS.debug) { update_layers_timings_start = performance.now(); }
-						_CGFI.update_layers().then(
-							function(drawOutput){
-								if(JSGAME.FLAGS.debug) { if(_CGP.update_layers.length >=5){ _CGP.update_layers.shift(); } _CGP.update_layers.push(performance.now() - update_layers_timings_start); }
-
-								// Do we draw?
-								if(drawOutput || fade){
-									// Combine layers.
-									let layer_combines_start ;
-									if(JSGAME.FLAGS.debug) { layer_combines_start = performance.now(); }
-									_CGFI.update_layer_COMBINE().then(
-										function(){
-											if(JSGAME.FLAGS.debug) { if(_CGP.layer_combines.length >=5){ _CGP.layer_combines.shift(); } _CGP.layer_combines.push(performance.now() - layer_combines_start); }
-
-											// Fade?
-											let fade_timings_start;
-											if(JSGAME.FLAGS.debug) { fade_timings_start = performance.now(); }
-											_CGFI.update_layer_FADE().then(
-												function(){
-													if(JSGAME.FLAGS.debug) { if(_CGP.fade_timings.length >=5){ _CGP.fade_timings.shift(); } _CGP.fade_timings.push(performance.now() - fade_timings_start); }
-
-													// Final output.
-													let output_timings_start;
-													if(JSGAME.FLAGS.debug) { output_timings_start = performance.now(); }
-													_CGFI.update_layer_OUTPUT().then(
-														function(){
-															if(JSGAME.FLAGS.debug) { if(_CGP.output_timings.length >=5){ _CGP.output_timings.shift(); } _CGP.output_timings.push(performance.now() - output_timings_start); }
-															if(JSGAME.FLAGS.debug) { if(_CGP.gfx_timings.length >=5){ _CGP.gfx_timings.shift(); } _CGP.gfx_timings.push(performance.now() - gfx_start); }
-
-															if(1) { res_updateAllLayers(); }
-															else  { rej_updateAllLayers(); }
-															return;
-														},
-														function(err){ errorHandler("update_layer_OUTPUT", err); }
-													);
-												},
-												function(err){ errorHandler("update_layer_FADE", err); }
-											);
-										},
-										function(err){ errorHandler("update_layer_COMBINE", err); }
-									);
-								}
-								else{
-									res_updateAllLayers();
-									return;
-								}
-
-							},
-							function(err){ errorHandler("update_layers", err); }
-						);
-					},
-					function(err){ errorHandler("doColorSwapping", err); }
-				);
-			});
-
+			core.GRAPHICS.DEBUG.end("gfx_timings");
 		},
 	},
 
@@ -1129,8 +1067,14 @@ core.GRAPHICS.FUNCS        = {
 			newVRAM_entry.tileset   = tileset   ;
 			newVRAM_entry.layer     = layer     ;
 			newVRAM_entry.layerType = layerType ;
-			if     (tileindex !== "" ){ newVRAM_entry.tileindex = tileindex ; }
-			else if(tilemap   !== "" ){ newVRAM_entry.tilemap   = tilemap   ; }
+
+			tileindex = (tileindex !== "") ? (tileindex) : "";
+			tilemap   = (tilemap   !== "") ? (tilemap  ) : "";
+
+			newVRAM_entry.tileindex = tileindex ;
+			newVRAM_entry.tilemap   = tilemap   ;
+
+			// Do a bounds-check before drawing the tile.
 
 			// Grid?
 			if(useGrid==true){
@@ -1178,6 +1122,24 @@ core.GRAPHICS.FUNCS        = {
 			// DEBUG:
 			newVRAM_entry.__calledBy = data.__calledBy;
 
+			if(tileset=="_textstrings"){
+				newVRAM_entry._textstrings={
+					"tilemap" : tilemap,
+					"tileset" : tileset,
+				};
+
+				// console.log(
+				// 	"=== 1 === Adjust_NewTile_obj:",
+				// 	"\n ARGUMENTS    :", x, y, tileset, tilemap , layer, flags,
+				// 	"\n imgObj       :", imgObj,
+				// 	"\n layerType    :", layerType,
+				// 	"\n useGrid      :", useGrid,
+				// 	"\n newVRAM_entry.tilemap:", newVRAM_entry.tilemap,
+				// 	"\n newVRAM_entry.tileset:", newVRAM_entry.tileset,
+				// 	"\n newVRAM_entry:", newVRAM_entry
+				// );
+			}
+
 			// Rotate or flip the image?
 			if( (flags.ROT !== false && flags.ROT !== 0) || flags.FLIP_X || flags.FLIP_Y || flags.colorSwaps.length){
 				// Custom canvases will not have the tilemap or tileindex set.
@@ -1188,7 +1150,13 @@ core.GRAPHICS.FUNCS        = {
 
 				// Add to colorSwap queue?
 				if(flags.colorSwaps.length){
-					_CGFI.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
+					// Clone the newVRAM_entry.
+					let clone_newVRAM_entry = JSON.parse(JSON.stringify(newVRAM_entry));
+
+					// Do the work.
+					_CGFI.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), clone_newVRAM_entry);
+
+					// _CGFI.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
 				}
 				// No colorswap, just rotation and/or flipping?
 				else if ( (flags.ROT !== false && flags.ROT !== 0) || flags.FLIP_X || flags.FLIP_Y ){
@@ -1208,12 +1176,6 @@ core.GRAPHICS.FUNCS        = {
 						newVRAM_entry.h         = dst_canvas.height ;
 						dst_ctx.drawImage(imgObj.canvas, newX, newY);
 					}
-
-					// Set drawThis.
-					// newVRAM_entry.flags.drawThis=true;
-
-					// Set the UPDATE flag for this layer.
-					// core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
 
 					newVRAM_entry.canvas         = dst_canvas ;
 					// newVRAM_entry.canvas         = imgObj.canvas ;
@@ -1239,12 +1201,6 @@ core.GRAPHICS.FUNCS        = {
 				newVRAM_entry.canvas  = undefined ;
 				newVRAM_entry.imgData = undefined ;
 
-				// Set drawThis.
-				// newVRAM_entry.flags.drawThis=true;
-
-				// Set the UPDATE flag for this layer.
-				// core.GRAPHICS.DATA.FLAGS[layer].UPDATE=true;
-
 				// Place the tile.
 				_CGFI.placeTile({
 					"mapWidth"      : (imgObj.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
@@ -1260,96 +1216,73 @@ core.GRAPHICS.FUNCS        = {
 		 *
 		 * @example _CGFI.doColorSwapping();
 		*/
-		doColorSwapping     : function(){
+		doColorSwapping     : function(newObj){
 			return new Promise(function(res,rej){
-				// res(); return;
-				// Early exit?
-				if(!core.GRAPHICS.WORKERS.w_colorswaps.queuedCount){ res(); return; }
+				core.GRAPHICS.DEBUG.start("doColorSwapping");
 
-				// Each for each queue.
+				// Increment the queue count.
+				core.GRAPHICS.WORKERS.w_colorswaps.queuedCount += 1;
+
+				// Set color swapping to active.
+				core.GRAPHICS.WORKERS.w_colorswaps.active=true;
+
+				let imgData_buffer = newObj.imgData_buffer ;
+				let newVRAM_entry  = newObj.newVRAM_entry  ;
+
 				let workers = core.GRAPHICS.WORKERS.WORKERS ;
-				let queues  = core.GRAPHICS.WORKERS.w_colorswaps.queue ;
+				let worker ;
+				let workerIndex ;
 
-				let proms=core.GRAPHICS.WORKERS.w_colorswaps.proms;
-				proms.length=0;
-
-				let img_buffers_arr = []                ;
-				let newVRAM_entries = []                ;
-				let transferList    = []                ;
-				for(let queueNum=0; queueNum<queues.length; queueNum+=1){
-
-					proms.push(
-						new Promise(
-							function(res_inner, rej_inner){
-								let thisQueue       = queues[queueNum]  ;
-								let worker          = workers[queueNum] ;
-								img_buffers_arr.length=0                ;
-								newVRAM_entries.length=0                ;
-								transferList   .length=0                ;
-
-								let queueLen=thisQueue.length;
-								for(let i=0; i<queueLen; i+=1){
-									let rec = thisQueue[i];
-
-									// Only colorswap items should be part of this queue.
-									if(rec.newVRAM_entry.flags.colorSwaps.length){
-										// Add data.
-										img_buffers_arr.push( rec.imgData_buffer );
-										newVRAM_entries.push( rec.newVRAM_entry  );
-										transferList   .push( rec.imgData_buffer );
-									}
-								}
-
-								// Only send a message to the worker if there is something for it to do.
-								if(img_buffers_arr.length){
-									// Define onmessage callback.
-									worker.onmessage = function(e){
-										// console.log("Worker #"+queueNum, "response:", e.data);
-										let prom = core.GRAPHICS.WORKERS.CALLBACK(e);
-										prom.then(
-											function(){
-												core.GRAPHICS.WORKERS.w_colorswaps.queue[queueNum].length=0;
-												// core.GRAPHICS.WORKERS.WORKERS[queueNum].onmessage = null;
-
-												// Reduce the queuedCount based on the number of items.
-												core.GRAPHICS.WORKERS.w_colorswaps.queuedCount -= img_buffers_arr.length;
-
-												res_inner();
-											},
-											function(err) { console.log("err:", err);   rej_inner(); }
-										);
-									};
-
-									let msg = {
-										"function"          : "colorswaps"    ,
-										"img_buffers_arr"   : img_buffers_arr ,
-										"newVRAM_entries"   : newVRAM_entries ,
-									};
-
-									// console.log("Sending " + img_buffers_arr.length + " items to worker #"+queueNum);
-
-									// Send the data to the worker.
-									worker.postMessage( msg , transferList );
-								}
-								else{
-									res_inner();
-								}
-							}
-						)
-					);
-
+				// Determine which worker to use.
+				for(let w=0; w<workers.length; w+=1){
+					if(workers[w].inuse==true){ continue; }
+					else{ workerIndex=w; worker=workers[workerIndex]; break; }
 				}
 
-				Promise.all(proms).then(
-					function(){
-						// Resolve the outer promise.
-						if(1) { res(); }
-						else  { rej(); }
-					},
-					function(err){
-						console.log("err:", err);
-					}
-				);
+				// Default to a random worker if they are all in use.
+				if(workerIndex==undefined){
+					workerIndex = JSGAME.SHARED.getRandomInt_inRange(0, workers.length-1);
+					worker=workers[workerIndex];
+				}
+
+				if(newVRAM_entry.flags.colorSwaps.length){
+					// Define onmessage callback.
+					worker.onmessage = function(e){
+						// Clear the inuse flag.
+						core.GRAPHICS.DEBUG.end("doColorSwapping");
+						worker.inuse=false;
+
+						if(e.data.workerIndex!=worker.workerIndex){
+							console.log("worker at index:", e.data.workerIndex, worker.workerIndex, "has completed.", e.data);
+							// alert("BAD!");
+						}
+
+
+						// Run the callback.
+						(async function RUNCALLBACK(){
+							try{ core.GRAPHICS.WORKERS.CALLBACK(e); }catch(err){ console.log("err:", err);   rej(); }
+							res();
+						})();
+					};
+
+					let msg = {
+						"function"        : "colorswaps"      ,
+						"img_buffers_arr" : [imgData_buffer]  ,
+						"newVRAM_entries" : [newVRAM_entry]   ,
+						// "startTime"       : performance.now() ,
+						"workerIndex"     : worker.workerIndex,
+					};
+
+					// Send the data to the worker.
+					worker.inuse=true;
+
+					worker.postMessage( msg , imgData_buffer );
+				}
+				else{
+					// Shouldn't have been sent here.
+					console.log("Shouldn't have been sent here.");
+					rej();
+				}
 			});
 		},
 
@@ -1440,50 +1373,20 @@ core.GRAPHICS.FUNCS        = {
 		 * @example _CGFI.addColorSwapToQueue(imgData, newVRAM_entry);
 		*/
 		addColorSwapToQueue : function(imgData, newVRAM_entry){
-			// Create the object.
+			// Create the object. (elements are expected to be clones.)
 			let newObj = {
 				"imgData_buffer" : imgData ,
 				"newVRAM_entry"  : newVRAM_entry
 			};
 
-			// Determine which worker's queue to add this change into.
-			let queues = core.GRAPHICS.WORKERS.w_colorswaps.queue ;
-			let queueLengths=[];
-
-			// Each for each queue.
-			for(let queueNum=0; queueNum<queues.length; queueNum+=1){
-				// Save the number of items in the queue.
-				// queueLengths.push(queues[queueNum].length);
-
-				try{
-					queueLengths.push(queues[queueNum].length);
-				}
-				catch(e){
-					console.log(
-						"\n queues          : ", queues,
-						"\n queueNum        : ", queueNum,
-						"\n queues[queueNum]: ", queues[queueNum],
-						"\n e:", e
-					);
-					return;
-				}
-			}
-			// let destinationQueue = queueLengths.indexOf(Math.min.apply(null,queueLengths)) ;
-			let destinationQueue = queueLengths.indexOf(Math.min(...queueLengths)) ;
-
-			// Add the object to the queue.
-			core.GRAPHICS.WORKERS.w_colorswaps.queue[destinationQueue].push(newObj);
-
-			//
-			core.GRAPHICS.WORKERS.w_colorswaps.queuedCount+=1;
-
 			// Immeditately perform the color swapping.
-			// _CGFI.doColorSwapping()
-				// .then(
-				// 	function(){ core.GRAPHICS.WORKERS.w_colorswaps.queuedCount-=1; },
-				// 	function(){}
-				// );
-			// ;
+			_CGFI.doColorSwapping(newObj)
+				.then(
+					function(){
+					},
+					function(err){ console.log("error in doColorSwapping:", err); }
+				)
+			;
 		},
 
 		/**
@@ -1500,6 +1403,16 @@ core.GRAPHICS.FUNCS        = {
 			let layer         = newVRAM_entry.layer      ;
 			let flags         = newVRAM_entry.flags      ;
 			let addr ;
+
+			// if(newVRAM_entry._textstrings){
+			// 	console.log(
+			// 		"=== 2 === placeTile:",
+			// 		"\n ARGUMENTS    :", data,
+			// 		"\n newVRAM_entry:", newVRAM_entry,
+			// 		"\n newVRAM_entry.flags:", newVRAM_entry.flags,
+			// 		"\n newVRAM_entry._textstrings:", newVRAM_entry._textstrings
+			// 	);
+			// }
 
 			// Add the newVRAM_entry to the specified layer's VRAM/SPRITES.
 			if     (layerType=="VRAM")  {
@@ -1520,6 +1433,7 @@ core.GRAPHICS.FUNCS        = {
 
 				// Adjust VRAM. (Multiple entries.)
 				else if(__calledBy=="DrawMap"){
+
 					// Start VRAM index.
 					let addr_1    = (y*_CS.VRAM_TILES_H)+x;
 
@@ -1532,32 +1446,47 @@ core.GRAPHICS.FUNCS        = {
 							// What is the next VRAM index?
 							let thisAddr = addr_1 + ( (_y * _CS.VRAM_TILES_H) + _x );
 
+							// Do a range check! Is thisAddr within the array?
+							if(core.GRAPHICS.DATA.VRAM[layer][thisAddr] == undefined){
+								// console.log("thisAddr is out of range for this layer.", thisAddr, newVRAM_entry);
+								continue;
+							}
+
 							// First index gets the newVRAM_entry.
 							if(thisAddr==addr_1){
+								// console.log("activating this tile.", "start:", addr_1, "current:", thisAddr, "_x:", _x, "_y:", _y);
 								newVRAM_entry.flags.OFF = false ;
 								newVRAM_entry.index_VRAM=thisAddr;
 								newVRAM_entry.index_SPRITE=undefined;
+								newVRAM_entry.drawThis=true;
 								core.GRAPHICS.DATA.VRAM[layer][thisAddr] = newVRAM_entry;
 							}
 							// Other indexes get turned off.
 							else{
 								// Set this tile to be OFF.
+								// console.log("DE_activating this tile.", "start:", addr_1, "current:", thisAddr, "_x:", _x, "_y:", _y);
 								let existingObj = core.GRAPHICS.DATA.VRAM[layer][thisAddr];
-								existingObj.flags.OFF = true ;
-								existingObj.index_VRAM=thisAddr;
-								existingObj.index_SPRITE=undefined;
 
 								// Set this tile to be transparent.
-								// existingObj.flags.OFF = false ;
-								// existingObj.tileset   = "default_tileset" ;
-								// existingObj.tilemap   = "" ;
-								// existingObj.tileindex = 1 ;
+								existingObj.index_VRAM=thisAddr;
+								existingObj.index_SPRITE=undefined;
+								// newVRAM_entry.drawThis=true;
+								newVRAM_entry.drawThis=false;
+								existingObj.flags.OFF = false ;
+								existingObj.tileset   = "default_tileset" ;
+								existingObj.tilemap   = "" ;
+								existingObj.tileindex = 1 ;  // Transparent tile.
 							}
 						}
 					}
 
 					// console.log(__calledBy, layer, addr_1, newVRAM_entry);
 
+				}
+
+				// Invalid!
+				else {
+					console.log("__calledBy was invalid!", __calledBy, layerType);
 				}
 			}
 			else if(layerType=="SPRITE"){
@@ -1570,7 +1499,6 @@ core.GRAPHICS.FUNCS        = {
 			}
 
 			// Set the draw and layer update flags.
-			// newVRAM_entry.YESIEXIST = true ; // REMOVE THIS
 			newVRAM_entry.flags.drawThis = true ;
 			core.GRAPHICS.DATA.FLAGS[newVRAM_entry.layer].UPDATE=true;
 		},
@@ -1587,13 +1515,16 @@ core.GRAPHICS.FUNCS        = {
 			return new Promise(function(res,rej){
 				let drawOutput=false;
 
+				core.GRAPHICS.DEBUG.start("update_layers");
+
 				let layers = Object.keys(core.SETTINGS.layers);
 				for(let i=0; i<layers.length; i+=1){
 					// Get draw start time.
-					let drawStart = performance.now();
+					core.GRAPHICS.DEBUG.start("layer_"+layers[i]);
 
 					// Get layer variables.
 					let layer           = layers[i];
+
 					let UPDATE          = core.GRAPHICS.DATA.FLAGS[layer].UPDATE          ;
 					let REDRAW          = core.GRAPHICS.DATA.FLAGS[layer].REDRAW          ;
 
@@ -1627,10 +1558,16 @@ core.GRAPHICS.FUNCS        = {
 						// DRAW TILES?
 						for(let t=0; t<VRAM.length; t+=1){
 							// Skip gaps in the array.
-							if(!VRAM[t]){ continue; }
+							if(!VRAM[t]){
+								// console.log("VRAM gap skip!", t, VRAM.length, VRAM[t]);
+								continue;
+							}
 
 							// Do not draw tiles that have OFF set.
-							if(VRAM[t].flags.OFF){ continue; }
+							if(VRAM[t].flags.OFF){
+								// console.log("flags set to off!");
+								continue;
+							}
 
 							// Does this tile have the drawThis flag set?
 							if(VRAM[t].flags.drawThis || REDRAW){
@@ -1640,6 +1577,7 @@ core.GRAPHICS.FUNCS        = {
 								// let w = VRAM[t].w ;
 								// let h = VRAM[t].h ;
 								let flags = VRAM[t].flags ;
+								let _textstrings=VRAM[t]._textstrings ;
 
 								// Source image data.
 								let tileset   = VRAM[t].tileset   ;
@@ -1661,17 +1599,21 @@ core.GRAPHICS.FUNCS        = {
 								// Draw the custom canvas if it exists.
 								if     (img_canvas !== false ){
 									finalImage=img_canvas; // Get the image.
-									finalImage.numUsed+=1; // Update numUsed for this imgObj.
+									finalImage.numUsed+=1; // Update numUsed for this imgObj. ????
+								}
+								else if(_textstrings){
+									finalImage = _CGA.tilemaps[_textstrings.tileset][_textstrings.tilemap].canvas;   // Get the image.
+									_CGA.tilemaps[_textstrings.tileset][_textstrings.tilemap].numUsed+=1;            // Update numUsed for this imgObj.
 								}
 								// Draw the tilemap if it exists.
 								else if(tilemap   !== ""){
-									finalImage=core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap].numUsed+=1; // Update numUsed for this imgObj.
-									finalImage=core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap].canvas;     // Get the image.
+									finalImage=_CGA.tilemaps[tileset][tilemap].canvas;   // Get the image.
+									_CGA.tilemaps[tileset][tilemap].numUsed+=1;          // Update numUsed for this imgObj.
 								}
 								// Draw the tileindex if it exists.
 								else if(tileindex   !== ""){
-									core.GRAPHICS.ASSETS.tilesets[tileset][tileindex].numUsed+=1;        // Update numUsed for this imgObj.
-									finalImage=core.GRAPHICS.ASSETS.tilesets[tileset][tileindex].canvas; // Get the image.
+									finalImage=_CGA.tilesets[tileset][tileindex].canvas; // Get the image.
+									_CGA.tilesets[tileset][tileindex].numUsed+=1;        // Update numUsed for this imgObj.
 								}
 								else{
 									// continue;
@@ -1692,8 +1634,8 @@ core.GRAPHICS.FUNCS        = {
 										"\n TEST3: "         ,tileindex  !== ""    ,
 
 										"\n instanceof HTMLImageElement :", VRAM[t].canvas instanceof HTMLCanvasElement,
-										"\n core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap]  :", core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap] ,
-										"\n core.GRAPHICS.ASSETS.tilesets[tileset][tileindex]:", core.GRAPHICS.ASSETS.tilesets[tileset][tileindex] ,
+										"\n _CGA.tilemaps[tileset][tilemap]  :", _CGA.tilemaps[tileset][tilemap] ,
+										"\n _CGA.tilesets[tileset][tileindex]:", _CGA.tilesets[tileset][tileindex] ,
 										""
 										);
 										throw Error(str);
@@ -1730,14 +1672,21 @@ core.GRAPHICS.FUNCS        = {
 						core.GRAPHICS.DATA.FLAGS[layer].REDRAW=false;
 					}
 
-					// Update the layer draw performance data.
-					if(JSGAME.FLAGS.debug) {
-						if(core.GRAPHICS.performance.LAYERS[layer].length >=5){ core.GRAPHICS.performance.LAYERS[layer].shift(); }
-						core.GRAPHICS.performance.LAYERS[layer].push(performance.now() - drawStart);                   }
+					core.GRAPHICS.DEBUG.end("layer_"+layer);
 				}
 
+				// Get a handle to the fade data.
+				let fadeData = core.GRAPHICS.WORKERS.__fade;
+
+				// If a fade is active then make sure the screen is drawn.
+				if( fadeData.chainFadeActive || fadeData.setFadeActive ){ drawOutput=true; }
+
+				core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=drawOutput ;
+
+				core.GRAPHICS.DEBUG.end("update_layers");
+
 				// Done! Resolve.
-				if(1) { res(drawOutput); }
+				if(1) { res(); }
 				else  { rej(); }
 			});
 		},
@@ -1750,34 +1699,33 @@ core.GRAPHICS.FUNCS        = {
 		*/
 		update_layer_COMBINE : function(){
 			return new Promise(function(res,rej){
-				// Get a handle to the temp output.
-				let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
-				let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
-				tempOutput_ctx.clearRect( 0,0, tempOutput.width, tempOutput.height );
+				core.GRAPHICS.DEBUG.start("layer_combines");
 
-				// Draw each layer to the OUTPUT in the order specified by the gamesettings.json file.
-				for(let i=0; i<core.SETTINGS.layerDrawOrder.length; i+=1){
-					let layerName = core.SETTINGS.layerDrawOrder[i];
-					let canvas = core.GRAPHICS.canvas[layerName];
-					tempOutput_ctx.drawImage( canvas, 0, 0) ;
+				// Get a handle to the fade data.
+				let fadeData = core.GRAPHICS.WORKERS.__fade;
+
+				let drawFlag1=core.GRAPHICS.DATA.FLAGS.OUTPUT.draw;
+				let drawFlag2=core.GRAPHICS.WORKERS.__fade.chainFadeActive;
+				let drawFlag3=core.GRAPHICS.WORKERS.__fade.setFadeActive;
+
+				if( drawFlag1 || drawFlag2 || drawFlag3 ){
+					// Get a handle to the temp output.
+					let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
+					let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
+					tempOutput_ctx.clearRect( 0,0, tempOutput.width, tempOutput.height );
+
+					// Draw each layer to the OUTPUT in the order specified by the gamesettings.json file.
+					for(let i=0; i<core.SETTINGS.layerDrawOrder.length; i+=1){
+						let layerName = core.SETTINGS.layerDrawOrder[i];
+						let canvas = core.GRAPHICS.canvas[layerName];
+						tempOutput_ctx.drawImage( canvas, 0, 0) ;
+					}
 				}
 
-				// // Get fade values.
-				// let WORKERS_OBJ       = core.GRAPHICS.WORKERS  ;
-				// let fadeLevel         = WORKERS_OBJ.w_fade.fadeLevel ;
-				// let fadeTable_fullOn  = WORKERS_OBJ.w_fade.fadeTable_fullOn ;
-				// let fadeTable_fullOff = WORKERS_OBJ.w_fade.fadeTable_fullOff ;
-				// let fade = (fadeLevel!== fadeTable_fullOn) && (fadeLevel != fadeTable_fullOff) ;
-
-				// if(fade){
-				// 	core.GRAPHICS.imgData.pre_OUTPUT.whole = tempOutput_ctx.getImageData(0, 0, tempOutput.width, tempOutput.height);
-				// }
-
 				// Done! Resolve.
-				if(1) { res(); }
-				else  { rej(); }
+				if(1) { core.GRAPHICS.DEBUG.end("layer_combines"); res(); }
+				else  { core.GRAPHICS.DEBUG.end("layer_combines"); rej(); }
 			});
-
 		},
 
 		/**
@@ -1788,229 +1736,102 @@ core.GRAPHICS.FUNCS        = {
 		*/
 		update_layer_OUTPUT  : function(){
 			return new Promise(function(res,rej){
-				// Get a handle to the temp output.
-				let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
+				core.GRAPHICS.DEBUG.start("output_timings");
 
-				// Clear the OUTPUT canvas.
-				core.GRAPHICS.ctx.OUTPUT.clearRect( 0,0, core.GRAPHICS.canvas.OUTPUT.width, core.GRAPHICS.canvas.OUTPUT.height );
+				// Get a handle to the fade data.
+				let fadeData = core.GRAPHICS.WORKERS.__fade;
 
-				// Draw to the OUTPUT canvas.
-				let x_offset = core.GRAPHICS.DATA.FLAGS.OUTPUT.x_offset;
-				let y_offset = core.GRAPHICS.DATA.FLAGS.OUTPUT.y_offset;
-				core.GRAPHICS.ctx.OUTPUT.drawImage(
-					tempOutput,
-					0 + x_offset,
-					0 + y_offset
-				);
+				let drawFlag1=core.GRAPHICS.DATA.FLAGS.OUTPUT.draw;
+				let drawFlag2=core.GRAPHICS.WORKERS.__fade.chainFadeActive;
+				let drawFlag3=core.GRAPHICS.WORKERS.__fade.setFadeActive;
+
+				if( drawFlag1 || drawFlag2 || drawFlag3 ){
+					// Get a handle to the temp output.
+					let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
+
+					// Clear the OUTPUT canvas.
+					core.GRAPHICS.ctx.OUTPUT.clearRect( 0,0, core.GRAPHICS.canvas.OUTPUT.width, core.GRAPHICS.canvas.OUTPUT.height );
+
+					// Draw to the OUTPUT canvas.
+					let x_offset = core.GRAPHICS.DATA.FLAGS.OUTPUT.x_offset;
+					let y_offset = core.GRAPHICS.DATA.FLAGS.OUTPUT.y_offset;
+
+					// Apply the current level of fading.
+					// let fade_alphas     = core.GRAPHICS.WORKERS.__fade.alphas;
+					// let fade_alphaIndex = core.GRAPHICS.WORKERS.__fade.alphaIndex;
+					// core.GRAPHICS.ctx.OUTPUT.globalAlpha = fade_alphas[fade_alphaIndex] ;
+
+					core.GRAPHICS.ctx.OUTPUT.drawImage(
+						tempOutput,
+						0 + x_offset,
+						0 + y_offset
+					);
+
+					core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=false;
+
+					// Is setFadeActive set? If alphaIndex is either full on or full off then clear the setFadeActive flag.
+					if(fadeData.setFadeActive && (fadeData.alphaIndex==0 || fadeData.alphaIndex>=fadeData.alphas.length-1) ){
+						fadeData.setFadeActive=false;
+					}
+				}
 
 				// Done! Resolve.
-				if(1) { res(); }
-				else  { rej(); }
+				if(1) { core.GRAPHICS.DEBUG.end("output_timings"); res(); }
+				else  { core.GRAPHICS.DEBUG.end("output_timings"); rej(); }
 			});
 		},
 
 		/**
-		 * @summary  Performs the OUTPUT layer fade using webworkers.
+		 * @summary  Used with chain fading to handle the next fade.
 		 * @memberof core.GRAPHICS.FUNCS.INTERNAL
 		 *
-		 * @example _CGFI.update_layer_FADE();
+		 * @example _CGFI.update_fadeValues();
 		*/
-		update_layer_FADE    : function(){
-			return new Promise(function(res,rej){
-				// core.GRAPHICS.WORKERS
-				let WORKERS_OBJ  = core.GRAPHICS.WORKERS  ;
-				let WORKERS      = core.GRAPHICS.WORKERS.WORKERS  ;
-				// let CALLBACK     = core.GRAPHICS.WORKERS.CALLBACK ;
-				let key = "w_fade";
+		update_fadeValues    : function(){
+			// Get a handle to the fade data.
+			let fadeData = core.GRAPHICS.WORKERS.__fade;
 
-				// core.GRAPHICS.WORKERS.w_fade
-				let fadeLevel_min          = WORKERS_OBJ[key].fadeLevel_min          ;
-				let fadeLevel_max          = WORKERS_OBJ[key].fadeLevel_max          ;
-				let fadeDirection          = WORKERS_OBJ[key].fadeDirection          ;
-				let fadeLevel              = WORKERS_OBJ[key].fadeLevel              ;
-				let fadeTable_fullOff      = WORKERS_OBJ[key].fadeTable_fullOff      ;
-				let fadeTable_fullOn       = WORKERS_OBJ[key].fadeTable_fullOn       ;
-				let stayBlack              = WORKERS_OBJ[key].stayBlack              ;
+			if(fadeData.chainFadeActive){
+				// Is it time to change the fade level?
+				if(performance.now()-fadeData.lastChange >= fadeData.msBeforeChange){
 
-				let msBeforeChange         = WORKERS_OBJ[key].msBeforeChange         ;
-				let lastChange             = WORKERS_OBJ[key].lastChange             ;
-				let now                    = performance.now()                       ;
+					// Set the last change timestamp.
+					fadeData.lastChange = performance.now();
 
-				// If there is not a fade to do then resolve and return.
-				if(fadeLevel == fadeTable_fullOff || fadeLevel == fadeTable_fullOn){
-					if(fadeLevel == fadeTable_fullOff && stayBlack){
-						// This fade level is straight black. No need to do calculations on it to get all black.
-						// console.log("A: Skipping fade and just filling with black.");
+					// Increment?
+					if     (fadeData.fadeDirection ==  1){
+						// Adjust fadeData.alphaIndex index.
+						if(fadeData.alphaIndex < fadeData.alphas.length-1){ fadeData.alphaIndex += fadeData.fadeDirection; }
 
-						// Get a handle to the temp output.
-						let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
-						let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
-						tempOutput_ctx.fillStyle = "rgba(0, 0, 0, 1.0)";      // Black
-						tempOutput_ctx.fillRect(0, 0, tempOutput.width, tempOutput.height);
-
-						// Done! Resolve.
-						res();
-						return;
-					}
-					else{
-						// Done! Resolve.
-						res();
-						return;
-					}
-				}
-
-				// Does the fadeLevel need to change?
-				if(fadeDirection != 0){
-					if(now-lastChange >= msBeforeChange){
-						WORKERS_OBJ[key].lastChange=now;
-
-						// Increment?
-						if     (fadeDirection ==  1){
-							// Is it already at max level?
-							if(fadeLevel == fadeLevel_max){
-								WORKERS_OBJ[key].fadeLevel=fadeTable_fullOn;
-							}
-
-							// Adjust fadeLevel index.
-							else{ WORKERS_OBJ[key].fadeLevel += fadeDirection; }
-						}
-
-						// Decrement?
-						else if(fadeDirection == -1){
-							// Is it already at min level?
-							if(fadeLevel == fadeLevel_min){
-								WORKERS_OBJ[key].fadeLevel=fadeTable_fullOff;
-							}
-
-							// Adjust fadeLevel index.
-							else{ WORKERS_OBJ[key].fadeLevel += fadeDirection; }
+						// Is it already at max level?
+						else{
+							fadeData.chainFadeActive = false ;
 						}
 					}
-					// No change.
-					else{
+
+					// Decrement?
+					else if(fadeData.fadeDirection == -1){
+						// Adjust fadeData.alphaIndex index.
+						if(fadeData.alphaIndex > 0){ fadeData.alphaIndex += fadeData.fadeDirection; }
+
+						// Is it already at min level?
+						else{
+							fadeData.chainFadeActive = false;
+						}
 					}
+
+					// Set the new fade.
+					_CGFU.setFade(fadeData.alphaIndex);
 				}
-
-				if(fadeLevel == 1){
-					// This fade level is straight black. No need to do calculations on it to get all black.
-					// console.log("B: Skipping fade and just filling with black.");
-
-					// Get a handle to the temp output.
-					let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
-					let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
-					tempOutput_ctx.fillStyle = "rgba(0, 0, 0, 1.0)";      // Black
-					tempOutput_ctx.fillRect(0, 0, tempOutput.width, tempOutput.height);
-
-					// Done! Resolve.
-					res();
-					return;
-				}
-
-				// core.GRAPHICS.WORKERS.w_fade.fadeTable
-				let maxBlue  = WORKERS_OBJ[key].fadeTable[fadeLevel].b ;
-				let maxGreen = WORKERS_OBJ[key].fadeTable[fadeLevel].g ;
-				let maxRed   = WORKERS_OBJ[key].fadeTable[fadeLevel].r ;
-
-				// Number of workers available. (assumes they are available.)
-				// let numWorkers = WORKERS.length;
-				let numWorkers = 1;
-
-				// Get a handle to the temp output.
-				let tempOutput     = core.GRAPHICS.canvas.pre_OUTPUT;
-				let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
-
-				let width = tempOutput.width;
-				let height = Math.ceil( (tempOutput.height/numWorkers) );
-				let x=0;
-				let y;
-
-				// Make ImageData of the combined canvas here.
-				core.GRAPHICS.imgData.pre_OUTPUT.whole = tempOutput_ctx.getImageData(0, 0, tempOutput.width, tempOutput.height);
-
-				// Slice up the full image.
-				// let full_imgData_buf = core.GRAPHICS.imgData.pre_OUTPUT.whole.data.buffer ;
-				// let blockSize        = Math.ceil(full_imgData_buf.byteLength / numWorkers);
-				// for(let w=0; w<numWorkers; w+=1){
-				// 	core.GRAPHICS.imgData.pre_OUTPUT.slices[w] =
-				// 		full_imgData_buf.slice(
-				// 			( blockSize * w ),
-				// 			( blockSize + (blockSize * w))
-				// 		)
-				// 	;
-				// }
-				core.GRAPHICS.imgData.pre_OUTPUT.slices[0] = core.GRAPHICS.imgData.pre_OUTPUT.whole.data.buffer;
-				let slices = core.GRAPHICS.imgData.pre_OUTPUT.slices;
-
-				let proms=core.GRAPHICS.WORKERS.w_fade.proms;
-				proms.length=0;
-
-				let transferList = [];
-				for(let w=0; w<numWorkers; w+=1){
-					let worker       = WORKERS[w] ;
-					proms.push(
-						new Promise(
-							function(res_inner, rej_inner){
-								// Get start point for y.
-								y=height*w;
-
-								// let img_buff = slices[w];
-								transferList[0] = slices[w];
-
-								let msg = {
-									"function" : "fade" ,
-									"img_buff" : slices[w]     ,
-									"x"        : x            ,
-									"y"        : y            ,
-									"w"        : width        ,
-									"h"        : height       ,
-									"maxRed"   : maxRed       ,
-									"maxGreen" : maxGreen     ,
-									"maxBlue"  : maxBlue      ,
-								};
-
-								worker.onmessage = function(e){
-									// console.log(e.data.time);
-									let prom = core.GRAPHICS.WORKERS.CALLBACK(e);
-									prom.then(
-										function(){ res_inner(); },
-										function(err) { console.log("err:", err); rej_inner(); }
-									);
-								};
-
-								// Send the data.
-								// try{
-									worker.postMessage(msg, transferList);
-								// }
-								// catch(e){
-									// console.log(e, msg, transferList);
-									// throw "";
-								// }
-							}
-						)
-					);
-				}
-
-				Promise.all(proms).then(
-					function(){
-						// Clear the slices array.
-						core.GRAPHICS.imgData.pre_OUTPUT.slices.length=0;
-						// core.GRAPHICS.imgData.pre_OUTPUT.whole=null;
-
-						// Set new value for the active state of the fade.
-						core.GRAPHICS.WORKERS.w_fade.fadeActive = (fadeLevel!== fadeTable_fullOn) && (fadeLevel != fadeTable_fullOff) ;
-
-						// Done! Resolve.
-						if(1) { res(); }
-						else  { rej(); }
-					},
-					function(err){
-						console.log("err:", err);
-					}
-				);
-
-			});
+			}
 		},
 
+		//
+		errorHandler : function(name, err){
+			let str = ["=E= graphicsUpdate: ("+name+") rejected promise.", err ];
+			console.error("err: "+name+": ", err);
+			throw Error(str);
+		},
 	},
 };
 
@@ -2288,7 +2109,7 @@ core.GRAPHICS.init = {
 								// Save map as ArrayBuffer.
 								let bufferType=8;
 								for(let index=0; index<converted.tilemaps[tileset][tilemap].length; index+=1){
-									if(converted.tilemaps[tileset][tilemap] > 255){ bufferType=16; break; }
+									if(converted.tilemaps[tileset][tilemap][index] > 255){ bufferType=16; break; }
 								}
 
 								if(bufferType==8 ){ tmp_tilemaps[tileset][tilemap] = new Uint8Array(converted.tilemaps[tileset][tilemap]); }
@@ -2299,9 +2120,9 @@ core.GRAPHICS.init = {
 					}
 
 					// The tilemaps can be added now.
-					core.GRAPHICS.ASSETS._original_data={};
-					core.GRAPHICS.ASSETS._original_data.tilemaps=tmp_tilemaps;
-					core.GRAPHICS.ASSETS._original_data.tilesets=tmp_tilesets;
+					_CGA._original_data={};
+					_CGA._original_data.tilemaps=tmp_tilemaps;
+					_CGA._original_data.tilesets=tmp_tilesets;
 
 					JSGAME.SHARED.PERFORMANCE.stamp(_perf_name , "END");
 
@@ -2324,6 +2145,7 @@ core.GRAPHICS.init = {
 			.replace(/\\r\\n/g                           , "\n"  ) // Normalize to Unix line endings.
 			.replace(/^\s*[\r\n]/gm                      , ''    ) // Blank lines.
 			.replace(/const char/gm                      , ''    ) // Remove const char
+			.replace(/const int/gm                       , ''    ) // Remove const int
 			.replace(/PROGMEM/gm                         , ''    ) // Remove PROGMEM
 			.replace(/(\/\*([\s\S]*?)\*\/)|(\/\/(.*)$)/gm, ''    ) // Single and Multi-line comments.
 			.replace(/\s*[#;].+$/gm                      , ''    ) // Hash and Comma comments.
@@ -2404,7 +2226,9 @@ core.GRAPHICS.init = {
 		let _perf_name = "VIDEO_INIT_"+"graphics2_setup";
 		try{
 			core.GRAPHICS.init.post_graphicsConversion();
+
 			core.GRAPHICS.init.post_graphicsConversion2();
+
 			core.GRAPHICS.init.createVRAMs();
 			core.GRAPHICS.init.createColorConversionTable();
 			core.GRAPHICS.init.createDefaultTileset();
@@ -2510,6 +2334,7 @@ core.GRAPHICS.init = {
 		let tempCanvas_ctx = tempCanvas.getContext('2d');
 		tempCanvas.width   = tile_width ;
 		tempCanvas.height  = tile_height ;
+		JSGAME.SHARED.setpixelated(tempCanvas);
 
 		for(i=0; i<len; i+=1){
 			// let hasTransparency = false;
@@ -2537,10 +2362,7 @@ core.GRAPHICS.init = {
 				buf32[pixel_index] = convertedPixel;
 
 				// A transparent pixel will come back as 0.
-				// if(trackTransparent && convertTransparent && convertedPixel==0){ hasTransparency = true; }
 			}
-			//
-			// if(trackTransparent && convertTransparent && hasTransparency){ transparencies.push(curTileId); }
 
 			// Write the arraybuffer to the imageData.
 			vramdata_rgb32.data.set(buf8);
@@ -2573,11 +2395,11 @@ core.GRAPHICS.init = {
 		for(let i=0; i<len; i+=1){
 			let tilesetName        = core.SETTINGS.tilesets[i].tileset ;
 			let convertTransparent = core.SETTINGS.tilesets[i].convertTransparent ;
-			let tilesetData        = core.GRAPHICS.ASSETS._original_data.tilesets[tilesetName] ;
+			let tilesetData        = _CGA._original_data.tilesets[tilesetName] ;
 			let numTiles           = tilesetData.length / (core.SETTINGS.TILE_WIDTH * core.SETTINGS.TILE_HEIGHT) ;
 			let imgData;
 
-			core.GRAPHICS.ASSETS.tilesets[tilesetName] = {};
+			_CGA.tilesets[tilesetName] = {};
 
 			let arrayOfCanvases  = [] ;
 
@@ -2590,12 +2412,12 @@ core.GRAPHICS.init = {
 			// Add the canvases and imgData piece by piece.
 			for(let n=0; n<numTiles; n+=1){
 				// Create an empty object.
-				core.GRAPHICS.ASSETS.tilesets[tilesetName][n]={};
-				let handle = core.GRAPHICS.ASSETS.tilesets[tilesetName][n];
+				_CGA.tilesets[tilesetName][n]={};
+				let handle = _CGA.tilesets[tilesetName][n];
 
 				// Canvas version of image.
+				JSGAME.SHARED.setpixelated( arrayOfCanvases[n] );
 				handle.canvas  = arrayOfCanvases[n] ;
-				JSGAME.SHARED.setpixelated(handle.canvas);
 				let ctx = handle.canvas.getContext("2d");
 
 				// imgData version of the image.
@@ -2607,6 +2429,8 @@ core.GRAPHICS.init = {
 
 				// Tile usage count (DEBUG.)
 				handle.numUsed = 0 ;
+
+				// handle.dataURL = handle.canvas.toDataURL();
 			}
 
 		}
@@ -2620,11 +2444,11 @@ core.GRAPHICS.init = {
 		let _perf_name = "VIDEO_INIT_"+"post_graphicsConversion2";
 		JSGAME.SHARED.PERFORMANCE.stamp(_perf_name , "START");
 
-		let tile_w = core.SETTINGS.TILE_WIDTH;
-		let tile_h = core.SETTINGS.TILE_HEIGHT;
+		let tile_w = _CS.TILE_WIDTH;
+		let tile_h = _CS.TILE_HEIGHT;
 
 		// Get the number of tilesets.
-		let tilesetNames     = Object.keys(core.GRAPHICS.ASSETS.tilesets);
+		let tilesetNames     = Object.keys(_CGA.tilesets);
 		let tilesetNames_len = tilesetNames.length;
 
 		// Through each tileset...
@@ -2632,15 +2456,15 @@ core.GRAPHICS.init = {
 			let tilesetName = tilesetNames[t];
 
 			// Go through each tilesets tilemaps...
-			let tilemapNames     = Object.keys(core.GRAPHICS.ASSETS._original_data.tilemaps[tilesetName]);
+			let tilemapNames     = Object.keys(_CGA._original_data.tilemaps[tilesetName]);
 			let tilemapNames_len = tilemapNames.length;
 
 			// Create the entry in tilesets.
-			core.GRAPHICS.ASSETS.tilemaps[tilesetName] = {};
+			_CGA.tilemaps[tilesetName] = {};
 
 			for(let m=0; m<tilemapNames_len; m+=1){
 				let tilemapName = tilemapNames[m];
-				let org_map=core.GRAPHICS.ASSETS._original_data.tilemaps[tilesetName][tilemapName];
+				let org_map=_CGA._original_data.tilemaps[tilesetName][tilemapName];
 				let mapWidth  = org_map[0];
 				let mapHeight = org_map[1];
 
@@ -2648,22 +2472,23 @@ core.GRAPHICS.init = {
 				let canvas    = document.createElement("canvas");
 				canvas.width  = mapWidth  * tile_w ;
 				canvas.height = mapHeight * tile_h ;
+				JSGAME.SHARED.setpixelated( canvas );
 				let ctx       = canvas.getContext("2d");
 
 				// Draw the tiles (which are canvases) onto this canvas.
 				for(let y=0; y<mapHeight; y+=1){
 					for(let x=0; x<mapWidth; x+=1){
 						let tileIndex = org_map[ (y * mapWidth) + x + 2 ];
-						let tile = core.GRAPHICS.ASSETS.tilesets[tilesetName][tileIndex];
-
+						let tile = _CGA.tilesets[tilesetName][tileIndex];
 						ctx.drawImage(tile.canvas, x*tile_w, y*tile_h);
 					}
 				}
 
 				// Save the new object.
-				core.GRAPHICS.ASSETS.tilemaps[tilesetName][tilemapName]={
+				_CGA.tilemaps[tilesetName][tilemapName]={
 					"canvas"  : canvas,
 					"imgData" : ctx.getImageData(0, 0, canvas.width, canvas.height),
+					// "dataURL" : canvas.toDataURL(),
 					"ctx"     : ctx,
 					"numUsed" : 0,
 				};
@@ -2785,12 +2610,13 @@ core.GRAPHICS.init = {
 	},
 	createDefaultTileset            : function(){
 		// Create default tileset.
-		core.GRAPHICS.ASSETS.tilesets.default_tileset=[];
+		_CGA.tilesets.default_tileset=[];
 
 		// Create black tile and add to the default tileset.
 		let canvas;
 		let imgData;
 		let ctx;
+
 		canvas=document.createElement("canvas");
 		canvas.width  = core.SETTINGS.TILE_WIDTH;
 		canvas.height = core.SETTINGS.TILE_HEIGHT;
@@ -2799,7 +2625,7 @@ core.GRAPHICS.init = {
 		ctx.fillStyle = "rgba(0, 0, 0, 1.0)";      // Black
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
-		core.GRAPHICS.ASSETS.tilesets.default_tileset.push({
+		_CGA.tilesets.default_tileset.push({
 			"canvas"  : canvas ,
 			"imgData" : imgData ,
 			"numUsed" : 0 ,
@@ -2813,12 +2639,11 @@ core.GRAPHICS.init = {
 		ctx=canvas.getContext("2d");
 		ctx.clearRect(0,0,canvas.width,canvas.height); // Full transparent.
 		imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
-		core.GRAPHICS.ASSETS.tilesets.default_tileset.push({
+		_CGA.tilesets.default_tileset.push({
 			"canvas"  : canvas ,
 			"imgData" : imgData ,
 			"numUsed" : 0 ,
 		});
-
 
 		/*
 		// Create a tile for each available color in the color conversion table.
@@ -2833,17 +2658,21 @@ core.GRAPHICS.init = {
 			canvas.height = core.SETTINGS.TILE_HEIGHT;
 			JSGAME.SHARED.setpixelated(canvas);
 			ctx=canvas.getContext("2d");
-			imgData = ctx.createImageData(canvas.width, canvas.height);
-			ctx.fillStyle = key;
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-			ctx.putImageData(imgData,0,0);
 
-			core.GRAPHICS.ASSETS.tilesets.default_tileset.push({
+			ctx.fillStyle = key;
+			// ctx.fillStyle = "#FF0000";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			// console.log(key, ctx);
+
+			imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
+
+			_CGA.tilesets.default_tileset.push({
 				"canvas"  : canvas ,
 				"imgData" : imgData ,
 				"numUsed" : 0 ,
 				"r32_hex" : key ,
 				"uze_dec" : parseInt(uze_dec,10) ,
+				// "dataURL": ctx.canvas.toDataURL()
 			});
 		}
 		*/
@@ -2891,8 +2720,11 @@ core.GRAPHICS.init = {
 					// Create a worker.
 					let worker = new Worker('cores/videoMode_C/videoMode_C_webworker.js') ;
 
-					// Add the worker to the worker array.
-					core.GRAPHICS.WORKERS.WORKERS[i] = worker ;
+					// Add the inuse flag.
+					worker.inuse=false;
+
+					// Add the workerIndex flag.
+					worker.workerIndex=i;
 
 					// Add the shared onmessage callback to the worker.
 					// worker.onmessage=core.GRAPHICS.WORKERS.CALLBACK;
@@ -2901,10 +2733,13 @@ core.GRAPHICS.init = {
 					worker.onerror=core.GRAPHICS.WORKERS.error_CALLBACK;
 
 					// Add a queue to w_colorswaps.
-					core.GRAPHICS.WORKERS.w_colorswaps.queue [i] = [] ;
+					// core.GRAPHICS.WORKERS.w_colorswaps.queue [i] = [] ;
 
 					// Add a queue to (NEW_QUEUE_HERE).
 					// core.GRAPHICS.WORKERS.NEW_QUEUE_HERE.queue [i] = [] ;
+
+					// Add the worker to the worker array.
+					core.GRAPHICS.WORKERS.WORKERS[i] = worker ;
 				}
 			}
 			JSGAME.SHARED.PERFORMANCE.stamp(_perf_name+"_createWebworkers" , "END");
@@ -2916,8 +2751,11 @@ core.GRAPHICS.init = {
 
 			// Set the OUTPUT canvas CSS background-color to black.
 			JSGAME.SHARED.PERFORMANCE.stamp(_perf_name+"_OUTPUTcanvasToBlack" , "START");
-			core.GRAPHICS.canvas.OUTPUT.style["background-color"]="black";
+			// core.GRAPHICS.canvas.OUTPUT.style["background-color"]="black";
 			JSGAME.SHARED.PERFORMANCE.stamp(_perf_name+"_OUTPUTcanvasToBlack" , "END");
+
+			//
+			core.GRAPHICS.DEBUG.init();
 
 			// Done! Resolve.
 			res1();

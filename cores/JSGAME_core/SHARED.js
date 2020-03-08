@@ -168,38 +168,50 @@ JSGAME.SHARED={
 	// Calculates the average frames per second.
 	fps : {
 		// colxi: https://stackoverflow.com/a/55644176/2731377
-		sampleSize : 20    ,
+		sampleSize : 60    ,
 		value      : 0     ,
 		_sample_   : []    ,
 		_index_    : 0     ,
 		_lastTick_ : false ,
 
-		tick : function() {
+		//
+		now          : 0 ,
+		delta        : 0 ,
+		fps          : 0 ,
+		average      : 0 ,
+		sampleLength : 0 ,
+		i            : 0 ,
+
+		tick : function(timestamp) {
 			// if is first tick, just set tick timestamp and return
 			if (!this._lastTick_) {
-				this._lastTick_ = performance.now();
+				// this._lastTick_ = performance.now();
+				this._lastTick_ = timestamp;
 				return 0;
 			}
 
 			// calculate necessary values to obtain current tick FPS
-			let now = performance.now();
-			let delta = (now - this._lastTick_) / 1000;
-			let fps = 1 / delta;
+			// this.now = performance.now();
+			this.now = timestamp;
+			this.delta = (this.now - this._lastTick_) / 1000;
+			this.fps = 1 / this.delta;
 
 			// add to fps samples, current tick fps value
-			this._sample_[this._index_] = Math.round(fps);
+			this._sample_[this._index_] = Math.round(this.fps);
+			// this._sample_[this._index_] = (this.fps);
 
 			// iterate samples to obtain the average
-			let average = 0;
-			let sampleLength = this._sample_.length;
-			for (let i = 0; i < sampleLength; i++) { average += this._sample_[i]; }
-			average = Math.round(average / sampleLength);
+			this.average = 0;
+			this.sampleLength = this._sample_.length;
+			for (this.i = 0; this.i < this.sampleLength; this.i++) { this.average += this._sample_[this.i]; }
+			this.average = Math.round(this.average / this.sampleLength);
+			// this.average = (this.average / this.sampleLength);
 
 			// set new FPS
-			this.value = average;
+			this.value = this.average;
 
 			// store current timestamp
-			this._lastTick_ = now;
+			this._lastTick_ = this.now;
 
 			// increase sample index counter, and reset it
 			// to 0 if exceded maximum sampleSize limit
@@ -558,52 +570,71 @@ JSGAME.SHARED={
 
 		// console.log("event.type:", event.type);
 
-		let extraText="NOTE: View the dev console for more detail.";
-		let str;
+		let extraText = "NOTE: View the dev console for more detail.";
+		let top_str   = "" ;
+		let stack_str = "" ;
+		let link      = "";
+
 		// Try to do the normal error output.
 		try{
-			let link = (event.filename || "")+":"+(event.lineno || "")+":"+(event.colno || "");
-
-			str="";
 			// TOP
-			str+="\n"+"=".repeat(55);
-			str+="\n"+"-".repeat(55);
-			str+="\nGLOBAL ERROR HANDLER: event.type: " + event.type;
-			str+="\n"+"-".repeat(55);
+			top_str+="\n"+"=".repeat(55);
+			top_str+="\n"+"-".repeat(55);
+			top_str+="\nGLOBAL ERROR HANDLER: event.type: " + event.type;
+			top_str+="\n"+"-".repeat(55);
 
 			// ERROR INSTANCEOF
-			if( (event instanceof ErrorEvent    ) ){ str+="\n -=> instanceof : ErrorEvent    "; }
-			if( (event instanceof EvalError     ) ){ str+="\n -=> instanceof : EvalError     "; }
-			if( (event instanceof RangeError    ) ){ str+="\n -=> instanceof : RangeError    "; }
-			if( (event instanceof ReferenceError) ){ str+="\n -=> instanceof : ReferenceError"; }
-			if( (event instanceof SyntaxError   ) ){ str+="\n -=> instanceof : SyntaxError   "; }
-			if( (event instanceof TypeError     ) ){ str+="\n -=> instanceof : TypeError     "; }
-			if( (event instanceof URIError      ) ){ str+="\n -=> instanceof : URIError      "; }
+			if( (event instanceof ErrorEvent    ) ){ top_str+="\n -=> instanceof : ErrorEvent    "; }
+			if( (event instanceof EvalError     ) ){ top_str+="\n -=> instanceof : EvalError     "; }
+			if( (event instanceof RangeError    ) ){ top_str+="\n -=> instanceof : RangeError    "; }
+			if( (event instanceof ReferenceError) ){ top_str+="\n -=> instanceof : ReferenceError"; }
+			if( (event instanceof SyntaxError   ) ){ top_str+="\n -=> instanceof : SyntaxError   "; }
+			if( (event instanceof TypeError     ) ){ top_str+="\n -=> instanceof : TypeError     "; }
+			if( (event instanceof URIError      ) ){ top_str+="\n -=> instanceof : URIError      "; }
 
 			// MAIN INFO
+
+			// The "unhandledrejection" event is different than the normal error event.
 			if(event.type=="unhandledrejection"){
-				if(event.reason.message){ str+="\n -=> message    : " + event.reason.message; } else { str+="\n -=> message    : " + "<UNAVAILABLE>"; }
-				if(link.length>5){ str+="\n -=> link       : " + link;                        } else { str+="\n -=> link       : " + "<UNAVAILABLE>"; }
-				if(event.lineno) { str+="\n -=> lineno     : " + event.lineno;                } else { str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }
-				if(event.colno)  { str+="\n -=> colno      : " + event.colno;                 } else { str+="\n -=> colno      : " + "<UNAVAILABLE>"; }
+				let temp        = "" ;
+				let temp_lineno = "" ;
+				let temp_link   = "" ;
+				let temp_colno  = "" ;
+
+				// There is a lot of string parsing here so wrap it in a try/catch.
+				try{
+					// Get the URL out of it (still has "(" and ")".
+					temp        = (event.reason.stack.split("at")[1].split(" ")[2]).trim();
+					// Break out the rest.
+					temp_link   = temp.substring(1, temp.length-1); // Remove "(" and ")" to get the link.
+					temp        = temp_link.split(":");             // Split by ":".
+					temp_lineno = temp[temp.length-2];              // Second to last is the line number.
+					temp_colno  = temp[temp.length-1];              // Last is the col number.
+				}
+				catch(e){
+				}
+
+				if(event.reason.message !== undefined) { top_str+="\n -=> message    : " + event.reason.message; } else { top_str+="\n -=> message    : " + "<UNAVAILABLE>"; }
+				if(temp_link.length>5)                 { top_str+="\n -=> link       : " + temp_link;            } else { top_str+="\n -=> link       : " + "<UNAVAILABLE>"; }
+				if(temp_lineno          !== undefined) { top_str+="\n -=> lineno     : " + temp_lineno;          } else { top_str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }
+				if(temp_colno           !== undefined) { top_str+="\n -=> colno      : " + temp_colno;           } else { top_str+="\n -=> colno      : " + "<UNAVAILABLE>"; }
 			}
 			else {
-				if(event.message){ str+="\n -=> message    : " + event.message; } else { str+="\n -=> message    : " + "<UNAVAILABLE>"; }
-				if(link.length>5){ str+="\n -=> link       : " + link;          } else { str+="\n -=> link       : " + "<UNAVAILABLE>"; }
-				if(event.lineno) { str+="\n -=> lineno     : " + event.lineno;  } else { str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }
-				if(event.colno)  { str+="\n -=> colno      : " + event.colno;   } else { str+="\n -=> colno      : " + "<UNAVAILABLE>"; }
+				link = (event.filename || "")+":"+(event.lineno || "")+":"+(event.colno || "");
+				if(event.message !== undefined) { top_str+="\n -=> message    : " + event.message;        } else { top_str+="\n -=> message    : " + "<UNAVAILABLE>"; }
+				if(link.length>5)               { top_str+="\n -=> link       : " + link;                 } else { top_str+="\n -=> link       : " + "<UNAVAILABLE>"; }
+				if(event.lineno  !== undefined) { top_str+="\n -=> lineno     : " + event.lineno;         } else { top_str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }
+				if(event.colno   !== undefined) { top_str+="\n -=> colno      : " + event.colno;          } else { top_str+="\n -=> colno      : " + "<UNAVAILABLE>"; }
 			}
 
 			// STACK (if available.)
 			let stack;
 			if     ( event && event.error  && event.error.stack  ) { stack = event.error.stack ; }
-			else if( event && event.reason && event.reason.stack ) {
-				stack = event.reason.stack.replace("at ", "-----");
-			}
-			else{ console.error(".stack was not available."); }
+			else if( event && event.reason && event.reason.stack ) { stack = event.reason.stack; }
+			else                                                   { console.error(".stack was not available."); }
 
 			if( stack ) {
-				str+="\n -=> stack      : ";
+				stack_str+="\n -=> stack      : ";
 				let arr = stack.split("\n");
 				let cnt=0;
 				let max_left_len = 0;
@@ -617,7 +648,16 @@ JSGAME.SHARED={
 					}
 					else{
 						let parts = line.split(" ");
-						if(parts.length==3){
+
+						// Unhandled rejection
+						if     (parts.length==2){
+							let left   = "at";
+							let middle = "?";
+							let right  = parts[1].trim() ; // url to fix
+							stackLines.push(left + " " + middle + "" + "_DELIMITER_" + right);
+						}
+						// Normal error.
+						else if(parts.length==3){
 							// Get max length of left.
 							let left   = parts[0].trim() ; // at
 							let middle = parts[1].trim() ; // function
@@ -634,6 +674,14 @@ JSGAME.SHARED={
 							// Recombine the string.
 							stackLines.push(left + " " + middle + "" + "_DELIMITER_"+ right);
 						}
+						// Specific to "at new Promise (<anonymous>)".
+						else if(line == "at new Promise (<anonymous>)"){
+							stackLines.push(line + "_DELIMITER_" + "");
+						}
+						// All others. Do not include.
+						else{
+							console.error("========= Unexpected number of parts. =========", parts.length, parts, stack);
+						}
 					}
 					cnt+=1;
 				}
@@ -643,7 +691,7 @@ JSGAME.SHARED={
 					line=line.trim();
 					// First line:
 					if(cnt==0){
-						str+="\n\t" + line + "";
+						stack_str+="\n\t" + line + "";
 					}
 					// Other lines:
 					else{
@@ -654,7 +702,7 @@ JSGAME.SHARED={
 
 							left = left.padEnd(max_left_len+0, " ");
 
-							str+="\n\t\t" + (left +"\t  "+ right) + "";
+							stack_str+="\n\t\t" + (left +"\t  "+ right) + "";
 						}
 						else{
 							console.log("parts the wrong length!", parts);
@@ -674,15 +722,15 @@ JSGAME.SHARED={
 					if(extraText.length>maxLen){ extraText = extraText.substring(0, maxLen-16) + " ... (truncated)"; }
 				}
 			}
-			str+="\n\t "+"-".repeat(55-5);
+			stack_str+="\n\t "+"-".repeat(55-5);
 
 			// BOTTOM
-			str+="\n"+"=".repeat(55);
-			str+="\n";
+			stack_str+="\n"+"=".repeat(55);
+			stack_str+="\n";
 
 			// MAIN ERROR
 			console.error(
-				"\nPARSED ERROR:\n", str,
+				"\nPARSED ERROR:\n", top_str + stack_str,
 				"\nevent       :\n", event
 			);
 
@@ -925,8 +973,20 @@ JSGAME.SHARED={
 	 *
 	 * @example JSGAME.SHARED.schedule_gameloop();
 	*/
-	schedule_gameloop : function(){
-		// JSGAME.SHARED.schedule_gameloop();
+	schedule_gameloop : function(delayMs){
+		// USAGE: JSGAME.SHARED.schedule_gameloop();
+		// USAGE: JSGAME.SHARED.schedule_gameloop(1);
+
+		// Use the passed time if it was set and is a positive number.
+		// delayMs = delayMs << 0 ; // Round down.
+		// if(delayMs && Math.sign(delayMs)==1){
+		// 	setTimeout(function(){
+		// 		JSGAME.SHARED.raf_id = requestAnimationFrame( game.gameloop );
+		// 	}, delayMs);
+		// }
+		// else{
+		// 	JSGAME.SHARED.raf_id = requestAnimationFrame( game.gameloop );
+		// }
 
 		JSGAME.SHARED.raf_id = requestAnimationFrame( game.gameloop );
 	},

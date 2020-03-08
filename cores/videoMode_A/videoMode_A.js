@@ -397,6 +397,7 @@ core.FUNCS.graphics.init = function(){
 						.replace(/\\r\\n/g                           , "\n"  ) // Normalize to Unix line endings.
 						.replace(/^\s*[\r\n]/gm                      , ''    ) // Blank lines.
 						.replace(/const char/gm                      , ''    ) // Remove const char
+						.replace(/const int/gm                       , ''    ) // Remove const int
 						.replace(/PROGMEM/gm                         , ''    ) // Remove PROGMEM
 						.replace(/(\/\*([\s\S]*?)\*\/)|(\/\/(.*)$)/gm, ''    ) // Single and Multi-line comments.
 						.replace(/\s*[#;].+$/gm                      , ''    ) // Hash and Comma comments.

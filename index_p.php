@@ -213,8 +213,10 @@ function combineFiles_typeByKey($keys){
 	else             { return $output;     }
 }
 
-function getLastUpdate(){
-	$latestVersion = trim( shell_exec(" find . -type f -printf '%CY-%Cm-%Cd %CH:%CM:00 (%CZ) %p\n'| sort -n | tail -n1 ") );
+function getLastUpdate($path){
+	global $_appdir;
+
+	$latestVersion = trim( shell_exec(" find " . $path . " -type f -not -path '*/\.git*' -printf '%CY-%Cm-%Cd %CH:%CM:00 (%CZ) %p\n'| sort -n | tail -n1 ") );
 	// 2020-02-28 19:21:00 (EST) ./index_p.php
 
 	$data = explode(" ", $latestVersion);
@@ -241,9 +243,10 @@ function getLastUpdate(){
 
 	//
 	return [
-		"file_lastUpdate"      => $file_lastUpdate      ,
-		"file_lastUpdate_name" => $file_lastUpdate_name ,
-		"age"                  => $age                  ,
+		"file_lastUpdate"      => trim($file_lastUpdate)                             ,
+		"file_lastUpdate_name" => trim(str_replace($path, ".", $file_lastUpdate_name) ) ,
+		// "file_lastUpdate_name" => trim($file_lastUpdate_name) ,
+		"age"                  => trim($age)                             ,
 	];
 };
 
@@ -258,9 +261,10 @@ function init(){
 	$outputText .= "'use strict'; \n";
 
 	// Get the data for the last updated file.
-	$data = getLastUpdate();
+	// $data = getLastUpdate(".");
+	$data = getLastUpdate($_appdir);
 	$file_lastUpdate      = $data["file_lastUpdate"] ;
-	$file_lastUpdate_name = $data["file_lastUpdate_name"] ;
+	$file_lastUpdate_name = $data["file_lastUpdate_name"];
 	$age                  = $data["age"] ;
 
 	$outputText .= "// ******************************************** \n";
@@ -337,9 +341,12 @@ function init(){
 	$PHP_VARS['debug']        = $debug  ? true : false ;
 	$PHP_VARS['hidden']       = $hidden ? true : false ;
 	$PHP_VARS['combine']      = $combine               ;
-	$PHP_VARS['file_lastUpdate']      = trim("$file_lastUpdate"     ) ;
-	$PHP_VARS['file_lastUpdate_name'] = trim("$file_lastUpdate_name") ;
-	$PHP_VARS['age']                  = trim("$age"                 ) ;
+
+	// Last update to the files of JSGAME.
+	$PHP_VARS['file_lastUpdate']      = $data["file_lastUpdate"]      ;
+	$PHP_VARS['file_lastUpdate_name'] = $data["file_lastUpdate_name"] ;
+	$PHP_VARS['age']                  = $data["age"]                  ;
+
 
 	// ***************************************
 	//  FIND AND LOAD THE gamelist.json FILE.
@@ -405,6 +412,13 @@ function init(){
 		// Does the gamesettings.json file exist?
 		if( file_exists ($gamedir . '/gamesettings.json') ) {
 			$gamesettings = json_decode(file_get_contents($gamedir."/gamesettings.json"), true);
+
+			// Last update to the selected game.
+			$data2 = getLastUpdate($gamedir);
+
+			$PHP_VARS['file_lastUpdate2']      = $data2["file_lastUpdate"]      ;
+			$PHP_VARS['file_lastUpdate_name2'] = $data2["file_lastUpdate_name"] ;
+			$PHP_VARS['age2']                  = $data2["age"]                  ;
 
 			$PHP_VARS['gamesettings_json'] = true ;
 			$PHP_VARS['gameSelected']      = true ;

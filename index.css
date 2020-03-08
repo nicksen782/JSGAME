@@ -160,6 +160,7 @@ input#canvasScaleSlider {
 
 #siteContainerDiv1 {
 	min-width: 600px;
+	/* background-color: white; */
 }
 
 #topBar #topBar_line1 {
@@ -167,6 +168,8 @@ input#canvasScaleSlider {
     color: white;
     font-size: 32px;
     position: relative;
+    margin-top: 4px;
+    margin-bottom: 4px;
 }
 
 #topBar #topBar_line1 #topBar_line1_jsgame {
@@ -186,12 +189,17 @@ input#canvasScaleSlider {
     position: relative;
     margin: auto;
     border: 5px solid #333333;
+    margin-top: 4px;
+    margin-bottom: 3px;
 }
 
 #gameCanvas_DIV {
 	width: 440px;
 	height: 440px;
 	margin: auto;
+	border: 2px solid #000000;
+	/* border: 2px solid #5d5c5c; */
+	background-color: black;
 }
 
 #indicator_preGame {
@@ -312,6 +320,9 @@ div#topBar_line1_buttons {
 canvas#canvas_OUTPUT {
     width: 100%;
     height: 100%;
+    /* background-color: black; */
+    border: 3px solid #5d5c5c;
+    /* border: 3px solid #000000; */
 }
 
 /* ================================ */

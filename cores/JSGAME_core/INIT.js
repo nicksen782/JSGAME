@@ -145,12 +145,17 @@ JSGAME.INIT={
 	 * @example JSGAME.INIT.__PRE_INIT();
 	*/
 	__PRE_INIT                       : function(){
-		console.log("=======================================\n");
-		console.log( "JSGAME: file_lastUpdate      : ", JSGAME.PRELOAD.PHP_VARS.file_lastUpdate      );
-		console.log( "JSGAME: file_lastUpdate_name : ", JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name );
-		console.log( "JSGAME: age                  : ", JSGAME.PRELOAD.PHP_VARS.age                  );
-		console.log("=======================================\n");
-		console.log("INIT JS GAME...");
+		// DISPLAY UPDATE DATES TO THE DEV CONSOLE.
+		let data = {
+			"JS GAME" : { "FILENAME":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name , "LAST_UPDATED_TXT":JSGAME.PRELOAD.PHP_VARS.age  + " ago", "LAST_UPDATED_DATE":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate  },
+			"GAME"    : { "FILENAME":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name2, "LAST_UPDATED_TXT":JSGAME.PRELOAD.PHP_VARS.age2 + " ago", "LAST_UPDATED_DATE":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate2 },
+		};
+		try     { console.table(); console.log("JSGAME / GAME VERSION:"); console.table(data); }
+		catch(e){ console.log("JSGAME / GAME VERSION:", data);                }
+
+
+		console.log("\n"+ "=======================================\n");
+		console.log("JS GAME: __PRE_INIT...");
 
 		// Handle errors (centralized.)
 		window.addEventListener('error'              , JSGAME.SHARED.listenerFunction, false);
@@ -283,7 +288,7 @@ JSGAME.INIT={
 	 * @example JSGAME.INIT.__LOADJSGAME();
 	*/
 	__LOADJSGAME                     : function() {
-		console.log("LOADING JSGAME...");
+		console.log("JSGAME: __LOADJSGAME...");
 		// JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
 		// JSGAME.GUI.preGame_indicator("loadingGame", "ON");
 
@@ -398,7 +403,7 @@ JSGAME.INIT={
 	 * @example  JSGAME.INIT.__GAMESTART();
 	*/
 	__GAMESTART                      : function(){
-		console.log("LOADING GAME...");
+		console.log("JSGAME: __GAMESTART...");
 		// JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
 		JSGAME.GUI.preGame_indicator("loadingGame", "ON");
 

@@ -5,11 +5,8 @@ self.postMessage = self.postMessage || self.webkitPostMessage;
 
 self.onmessage = function(event) {
 	switch( event.data.function ){
-		// imgData manipulation for color swaps of the provided array buffer (Image Data.)
+		// ImageData manipulation for color swaps of the provided array buffer(s)
 		case "colorswaps" : { colorswaps(event); break; }
-
-		// Handles fading of the provided array buffer (Image Data.)
-		case "fade"       : { fade(event); break; }
 
 		// Unmatched function.
 		default     : { break; }
@@ -37,6 +34,12 @@ function colorswaps(event){
 
 			// Get the number of bytes to read through.
 			let len = img_view8.byteLength;
+
+			// Set all colorSwap strings to uppercase.
+			for(let j=0; j<flags.colorSwaps.length; j+=1){
+				flags.colorSwaps[j][0] = flags.colorSwaps[j][0].toUpperCase();
+				flags.colorSwaps[j][1] = flags.colorSwaps[j][1].toUpperCase();
+			}
 
 			// Go through the bytes of the view.
 			let i_32=0;
@@ -132,83 +135,10 @@ function colorswaps(event){
 		"finished_img_buffers_arr" : finished_img_buffers_arr ,
 		"finished_newVRAM_entries" : finished_newVRAM_entries ,
 		"length"                   : event.data.img_buffers_arr.length ,
+		// "startTime"                : event.data.startTime ,
+		"workerIndex"              : event.data.workerIndex,
 	};
 
 	// Return the data.
 	self.postMessage(msg, transferList);
-}
-
-function fade(event){
-	// Get the max for red, green, and blue from the passed fade_record.
-	let maxRed   = event.data.maxRed   / 100;
-	let maxGreen = event.data.maxGreen / 100;
-	let maxBlue  = event.data.maxBlue  / 100;
-
-	//  Get handle to the provided image buffer.
-	let img_buff = event.data.img_buff ;
-
-	//  Create views.
-	let img_view8  = new Uint8ClampedArray(img_buff) ;
-	let img_view32 = new Uint32Array(img_buff);
-
-	// Get the number of bytes to read through.
-	// let len = (w * h) * 4;
-	let len = img_view8.byteLength;
-
-	let i_32=0;
-	for(let i=0; i<len; i+=4){
-		// Get the RGB values for this pixel.
-		let red   = img_view8[i+0];
-		let green = img_view8[i+1];
-		let blue  = img_view8[i+2];
-		let alpha = img_view8[i+3];
-
-		// Get the new color values for this pixel.
-		let new_red   = (red   * (maxRed  ) ) << 0 ;
-		let new_green = (green * (maxGreen) ) << 0 ;
-		let new_blue  = (blue  * (maxBlue ) ) << 0 ;
-		let new_alpha = (alpha) ;
-
-		let notChanged = ( (new_red == red) && (new_green == green) && (new_blue == blue) && (new_alpha == alpha) ) ? true : false ;
-
-		// No change?
-		if( notChanged ){
-			// Skip!
-		}
-		else{
-			// Replace the colors. (8-bit) (slower)
-			// img_view8[i+0] = new_red   ;
-			// img_view8[i+1] = new_green ;
-			// img_view8[i+2] = new_blue  ;
-			// img_view8[i+3] = new_alpha ;
-
-			// Replace the colors. (32-bit) (faster)
-			img_view32[i_32] =
-				(new_alpha  << 24) | // alpha
-				(new_blue   << 16) | // blue
-				(new_green  <<  8) | // green
-				(new_red         )   // red
-			;
-		}
-
-		//
-		i_32+=1;
-
-	}
-
-	let msg = {
-		"function"          : "fade"   ,
-		"finished_img_buff" : img_buff ,
-		"x"                 : event.data.x ,
-		"y"                 : event.data.y ,
-		"w"                 : event.data.w ,
-		"h"                 : event.data.h ,
-	};
-
-	// let transferList = [];
-	let transferList = [ img_buff ];
-
-	// Return the data.
-	self.postMessage(msg, transferList);
-
 }
