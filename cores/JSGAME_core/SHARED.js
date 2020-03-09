@@ -891,7 +891,6 @@ JSGAME.SHARED={
 		if(!rounding){ rounding="up"; }
 		if     (rounding=="up")  { return Math.ceil((core.SETTINGS.fps) * seconds); }
 		else if(rounding=="down"){ return Math.ceil((core.SETTINGS.fps) * seconds); }
-
 	},
 
 	/**

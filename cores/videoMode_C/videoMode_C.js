@@ -79,6 +79,14 @@ core.GRAPHICS.WORKERS      = {
 
 					// Go through each of the newVRAM entries.
 					for(let i=0; i<newVRAMs.length; i+=1){
+						// Decrement the queue count.
+						core.GRAPHICS.WORKERS.w_colorswaps.queuedCount -= 1 ;
+
+						// If the queue count is now 0 then set active to false.
+						if(core.GRAPHICS.WORKERS.w_colorswaps.queuedCount==0){
+							core.GRAPHICS.WORKERS.w_colorswaps.active=false;
+						}
+
 						// Convert the imgData back into an imgData object.
 						let img_buff = imgDatas[i] ;
 						let img_view = new Uint8ClampedArray(img_buff) ;
@@ -114,10 +122,11 @@ core.GRAPHICS.WORKERS      = {
 						if( (flags.ROT !== false && flags.ROT !== 0) ){
 							dst_ctx.drawImage(
 								src_canvas,
-								newX+newVRAM.x_offset,
-								newY+newVRAM.y_offset
+								newX + newVRAM.x_offset,
+								newY + newVRAM.y_offset
 							);
 						}
+
 						// Draw the source image as-is.
 						else{
 							dst_ctx.drawImage(src_canvas, newX, newY);
@@ -129,21 +138,14 @@ core.GRAPHICS.WORKERS      = {
 
 						core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=true;
 
+						newVRAM.flags.lateDraw=true;
+
 						// Place the tile.
 						_CGFI.placeTile({
 							"mapWidth"      : (newVRAM.canvas.width   / _CS.TILE_WIDTH ) << 0 ,
 							"mapHeight"     : (newVRAM.canvas.height  / _CS.TILE_HEIGHT) << 0 ,
 							"newVRAM_entry" : newVRAM ,
 						});
-
-						// Decrement the queue count.
-						core.GRAPHICS.WORKERS.w_colorswaps.queuedCount -= 1 ;
-
-						// If the queue count is now 0 then set active to false.
-						if(core.GRAPHICS.WORKERS.w_colorswaps.queuedCount==0){
-							core.GRAPHICS.WORKERS.w_colorswaps.active=false;
-						}
-
 					}
 
 					// Resolve.
@@ -168,22 +170,28 @@ core.GRAPHICS.WORKERS      = {
 		"active"      : false ,
 	},
 
-	// Object for controlling whole-screen fades.
-	"__fade" : {
-		"setFadeActive"     : false , //
-		"chainFadeActive"   : false , //
-		"alphas":[
-			0.00, 0.10, 0.20, 0.30, 0.40,
-			0.50, 0.60, 0.70, 0.80, 0.90,
-			1.00,
-		],
-		"alphaIndex"        : 10    , // Current index in the alphas array.
-
-		"msBeforeChange"    : 0     , // performance.now() milliseconds before the next change.
-		"lastChange"        : 0     , // performance.now() timestamp of the last change.
-		"fadeDirection"     : 1     , // 1 means go up fadeLevels. -1 means go down fadeLevels.
-	},
 };
+
+/**
+ * @summary Object for controlling whole-screen fades.
+ * @global
+*/
+core.GRAPHICS.FADE = {
+	"setFadeActive"     : false , // Set when setFade is used.
+	"alphas":[
+		0.00, 0.10, 0.20, 0.30, 0.40,
+		0.50, 0.60, 0.70, 0.80, 0.90,
+		1.00,
+	], // globalAlpha settings for fade effects.
+	"alphaIndex"        : 10    , // Current index in the alphas array.
+
+	// Used with chainFade.
+	"chainFadeActive"   : false , // Set when chainFade is used.
+	"msBeforeChange"    : 0     , // Used with chainFade. performance.now() milliseconds before the next change.
+	"lastChange"        : 0     , // Used with chainFade. performance.now() timestamp of the last change.
+	"fadeDirection"     : 1     , // Used with chainFade. 1 means go up fadeLevels. -1 means go down fadeLevels.
+};
+
 
 /**
  * @summary PERFORMANCE MONITORING (layer draw timings, etc.)
@@ -302,6 +310,8 @@ core.GRAPHICS.FUNCS        = {
 
 				// Clear the canvas.
 				ctx.clearRect(0,0,w,h); // Full transparent.
+
+				core.GRAPHICS.DATA.FLAGS[layer].lastUpdate=performance.now();
 			}
 		},
 
@@ -395,6 +405,9 @@ core.GRAPHICS.FUNCS        = {
 
 				// Clear the output canvas.
 				_CGFU.ClearOUTPUT();
+
+				core.GRAPHICS.DATA.FLAGS[layer].lastUpdate=performance.now();
+
 			}
 		},
 
@@ -407,6 +420,8 @@ core.GRAPHICS.FUNCS        = {
 		ClearOUTPUT         : function(){
 			let canvas = core.GRAPHICS.canvas.OUTPUT;
 			core.GRAPHICS.ctx.OUTPUT.clearRect(0,0,canvas.width,canvas.height);
+
+			core.GRAPHICS.DATA.FLAGS.OUTPUT.lastUpdate=performance.now();
 		},
 
 		/**
@@ -427,6 +442,8 @@ core.GRAPHICS.FUNCS        = {
 				let canvas = core.GRAPHICS.canvas[layers[i]];
 				let ctx    = core.GRAPHICS.ctx[layers[i]];
 				ctx.clearRect(0,0,canvas.width,canvas.height);
+
+				core.GRAPHICS.DATA.FLAGS[layers[i]].lastUpdate=performance.now();
 			}
 		},
 
@@ -851,23 +868,23 @@ core.GRAPHICS.FUNCS        = {
 			}
 
 			// Set the fade direction to the specifed value.
-			core.GRAPHICS.WORKERS.__fade.fadeDirection=fadeDirection;
+			core.GRAPHICS.FADE.fadeDirection=fadeDirection;
 
 			// Get a handle to the alphas table.
-			let fade_alphas     = core.GRAPHICS.WORKERS.__fade.alphas;
+			let fade_alphas     = core.GRAPHICS.FADE.alphas;
 
 			// Fade direction up?
 			let newFadeLevel;
-			if     (core.GRAPHICS.WORKERS.__fade.fadeDirection ==  1){
+			if     (core.GRAPHICS.FADE.fadeDirection ==  1){
 				// Set the fade level to the default value for this fade direction.
 				newFadeLevel=0;
-				core.GRAPHICS.WORKERS.__fade.alphaIndex=newFadeLevel;
+				core.GRAPHICS.FADE.alphaIndex=newFadeLevel;
 			}
 			// Fade direction down?
-			else if(core.GRAPHICS.WORKERS.__fade.fadeDirection == -1){
+			else if(core.GRAPHICS.FADE.fadeDirection == -1){
 				// Set the fade level to the default value for this fade direction.
 				newFadeLevel=fade_alphas.length-1;
-				core.GRAPHICS.WORKERS.__fade.alphaIndex=newFadeLevel;
+				core.GRAPHICS.FADE.alphaIndex=newFadeLevel;
 			}
 
 			// Make the change to the output canvas globalAlpha.
@@ -877,14 +894,14 @@ core.GRAPHICS.FUNCS        = {
 			core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=true;
 
 			// Set stayBlack with the specified value.
-			// core.GRAPHICS.WORKERS.__fade.stayBlack=stayBlack;
+			// core.GRAPHICS.FADE.stayBlack=stayBlack;
 
 			// Set the new speed value.
-			core.GRAPHICS.WORKERS.__fade.msBeforeChange=speed;
-			core.GRAPHICS.WORKERS.__fade.lastChange=performance.now();
+			core.GRAPHICS.FADE.msBeforeChange=speed;
+			core.GRAPHICS.FADE.lastChange=performance.now();
 
 			//
-			core.GRAPHICS.WORKERS.__fade.chainFadeActive=true;
+			core.GRAPHICS.FADE.chainFadeActive=true;
 		},
 
 		/**
@@ -903,12 +920,12 @@ core.GRAPHICS.FUNCS        = {
 			// _CGFU.setFade(6);
 			core.GRAPHICS.DEBUG.start("fade_timings");
 
-			if(alphaIndex >=0 && alphaIndex < core.GRAPHICS.WORKERS.__fade.alphas.length){
+			if(alphaIndex >=0 && alphaIndex < core.GRAPHICS.FADE.alphas.length){
 				// Get a handle to the alphas table.
-				let fade_alphas     = core.GRAPHICS.WORKERS.__fade.alphas;
+				let fade_alphas     = core.GRAPHICS.FADE.alphas;
 
 				// Set the new alphaIndex.
-				core.GRAPHICS.WORKERS.__fade.alphaIndex = alphaIndex;
+				core.GRAPHICS.FADE.alphaIndex = alphaIndex;
 
 				// Make the change to the output canvas globalAlpha.
 				core.GRAPHICS.ctx.OUTPUT.globalAlpha = fade_alphas[alphaIndex] ;
@@ -922,7 +939,7 @@ core.GRAPHICS.FUNCS        = {
 				return;
 			}
 
-			core.GRAPHICS.WORKERS.__fade.setFadeActive=true;
+			core.GRAPHICS.FADE.setFadeActive=true;
 
 			core.GRAPHICS.DEBUG.end("fade_timings");
 		},
@@ -933,12 +950,12 @@ core.GRAPHICS.FUNCS        = {
 		 *
 		 * @example _CGFU.renderOutput();
 		*/
-		renderOutput : async function(){
+		renderOutput        : async function(){
 			core.GRAPHICS.DEBUG.start("gfx_timings");
 
 			let drawFlag1=core.GRAPHICS.DATA.FLAGS.OUTPUT.draw;
-			let drawFlag2=core.GRAPHICS.WORKERS.__fade.chainFadeActive;
-			let drawFlag3=core.GRAPHICS.WORKERS.__fade.setFadeActive;
+			let drawFlag2=core.GRAPHICS.FADE.chainFadeActive;
+			let drawFlag3=core.GRAPHICS.FADE.setFadeActive;
 
 			if( drawFlag1 || drawFlag2 || drawFlag3 ){
 				// Combine layers.
@@ -948,8 +965,8 @@ core.GRAPHICS.FUNCS        = {
 				_CGFI.update_fadeValues();
 
 				// Draw the screen from memory.
-				_CGFI.update_layer_OUTPUT();
-				// try{ await _CGFI.update_layer_OUTPUT(); core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=false; } catch(e){ _CGFI.errorHandler("update_layer_OUTPUT", e); }
+				// _CGFI.update_layer_OUTPUT();
+				try{ await _CGFI.update_layer_OUTPUT(); core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=false; } catch(e){ _CGFI.errorHandler("update_layer_OUTPUT", e); }
 			}
 			else{
 				// core.GRAPHICS.DEBUG.start("doColorSwapping"); core.GRAPHICS.DEBUG.end("doColorSwapping");
@@ -982,7 +999,7 @@ core.GRAPHICS.FUNCS        = {
 		 *
 		 * @example _CGFI.returnNewTile_obj();
 		*/
-		returnNewTile_obj   : function(){
+		returnNewTile_obj    : function(){
 			let output = 	{
 				// Position and Dimension
 				"x"               : 0                 , // Pixel-aligned x position.
@@ -1019,6 +1036,7 @@ core.GRAPHICS.FUNCS        = {
 
 					// Draw flags.
 					"drawThis"    : false             , // Draw status.  true: Image will be drawn., false: Image will not be drawn.
+					"lateDraw"    : false             , // Similar to drawThis but intended for draws that happen late.
 				}
 			};
 
@@ -1032,7 +1050,7 @@ core.GRAPHICS.FUNCS        = {
 		 *
 		 * @example _CGFI.Adjust_NewTile_obj(data);
 		*/
-		Adjust_NewTile_obj  : function(data){
+		Adjust_NewTile_obj   : function(data){
 			let x          = data.x          ;
 			let y          = data.y          ;
 			let tileset    = data.tileset    ;
@@ -1216,7 +1234,7 @@ core.GRAPHICS.FUNCS        = {
 		 *
 		 * @example _CGFI.doColorSwapping();
 		*/
-		doColorSwapping     : function(newObj){
+		doColorSwapping      : function(newObj){
 			return new Promise(function(res,rej){
 				core.GRAPHICS.DEBUG.start("doColorSwapping");
 
@@ -1295,7 +1313,7 @@ core.GRAPHICS.FUNCS        = {
 		 *
 		 * @example _CGFI.ROT_FLIPX_FLIPY(imgObj_canvas, newVRAM_entry);
 		*/
-		ROT_FLIPX_FLIPY     : function(imgObj_canvas, newVRAM_entry){
+		ROT_FLIPX_FLIPY      : function(imgObj_canvas, newVRAM_entry){
 			// Create the src canvas as a copy of the provided canvas.
 			let src_canvas    = document.createElement("canvas");
 			src_canvas.width  = newVRAM_entry.w ;
@@ -1372,21 +1390,15 @@ core.GRAPHICS.FUNCS        = {
 		 *
 		 * @example _CGFI.addColorSwapToQueue(imgData, newVRAM_entry);
 		*/
-		addColorSwapToQueue : function(imgData, newVRAM_entry){
+		addColorSwapToQueue  : function(imgData, newVRAM_entry){
 			// Create the object. (elements are expected to be clones.)
 			let newObj = {
 				"imgData_buffer" : imgData ,
 				"newVRAM_entry"  : newVRAM_entry
 			};
 
-			// Immeditately perform the color swapping.
-			_CGFI.doColorSwapping(newObj)
-				.then(
-					function(){
-					},
-					function(err){ console.log("error in doColorSwapping:", err); }
-				)
-			;
+			// Immeditately perform the color swapping. (Uses a web worker.)
+			_CGFI.doColorSwapping(newObj);
 		},
 
 		/**
@@ -1396,23 +1408,13 @@ core.GRAPHICS.FUNCS        = {
 		 *
 		 * @example _CGFI.placeTile();
 		*/
-		placeTile           : function(data){
+		placeTile            : function(data){
 			let newVRAM_entry = data.newVRAM_entry       ;
 			let layerType     = newVRAM_entry.layerType  ;
 			let __calledBy    = newVRAM_entry.__calledBy ;
 			let layer         = newVRAM_entry.layer      ;
 			let flags         = newVRAM_entry.flags      ;
 			let addr ;
-
-			// if(newVRAM_entry._textstrings){
-			// 	console.log(
-			// 		"=== 2 === placeTile:",
-			// 		"\n ARGUMENTS    :", data,
-			// 		"\n newVRAM_entry:", newVRAM_entry,
-			// 		"\n newVRAM_entry.flags:", newVRAM_entry.flags,
-			// 		"\n newVRAM_entry._textstrings:", newVRAM_entry._textstrings
-			// 	);
-			// }
 
 			// Add the newVRAM_entry to the specified layer's VRAM/SPRITES.
 			if     (layerType=="VRAM")  {
@@ -1501,6 +1503,8 @@ core.GRAPHICS.FUNCS        = {
 			// Set the draw and layer update flags.
 			newVRAM_entry.flags.drawThis = true ;
 			core.GRAPHICS.DATA.FLAGS[newVRAM_entry.layer].UPDATE=true;
+			core.GRAPHICS.DATA.FLAGS[newVRAM_entry.layer].lastUpdate=performance.now();
+			core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=true;
 		},
 
 		// LAYER UPDATING FUNCTIONS.
@@ -1513,7 +1517,8 @@ core.GRAPHICS.FUNCS        = {
 		*/
 		update_layers        : function(){
 			return new Promise(function(res,rej){
-				let drawOutput=false;
+				let drawOutput  = false;
+				let hasLateDraw = false;
 
 				core.GRAPHICS.DEBUG.start("update_layers");
 
@@ -1529,10 +1534,10 @@ core.GRAPHICS.FUNCS        = {
 					let REDRAW          = core.GRAPHICS.DATA.FLAGS[layer].REDRAW          ;
 
 					// Get layer variables.
-					let layerFlags      = core.GRAPHICS.DATA.FLAGS[layer]                 ;
+					let layerFlags              = core.GRAPHICS.DATA.FLAGS[layer]                         ;
 					let clearCanvasBeforeUpdate = core.GRAPHICS.DATA.FLAGS[layer].clearCanvasBeforeUpdate ;
-					let canvas          = core.GRAPHICS.canvas[layer]                     ;
-					let ctx             = core.GRAPHICS.ctx[layer]                        ;
+					let canvas                  = core.GRAPHICS.canvas[layer]                             ;
+					let ctx                     = core.GRAPHICS.ctx[layer]                                ;
 
 					// Force redraw if UPDATE is set and the layer has clearCanvasBeforeUpdate set.
 					if(UPDATE && clearCanvasBeforeUpdate){
@@ -1568,6 +1573,8 @@ core.GRAPHICS.FUNCS        = {
 								// console.log("flags set to off!");
 								continue;
 							}
+
+							if(VRAM[t].flags.lateDraw){ VRAM[t].flags.drawThis=true; VRAM[t].flags.lateDraw=false; hasLateDraw=true; }
 
 							// Does this tile have the drawThis flag set?
 							if(VRAM[t].flags.drawThis || REDRAW){
@@ -1676,12 +1683,11 @@ core.GRAPHICS.FUNCS        = {
 				}
 
 				// Get a handle to the fade data.
-				let fadeData = core.GRAPHICS.WORKERS.__fade;
+				let fadeData = core.GRAPHICS.FADE;
 
-				// If a fade is active then make sure the screen is drawn.
-				if( fadeData.chainFadeActive || fadeData.setFadeActive ){ drawOutput=true; }
-
-				core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=drawOutput ;
+				// If a late draw is set or the fade is active then make sure the screen is drawn.
+				if( hasLateDraw || fadeData.chainFadeActive || fadeData.setFadeActive ){ drawOutput=true; }
+				core.GRAPHICS.DATA.FLAGS.OUTPUT.draw = drawOutput ;
 
 				core.GRAPHICS.DEBUG.end("update_layers");
 
@@ -1702,11 +1708,11 @@ core.GRAPHICS.FUNCS        = {
 				core.GRAPHICS.DEBUG.start("layer_combines");
 
 				// Get a handle to the fade data.
-				let fadeData = core.GRAPHICS.WORKERS.__fade;
+				let fadeData = core.GRAPHICS.FADE;
 
 				let drawFlag1=core.GRAPHICS.DATA.FLAGS.OUTPUT.draw;
-				let drawFlag2=core.GRAPHICS.WORKERS.__fade.chainFadeActive;
-				let drawFlag3=core.GRAPHICS.WORKERS.__fade.setFadeActive;
+				let drawFlag2=core.GRAPHICS.FADE.chainFadeActive;
+				let drawFlag3=core.GRAPHICS.FADE.setFadeActive;
 
 				if( drawFlag1 || drawFlag2 || drawFlag3 ){
 					// Get a handle to the temp output.
@@ -1739,11 +1745,11 @@ core.GRAPHICS.FUNCS        = {
 				core.GRAPHICS.DEBUG.start("output_timings");
 
 				// Get a handle to the fade data.
-				let fadeData = core.GRAPHICS.WORKERS.__fade;
+				let fadeData = core.GRAPHICS.FADE;
 
 				let drawFlag1=core.GRAPHICS.DATA.FLAGS.OUTPUT.draw;
-				let drawFlag2=core.GRAPHICS.WORKERS.__fade.chainFadeActive;
-				let drawFlag3=core.GRAPHICS.WORKERS.__fade.setFadeActive;
+				let drawFlag2=core.GRAPHICS.FADE.chainFadeActive;
+				let drawFlag3=core.GRAPHICS.FADE.setFadeActive;
 
 				if( drawFlag1 || drawFlag2 || drawFlag3 ){
 					// Get a handle to the temp output.
@@ -1757,8 +1763,8 @@ core.GRAPHICS.FUNCS        = {
 					let y_offset = core.GRAPHICS.DATA.FLAGS.OUTPUT.y_offset;
 
 					// Apply the current level of fading.
-					// let fade_alphas     = core.GRAPHICS.WORKERS.__fade.alphas;
-					// let fade_alphaIndex = core.GRAPHICS.WORKERS.__fade.alphaIndex;
+					// let fade_alphas     = core.GRAPHICS.FADE.alphas;
+					// let fade_alphaIndex = core.GRAPHICS.FADE.alphaIndex;
 					// core.GRAPHICS.ctx.OUTPUT.globalAlpha = fade_alphas[fade_alphaIndex] ;
 
 					core.GRAPHICS.ctx.OUTPUT.drawImage(
@@ -1789,7 +1795,7 @@ core.GRAPHICS.FUNCS        = {
 		*/
 		update_fadeValues    : function(){
 			// Get a handle to the fade data.
-			let fadeData = core.GRAPHICS.WORKERS.__fade;
+			let fadeData = core.GRAPHICS.FADE;
 
 			if(fadeData.chainFadeActive){
 				// Is it time to change the fade level?
@@ -1827,7 +1833,7 @@ core.GRAPHICS.FUNCS        = {
 		},
 
 		//
-		errorHandler : function(name, err){
+		errorHandler         : function(name, err){
 			let str = ["=E= graphicsUpdate: ("+name+") rejected promise.", err ];
 			console.error("err: "+name+": ", err);
 			throw Error(str);
