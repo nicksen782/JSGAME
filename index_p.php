@@ -216,7 +216,7 @@ function combineFiles_typeByKey($keys){
 function getLastUpdate($path){
 	global $_appdir;
 
-	$latestVersion = trim( shell_exec(" find " . $path . " -type f -not -path '*/\.git*' -printf '%CY-%Cm-%Cd %CH:%CM:00 (%CZ) %p\n'| sort -n | tail -n1 ") );
+	$latestVersion = trim( shell_exec(" find " . $path . " -type f -not -path '*/\.git*'  -not -path '*/\docs**' -printf '%CY-%Cm-%Cd %CH:%CM:00 (%CZ) %p\n'| sort -n | tail -n1 ") );
 	// 2020-02-28 19:21:00 (EST) ./index_p.php
 
 	$data = explode(" ", $latestVersion);
