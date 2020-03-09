@@ -119,6 +119,7 @@
 									</select>
 								</div>
 							</div>
+
 							<!-- VOLUME -->
 							<div class="navrow" id="masterVolumeSlider_row">
 								<div class="navrow_left">VOLUME</div>
@@ -127,6 +128,7 @@
 										value="0">
 								</div>
 							</div>
+
 							<!-- SIZE -->
 							<div class="navrow" id="canvasScaleSlider_row">
 								<div class="navrow_left">SIZE</div>
@@ -135,6 +137,7 @@
 										max="3.2" value="1">
 								</div>
 							</div>
+
 							<!-- ON-SCREEN GAMEPADS -->
 							<div class="navrow" id="btn_toggleGamepads">
 								<div class="navrow_left">Gamepads (on-screen)</div>
@@ -158,6 +161,7 @@
 									Toggles the Full Screen Mode.
 								</div>
 							</div>
+
 							<!-- RELOAD WINDOW -->
 							<div class="navrow" onclick="JSGAME.GUI.reloadGame();">
 								<div class="navrow_left">Reload Window</div>
@@ -165,6 +169,7 @@
 									Reloads the window.
 								</div>
 							</div>
+
 							<!-- RESTART GAME -->
 							<!-- <div class="navrow" onclick="JSGAME.GUI.reloadGame();">
 								<div class="navrow_left">Restart Game</div>
@@ -179,11 +184,16 @@
 					<!-- Links -->
 					<div class="navcol">
 						<div class="navbutton">
-							<span class="navbutton_label">Game Info</span>
+							<span class="navbutton_label">Information</span>
 							<span class="navbutton_caret_down"></span>
 						</div>
 						<div class="navbutton_content" id="gamelinks">
 							<!-- Built-in Links -->
+							<div class="navrow" target="_blank" href="docs" onclick="window.open( this.getAttribute('href'), this.getAttribute('target') );">
+								<div class="navrow_left">JS GAME (API Docs)</div>
+								<div class="navrow_right">(Opens in new tab)</div>
+							</div>
+
 							<div class="navrow" target="_blank" href="https://github.com/nicksen782/JSGAME" onclick="window.open( this.getAttribute('href'), this.getAttribute('target') );">
 								<div class="navrow_left">JS GAME (Github)</div>
 								<div class="navrow_right">(Opens in new tab)</div>

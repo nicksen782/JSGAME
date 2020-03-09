@@ -9,12 +9,40 @@ core.FUNCS.audio.TODO_pauseAllSounds
 
 */
 
-core.ASSETS.audio     = {} ; // Audio lookup to the audio elements and some extra data.
-core.FUNCS.audio      = {} ; // Functions for audio.
-core.AUDIO            = {} ; // Audio elements and some extra data.
+/**
+ * Audio lookup to the audio elements and some extra data.
+ * @summary Audio lookup to the audio elements and some extra data.
+ * @global
+*/
+core.ASSETS.audio     = {} ; //
 
-core.AUDIO.midiSynths = {} ; // Synths used by TinySynth
-core.AUDIO.midiData   = {} ; // MIDI data used by TinySynth
+/**
+ * Functions for audio.
+ * @summary Functions for audio.
+ * @namespace core.FUNCS.audio
+*/
+core.FUNCS.audio      = {} ; //
+
+/**
+ * Audio elements and some extra data.
+ * @summary Audio elements and some extra data.
+ * @global
+*/
+core.AUDIO            = {} ; //
+
+/**
+ * Synths used by TinySynth.
+ * @summary Synths used by TinySynth.
+ * @global
+*/
+core.AUDIO.midiSynths = {} ; //
+
+/**
+ * MIDI data used by TinySynth.
+ * @summary MIDI data used by TinySynth
+ * @global
+*/
+core.AUDIO.midiData   = {} ; //
 
 // *** Init conversion functions - Removed after use. ***
 core.FUNCS.audio.init = function(){
@@ -445,15 +473,20 @@ core.FUNCS.audio.init = function(){
 
 };
 
+
+
 // *** Sound/audio control (MP3) ***
 
-// (MP3) Cancel all sounds (stop the sound and reset the currentTime value.)
+/**
+ * @summary  (MP3) Cancel all sounds (stop the sound and reset the currentTime value.)
+ * @memberof core.FUNCS.audio
+ * @param    {string} type
+ *
+ * @example _CFA.cancelAllSounds_mp3('all');
+ * @example _CFA.cancelAllSounds_mp3('mp3_sfx');
+ * @example _CFA.cancelAllSounds_mp3('mp3_bgm');
+*/
 core.FUNCS.audio.cancelAllSounds_mp3 = function(type){
-	// EXAMPLE:
-	// core.FUNCS.audio.cancelAllSounds_mp3('all');
-	// core.FUNCS.audio.cancelAllSounds_mp3('mp3_sfx');
-	// core.FUNCS.audio.cancelAllSounds_mp3('mp3_bgm');
-
 	// Make sure a valid type was specified.
 	if(type==undefined || ['mp3_sfx', 'mp3_bgm', 'all'].indexOf(type) == -1){
 		console.log("ERROR in cancelAllSounds_mp3: A type was not specified.");
@@ -482,7 +515,16 @@ core.FUNCS.audio.cancelAllSounds_mp3 = function(type){
 	}
 
 };
-// (MP3) Plays Sound FX and Music.
+
+/**
+ * @summary  (MP3) Plays Sound FX and Music.
+ * @memberof core.FUNCS.audio
+ * @param    {string} soundKey
+ * @param    {boolean} retrigger
+ * @param    {number} volume
+ *
+ * @example _CFA.playSound_mp3("payfee1", true, 1.0);
+ */
 core.FUNCS.audio.playSound_mp3 = function(soundKey, retrigger, volume){
 	// core.FUNCS.audio.playSound_mp3("payfee1", true, 1.0);
 
@@ -550,16 +592,35 @@ core.FUNCS.audio.playSound_mp3 = function(soundKey, retrigger, volume){
 
 };
 
+
+
 // *** Sound/audio control (MIDI) ***
 
 // (MIDI)
+/**
+ * @summary  (MIDI) Resumes the MIDI on the specified synth.
+ * @memberof core.FUNCS.audio
+ * @param    {string} synthKey
+ *
+ * @example  _CFA.resume_midi("BGM1");
+ */
 core.FUNCS.audio.resume_midi = function(synthKey){
 	if(synthKey==""){ return; }
 
 	let synth = core.AUDIO.midiSynths[synthKey];
 	if(! synth.getPlayStatus().play ){ synth.playMIDI(); }
 };
+
 // (MIDI)
+/**
+ * @summary  (MIDI) Stops/pauses the MIDI on the specified synth. Can also reset the play position.
+ * @memberof core.FUNCS.audio
+ * @param    {string} synthKey
+ * @param    {boolean} resetPosition
+ *
+ * @example _CFA.stop_midi("BGM1", true);
+ * @example _CFA.stop_midi("BGM1", false);
+ */
 core.FUNCS.audio.stop_midi = function(synthKey, resetPosition){
 	if(synthKey==""){ return; }
 
@@ -569,7 +630,18 @@ core.FUNCS.audio.stop_midi = function(synthKey, resetPosition){
 		synth.stopMIDI();
 	}
 };
+
 // (MIDI)
+/**
+ * @summary  (MIDI) Start playing a MIDI key.
+ * @memberof core.FUNCS.audio
+ * @param    {string} synthKey
+ * @param    {string} soundKey
+ * @param    {boolean} loop
+ * @param    {number} vol
+ *
+ * @example  _CFA.play_midi("BGM1", "A_THEME_MID", true, 1.0);
+ */
 core.FUNCS.audio.play_midi = function(synthKey, soundKey, loop, vol){
 	if(synthKey==""){ return; }
 	if(soundKey==""){ return; }
@@ -585,7 +657,14 @@ core.FUNCS.audio.play_midi = function(synthKey, soundKey, loop, vol){
 	synth.playMIDI();
 };
 
-// (MIDI) Cancel all sounds (can also reset the position to 0.)
+/**
+ * @summary  (MIDI) Cancel all sounds (can also reset the position to 0.)
+ * @memberof core.FUNCS.audio
+ * @param    {boolean} resetPosition
+ *
+ * @example  _CFA.stopAllSounds_midi(true);
+ * @example  _CFA.stopAllSounds_midi(false);
+ */
 core.FUNCS.audio.stopAllSounds_midi = function(resetPosition){
 	// Do a pause on all synths and then reset their song position to 0.
 
@@ -607,6 +686,13 @@ core.FUNCS.audio.stopAllSounds_midi = function(resetPosition){
 // *** Sound/audio control (SHARED) ***
 
 // Change the master volume (affects all sounds.)
+/**
+ * @summary  (MP3/MIDI) Controls the master volume.
+ * @memberof core.FUNCS.audio
+ * @param    {number} newVol
+ *
+ * @example  _CFA.changeMasterVolume(80);
+ */
 core.FUNCS.audio.changeMasterVolume = function(newVol){
 	// Change the master volume value.
 	JSGAME.SHARED.masterVolume=newVol;
@@ -624,7 +710,6 @@ core.FUNCS.audio.changeMasterVolume = function(newVol){
 		try     { synth.setMasterVol( (100 * JSGAME.SHARED.masterVolume/100)/100 ) ;  }
 		catch(e){ console.warn("WARNING: changeMasterVolume: Unable to read the master volume."); }
 	}
-
 };
 
 // Pause all sounds (mp3, midi)
@@ -643,6 +728,7 @@ core.FUNCS.audio.TODO_pauseAllSounds = function(){
 	}
 
 };
+
 // Resume all sounds (mp3, midi)
 core.FUNCS.audio.TODO_resumeAllSounds = function(){
 	// core.FUNCS.audio.stopAllSounds_midi(false);
@@ -668,3 +754,11 @@ core.FUNCS.audio.TODO_resumeAllSounds = function(){
 		// core.AUDIO.elems.tick.paused
 	}
 };
+
+// *** SHORTHAND METHODS ***
+
+/**
+ * @summary Shortened way to access core.FUNCS.audio.
+ * @global
+*/
+let _CFA   =core.FUNCS.audio;
