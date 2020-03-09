@@ -50,6 +50,9 @@ function colorswaps(event){
 				let blue  = img_view8[i+2];
 				let alpha = img_view8[i+3];
 
+				// Any fully transparent pixel can be skipped.
+				if(alpha==0){ i_32+=1; continue; }
+
 				// Go through the colorSwaps and look for matches.
 				for(let j=0; j<flags.colorSwaps.length; j+=1){
 					// Determine the colors that we are looking for.

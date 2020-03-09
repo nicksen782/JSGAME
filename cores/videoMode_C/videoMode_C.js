@@ -243,7 +243,6 @@ core.GRAPHICS.DEBUG = {
 	}
 };
 
-
 core.GRAPHICS.FUNCS        = {
 	/**
 	 * USER-ACCESSIBLE DRAW FUNCTIONS.
@@ -910,11 +909,11 @@ core.GRAPHICS.FUNCS        = {
 		 * @param    {number} fadeLevel The new fade level.
 		 *
 		 * @example // Set to full off (black) and remain.
-			* _CGFU.setFade(0 );
+			* _CGFU.setFade(0);
 		 * @example // Set to roughly half on and remain.
 			* _CGFU.setFade(6);
-		 * @example // Set to full on and remain.
-			* _CGFU.setFade(13);
+		 * @example // Set to full on and rema	in.
+			* _CGFU.setFade(10);
 		*/
 		setFade             : function(alphaIndex){
 			// _CGFU.setFade(6);
