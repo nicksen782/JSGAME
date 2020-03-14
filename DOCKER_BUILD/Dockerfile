@@ -54,8 +54,16 @@ RUN \
 		php-dom libapache2-mod-php                   \
 		php7.2-sqlite                                \
 		libapache2-mod-php7.2                        \
+		git-core        \
+		build-essential \
+		openssl         \
+		libssl-dev      \
+		python          \
+		nodejs          \
 		&& \
 	echo "" && \
+	curl -L https://npmjs.org/install.sh | sh && \
+	npm install terser -g && \
 	# Upgrade software.
 	#apt-get upgrade -y  && \
 	echo "" && \
@@ -77,6 +85,8 @@ RUN \
 RUN \
 	mkdir /var/www/site       && \
 	mkdir /var/www/site/MOUNT && \
+	find /var/www/site/MOUNT -type d -exec chmod 777 {} \; \
+	find /var/www/site/MOUNT -type f -exec chmod 777 {} \; \
 	echo ""                   && \
 	echo DONE                 && \
 	echo ""

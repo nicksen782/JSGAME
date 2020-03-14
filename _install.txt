@@ -23,16 +23,16 @@ if [ "$1" = "DOCKER" ]; then CREATEDOCKER=1; fi
 ####################################################################################################
 
 # Make the directory structure.
-if [ ! -f "JS_GAME" ]         ; then mkdir JS_GAME          ; fi
-if [ ! -f "JS_GAME/APP" ]     ; then mkdir JS_GAME/APP      ; fi
-if [ ! -f "JS_GAME/JS_GAMES" ]; then mkdir JS_GAME/JS_GAMES ; fi
+if [ ! -f "APP" ]          ; then mkdir APP          ; fi
+if [ ! -f "APP/JS_GAME" ]  ; then mkdir APP/JS_GAME  ; fi
+if [ ! -f "APP/JS_GAMES" ] ; then mkdir APP/JS_GAMES ; fi
 
-# Enter the JS_GAME directory and then clone JS_GAME into APP.
-cd JS_GAME || return
-git clone https://github.com/nicksen782/JSGAME.git APP
+# Enter the APP directory and then clone JS_GAME into JS_GAME.
+cd APP || return
+git clone https://github.com/nicksen782/JSGAME.git JS_GAME
 
 # Test for the existence of the gamelist.json file.
-destfile=APP/gamelist.json
+destfile=JS_GAME/gamelist.json
 if [ ! -f "$destfile" ]
 then
 # The file was not found. Create a starter gamelist.jsonfile with JS_GAME: Tetris.
@@ -51,13 +51,16 @@ git clone https://github.com/nicksen782/JSGAME_Tetris.git           JS_GAMES/Tet
 git clone https://github.com/nicksen782/JSGAME_videoModeC_TESTS.git JS_GAMES/videoModeC_TESTS
 fi
 
+# Fix the git configs.
+cd JS_GAME && git config --local core.fileMode false
+
 ##########################
 # DOCKER SECTION - START #
 ##########################
 
 if [ $CREATEDOCKER -eq 1 ]
 then
-	cd APP || return
+	cd JS_GAME || return
 	cd DOCKER_BUILD || return
 	chmod +x 00A_buildCreateStart.sh
 	chmod +x 00B_stopRemoveAll.sh
@@ -68,9 +71,14 @@ then
 	chmod +x 04_stop.sh
 	chmod +x 05_removeContainer.sh
 	chmod +x 06_removeImage.sh
+
+	// Build the Docker container.
 	./00A_buildCreateStart.sh
+
 	cd ..
 	cd ..
+
+	echo
 	echo "You can access JS_GAME via URL: http://127.0.0.1:8080/"
 	echo
 fi
@@ -80,6 +88,5 @@ fi
 ##########################
 
 # Rename the install script so that it does not get accidentally run again.
-cd ..
-chmod -x _install.sh
-mv _install.sh _install.txt
+# if [ -f "../_install.sh" ] ; then cd .. && chmod -x _install.sh && mv _install.sh _install.txt ; fi
+
