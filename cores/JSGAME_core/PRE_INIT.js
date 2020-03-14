@@ -4,12 +4,10 @@
 
 'use strict';
 
-// window.location.origin
 let thisPath   = window.location.pathname;
 let parentPath = thisPath.split("/");
 parentPath.pop(); parentPath.pop();
 parentPath = window.location.origin + (parentPath.join("/")) + "/" ;
-// console.log( parentPath );
 
 let requestAnimationFrame = window.requestAnimationFrame       || window.mozRequestAnimationFrame ||
 							window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
@@ -34,13 +32,13 @@ let JSGAME={
 let core = {
 	SETTINGS   : {} , // Core kernel settings.
 	DOM        : {} , // DOM cache.
-	debug      : {} , // Holds DOM specific to debugging.
 	ASSETS     : {} , // Populated by Populated by game init code.
-	AUDIO      : {} , // Populated by game init code.
-	GRAPHICS   : {} , // Populated by game init code.
-	CONSTS     : {} , // Populated by video/audio kernels.
-	FUNCS      : {} , // Populated by video/audio kernels.
+	AUDIO      : {} , // Populated by sound mode.
+	GRAPHICS   : {} , // Populated by video mode.
+	FUNCS      : {} , // Populated by video/audio kernels. (legacy. videoModeA, soundModeA)
 	EXTERNAL   : {} , // The game can add to this. The cores determine the default contents.
+	// debug      : {} , // Holds DOM specific to debugging.
+	// CONSTS     : {} , // Populated by video/audio kernels.
 };
 core.FUNCS.graphics = {};
 

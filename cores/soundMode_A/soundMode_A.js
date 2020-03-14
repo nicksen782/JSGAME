@@ -1,3 +1,7 @@
+// ====================================
+// ==== FILE START: soundMode_A.js ====
+// ====================================
+
 'use strict';
 
 /*
@@ -762,3 +766,7 @@ core.FUNCS.audio.TODO_resumeAllSounds = function(){
  * @global
 */
 let _CFA   =core.FUNCS.audio;
+
+// ==================================
+// ==== FILE END: soundMode_A.js ====
+// ==================================

@@ -374,9 +374,9 @@ JSGAME.SHARED={
 	/**
 	 * @summary   Converts an array buffer to data uri.
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} buffer
-	 * @param    {*} type
-	 * @param    {*} callback
+	 * @param    {ArrayBuffer} buffer
+	 * @param    {string} type
+	 * @param    {function} callback
 	 *
 	 * @example JSGAME.SHARED.arrayBufferToBase64_datauri(buffer, type, callback);
 	*/
@@ -398,7 +398,7 @@ JSGAME.SHARED={
 	/**
 	 * @summary   Changes the dimensions of the containing DIV for the game canvas (Canvas has CSS dims at 100%.)
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} scale
+	 * @param    {number} scale
 	 *
 	 * @example JSGAME.SHARED.canvasResize(scale);
 	*/
@@ -437,18 +437,17 @@ JSGAME.SHARED={
 			"botBar"           : JSGAME.DOM.botBar          .getBoundingClientRect() ,
 		};
 
-		let dimsA = window.getComputedStyle(JSGAME.DOM.siteContainerDiv, null) ;
-		let dimsB = window.getComputedStyle(JSGAME.DOM.topBar          , null) ;
-		let dimsC = window.getComputedStyle(JSGAME.DOM.mainCenter      , null) ;
-		let dimsD = window.getComputedStyle(JSGAME.DOM.botBar          , null) ;
+		// let dimsA = window.getComputedStyle(JSGAME.DOM.siteContainerDiv, null) ;
+		// let dimsB = window.getComputedStyle(JSGAME.DOM.topBar          , null) ;
+		// let dimsC = window.getComputedStyle(JSGAME.DOM.mainCenter      , null) ;
+		// let dimsD = window.getComputedStyle(JSGAME.DOM.botBar          , null) ;
 
-		let test = {
-			"siteContainerDiv" : { width:parseInt(dimsA.width,10), height:parseInt(dimsA.height,10) } ,
-			"topBar"           : { width:parseInt(dimsB.width,10), height:parseInt(dimsB.height,10) } ,
-			"mainCenter"       : { width:parseInt(dimsC.width,10), height:parseInt(dimsC.height,10) } ,
-			"botBar"           : { width:parseInt(dimsD.width,10), height:parseInt(dimsD.height,10) } ,
-
-		};
+		// let test = {
+		// 	"siteContainerDiv" : { width:parseInt(dimsA.width,10), height:parseInt(dimsA.height,10) } ,
+		// 	"topBar"           : { width:parseInt(dimsB.width,10), height:parseInt(dimsB.height,10) } ,
+		// 	"mainCenter"       : { width:parseInt(dimsC.width,10), height:parseInt(dimsC.height,10) } ,
+		// 	"botBar"           : { width:parseInt(dimsD.width,10), height:parseInt(dimsD.height,10) } ,
+		// };
 
 		let total_w = (dims1.siteContainerDiv.width) << 0;
 
@@ -511,19 +510,20 @@ JSGAME.SHARED={
 	/**
 	 * @summary   Shows or hides the document based on mouseenter/mouseleave and the hidden setting.
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} e
+	 * @param    {event} e
 	 *
 	 * @example JSGAME.SHARED.toggleDocumentHidden(e);
 	*/
 	toggleDocumentHidden : function(e){
-		// Get the event type.
-		let type = e.type;
-
 		// Get a DOM handle to the hidden_mode checkbox.
 		let hidden_mode = JSGAME.DOM.hidden_mode;
 
 		// Act only if the checkbox is checked.
 		if(hidden_mode.checked){
+			// Get the event type.
+			let type = e.type;
+
+			// Act on the event.
 			if     (type=="mouseleave"){ document.body.style.visibility="hidden"; }
 			else if(type=="mouseenter"){ document.body.style.visibility="visible"; }
 		}
@@ -532,7 +532,7 @@ JSGAME.SHARED={
 	/**
 	 * @summary   Global Error Handler - listener function.
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} event
+	 * @param    {event} event
 	 *
 	 * @example JSGAME.SHARED.listenerFunction(event);
 	*/
@@ -548,16 +548,11 @@ JSGAME.SHARED={
 	/**
 	 * @summary   Global Error Handler
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} event
-	 * @param    {*} msg
-	 * @param    {*} url
-	 * @param    {*} lineNo
-	 * @param    {*} columnNo
-	 * @param    {*} error
+	 * @param    {event} event
 	 *
-	 * @example JSGAME.SHARED.GlobalErrorHandler(event, msg, url, lineNo, columnNo, error);
+	 * @example JSGAME.SHARED.GlobalErrorHandler(event);
 	*/
-	GlobalErrorHandler : function(event, msg, url, lineNo, columnNo, error){
+	GlobalErrorHandler : function(event){
 		// console.log(
 		// 	"\n event   :", event    ,
 		// 	"\n msg     :", msg      ,
@@ -583,14 +578,14 @@ JSGAME.SHARED={
 			top_str+="\nGLOBAL ERROR HANDLER: event.type: " + event.type;
 			top_str+="\n"+"-".repeat(55);
 
-			// ERROR INSTANCEOF
-			if( (event instanceof ErrorEvent    ) ){ top_str+="\n -=> instanceof : ErrorEvent    "; }
-			if( (event instanceof EvalError     ) ){ top_str+="\n -=> instanceof : EvalError     "; }
-			if( (event instanceof RangeError    ) ){ top_str+="\n -=> instanceof : RangeError    "; }
-			if( (event instanceof ReferenceError) ){ top_str+="\n -=> instanceof : ReferenceError"; }
-			if( (event instanceof SyntaxError   ) ){ top_str+="\n -=> instanceof : SyntaxError   "; }
-			if( (event instanceof TypeError     ) ){ top_str+="\n -=> instanceof : TypeError     "; }
-			if( (event instanceof URIError      ) ){ top_str+="\n -=> instanceof : URIError      "; }
+			// ERROR INSTANCEOF.
+			if     ( (event instanceof EvalError     ) ){ top_str+="\n -=> instanceof : EvalError     "; }
+			else if( (event instanceof RangeError    ) ){ top_str+="\n -=> instanceof : RangeError    "; }
+			else if( (event instanceof ReferenceError) ){ top_str+="\n -=> instanceof : ReferenceError"; }
+			else if( (event instanceof SyntaxError   ) ){ top_str+="\n -=> instanceof : SyntaxError   "; }
+			else if( (event instanceof TypeError     ) ){ top_str+="\n -=> instanceof : TypeError     "; }
+			else if( (event instanceof URIError      ) ){ top_str+="\n -=> instanceof : URIError      "; }
+			else if( (event instanceof ErrorEvent    ) ){ top_str+="\n -=> instanceof : ErrorEvent    "; }
 
 			// MAIN INFO
 
@@ -605,6 +600,7 @@ JSGAME.SHARED={
 				try{
 					// Get the URL out of it (still has "(" and ")".
 					temp        = (event.reason.stack.split("at")[1].split(" ")[2]).trim();
+
 					// Break out the rest.
 					temp_link   = temp.substring(1, temp.length-1); // Remove "(" and ")" to get the link.
 					temp        = temp_link.split(":");             // Split by ":".
@@ -856,17 +852,14 @@ JSGAME.SHARED={
 	/**
 	 * @summary   Convenience function for checking button state.
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} btnConst1
-	 * @param    {*} btnConst2
+	 * @param    {string} btnConst1
+	 * @param    {string} btnConst2
 	 *
-	 * @example JSGAME.SHARED.checkButton(btnConst1, btnConst2);
+	 * @example JSGAME.SHARED.checkButton("ANY"    , "btnPressed1");
+	 * @example JSGAME.SHARED.checkButton("BTN_UP" , "btnHeld1");
+	 * @example JSGAME.SHARED.checkButton("BTN_UP" , "btnReleased1");
 	*/
 	checkButton : function(btnConst1, btnConst2){
-		// EXAMPLE USAGE: if( game.chkBtn              ("BTN_UP" , "btnPressed1") ) {}
-		// EXAMPLE USAGE: if( game.chkBtn              ("ANY"    , "btnPressed1") ) {}
-		// EXAMPLE USAGE: if( JSGAME.SHARED.checkButton("BTN_UP" , "btnPressed1") ) {}
-		// EXAMPLE USAGE: if( JSGAME.SHARED.checkButton("ANY"    , "btnPressed1") ) {}
-
 		// Check for match on specific button.
 		if(btnConst1 != "ANY"){
 			return JSGAME.consts[btnConst1] & JSGAME.SHARED.buttons[btnConst2] ? true : false ;
@@ -882,8 +875,8 @@ JSGAME.SHARED={
 	/**
 	 * @summary   Accepts seconds (decimal or int). Returns number of frames for that quanity of seconds (rounded up) .
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} seconds
-	 * @param    {*} rounding
+	 * @param    {number} seconds
+	 * @param    {string} rounding ("up" or "down")
 	 *
 	 * @example JSGAME.SHARED.secondsToFrames(seconds, rounding);
 	*/
@@ -896,8 +889,8 @@ JSGAME.SHARED={
 	/**
 	 * @summary   Get a random integer in the specified range.
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} min
-	 * @param    {*} max
+	 * @param    {number} min
+	 * @param    {number} max
 	 *
 	 * @example JSGAME.SHARED.getRandomInt_inRange(min, max);
 	*/
@@ -907,40 +900,41 @@ JSGAME.SHARED={
 		return ((Math.random() * (max - min + 1)) + min) << 0;
 	},
 
-	/**
-	 * @summary   Update a value using a bit mask. (Per call can only turn "ON" or "OFF" bits. Not both.)
-	 * @memberof JSGAME.SHARED
-	 * @param    {*} src
-	 * @param    {*} mask
-	 * @param    {*} value
-	 *
-	 * @example JSGAME.SHARED.get_new_bitMask(src, mask, value);
-	*/
-	get_new_bitMask : function(src, mask, value){
-		// Example usage:
-		//  # To set an updated flags value (SPRITE_OFF set) for a sprite:
-		//  let spriteNum = 0;
-		//  let newFlags = JSGAME.SHARED.get_new_bitMask(core.GRAPHICS.sprites[d].flags, core.CONSTS["SPRITE_OFF"], 1);
-		//  core.FUNCS.graphics.changeSpriteFlags(spriteNum, newFlags);
+	// /**
+	//  * @summary   Update a value using a bit mask. (Per call can only turn "ON" or "OFF" bits. Not both.)
+	//  * @memberof JSGAME.SHARED
+	//  * @param    {*} src
+	//  * @param    {*} mask
+	//  * @param    {*} value
+	//  *
+	//  * @example JSGAME.SHARED.get_new_bitMask(src, mask, value);
+	// */
+	// get_new_bitMask : function(src, mask, value){
+	// 	// Example usage:
+	// 	//  # To set an updated flags value (SPRITE_OFF set) for a sprite:
+	// 	//  let spriteNum = 0;
+	// 	//  let newFlags = JSGAME.SHARED.get_new_bitMask(core.GRAPHICS.sprites[d].flags, core.CONSTS["SPRITE_OFF"], 1);
+	// 	//  core.FUNCS.graphics.changeSpriteFlags(spriteNum, newFlags);
 
-		let newValue;
-		if     (value==1){ newValue = src |  (mask); }
-		else if(value==0){ newValue = src & ~(mask); }
-		else             { console.log("applyMask: not 0 or 1."); }
+	// 	let newValue;
+	// 	if     (value==1){ newValue = src |  (mask); }
+	// 	else if(value==0){ newValue = src & ~(mask); }
+	// 	else             { console.log("applyMask: not 0 or 1."); }
 
-		return newValue;
-	},
+	// 	return newValue;
+	// },
 
 	/**
 	 * @summary   Map number in one range into another range.
 	 * @memberof JSGAME.SHARED
-	 * @param    {*} in_num
-	 * @param    {*} in_min
-	 * @param    {*} in_max
-	 * @param    {*} out_min
-	 * @param    {*} out_max
+	 * @param    {number} in_num
+	 * @param    {number} in_min
+	 * @param    {number} in_max
+	 * @param    {number} out_min
+	 * @param    {number} out_max
 	 *
 	 * @example JSGAME.SHARED.map_range(in_num, in_min, in_max, out_min, out_max);
+	 * @example JSGAME.SHARED.map_range(50    , 0     , 100   , 0      , 200); // Should be 100.
 	*/
 	map_range : function(in_num, in_min, in_max, out_min, out_max) {
 		// https://gist.github.com/xposedbones/75ebaef3c10060a3ee3b246166caab56
@@ -960,8 +954,6 @@ JSGAME.SHARED={
 	 * @example JSGAME.SHARED.cancel_gameloop();
 	*/
 	cancel_gameloop   : function(){
-		// JSGAME.SHARED.cancel_gameloop();
-
 		window.cancelAnimationFrame( JSGAME.SHARED.raf_id );
 		JSGAME.SHARED.raf_id=null;
 	},
@@ -973,20 +965,6 @@ JSGAME.SHARED={
 	 * @example JSGAME.SHARED.schedule_gameloop();
 	*/
 	schedule_gameloop : function(delayMs){
-		// USAGE: JSGAME.SHARED.schedule_gameloop();
-		// USAGE: JSGAME.SHARED.schedule_gameloop(1);
-
-		// Use the passed time if it was set and is a positive number.
-		// delayMs = delayMs << 0 ; // Round down.
-		// if(delayMs && Math.sign(delayMs)==1){
-		// 	setTimeout(function(){
-		// 		JSGAME.SHARED.raf_id = requestAnimationFrame( game.gameloop );
-		// 	}, delayMs);
-		// }
-		// else{
-		// 	JSGAME.SHARED.raf_id = requestAnimationFrame( game.gameloop );
-		// }
-
 		JSGAME.SHARED.raf_id = requestAnimationFrame( game.gameloop );
 	},
 };
