@@ -77,15 +77,15 @@ JSGAME.GUI={
 		// Read in some values from RAM/DOM.
 		let gamepads  = ! JSGAME.DOM.gameControls.classList.contains("hide") ;
 		let debug     = document.getElementById("debug_mode").checked ? true : false;
-		let qsFromPHP = JSGAME.PRELOAD.PHP_VARS.queryString;
+		let hidden    = document.getElementById("hidden_mode").checked ? true : false;
+		let mastervol = JSGAME.PRELOAD.PHP_VARS.mastervol ;
 
 		let vals = {
-			"game"      : gamestring ? gamestring : "" ,
-			"gamepads"  : gamepads   ? gamepads   : "" ,
-			"debug"     : debug      ? debug      : "" ,
-			"hidden"    : debug && [undefined, "undefined"].indexOf(qsFromPHP.hidden)    == -1 ? qsFromPHP.hidden                         : "" ,
-			"mastervol" : debug && [undefined, "undefined"].indexOf(qsFromPHP.mastervol) == -1 ? qsFromPHP.mastervol                      : "" ,
-			"combine"   : debug && [undefined, "undefined"].indexOf(qsFromPHP.combine)   == -1 ? JSON.stringify(qsFromPHP.combine,null,0) : "" ,
+			"game"      : gamestring         ? gamestring : "" ,
+			"gamepads"  : gamepads           ? gamepads   : "" ,
+			"debug"     : debug && debug     ? debug      : "" ,
+			"hidden"    : debug && hidden    ? hidden     : "" ,
+			"mastervol" : debug && mastervol ? mastervol  : "" ,
 		};
 		let keys = Object.keys(vals);
 
@@ -202,9 +202,9 @@ JSGAME.GUI={
 	/**
 	 * @summary Used for user input when clicking on the gamepad buttons.
 	 * @memberof JSGAME.GUI
-	 * @param {*} type
-	 * @param {*} btn
-	 * @param {*} pad
+	 * @param {string} type
+	 * @param {string} btn
+	 * @param {number} pad
 	 * @example JSGAME.GUI.userInput(type, btn, pad);
 	*/
 	userInput           : function( type, btn, pad ){
@@ -240,7 +240,7 @@ JSGAME.GUI={
 	/**
 	 * @summary Listen for a key to be pressed.
 	 * @memberof JSGAME.GUI
-	 * @param {*} e
+	 * @param {event} e
 	 * @example JSGAME.GUI.document_keydown(e);
 	*/
 	document_keydown    : function(e){
@@ -253,7 +253,7 @@ JSGAME.GUI={
 	/**
 	 * @summary Listen for a key to be released.
 	 * @memberof JSGAME.GUI
-	 * @param {*} e
+	 * @param {event} e
 	 * @example JSGAME.GUI.document_keyup(e);
 	*/
 	document_keyup      : function(e){
@@ -315,23 +315,22 @@ JSGAME.GUI={
 	},
 
 	/**
-	 * @summary --
+	 * @summary Display a banner message over the gameplay area.
 	 * @memberof JSGAME.GUI
-	 * @param {*} msgKey
-	 * @param {*} newState
-	 * @example JSGAME.GUI.preGame_indicator(msgKey, newState);
+	 * @param {string} msgKey
+	 * @param {string} newState
+	 *
+	 * @example JSGAME.GUI.preGame_indicator("jsgamesetup", "ON");
+	 * @example JSGAME.GUI.preGame_indicator("", "OFF");
 	*/
 	preGame_indicator   : function(msgKey, newState){
-		// JSGAME.GUI.preGame_indicator("jsgamesetup"  , "ON");
-		// JSGAME.GUI.preGame_indicator("nogame"       , "ON");
-		// JSGAME.GUI.preGame_indicator("loadingGame"  , "ON");
-		// JSGAME.GUI.preGame_indicator("gestureNeeded", "ON");
-		// JSGAME.GUI.preGame_indicator("gamelistEmpty", "ON");
-
 		let textObj = {
 			"jsgamesetup"        : "Starting JS GAME" ,
 			"nogame"             : "A game has not been selected.\nPlease select a game." ,
 			"loadingGame"        : "Loading game." ,
+			"loadedGame"         : "Loaded game." ,
+			"gameInited"         : "Initialized game." ,
+			// "gameReady"          : "Game is ready." ,
 			"gestureNeeded"      : "Please click/touch anywhere\nin this window to continue." ,
 			"gestureNeeded_done" : "Gesture detected." ,
 			"gamelistEmpty"      : "No games are installed.\n\nYou will need to install games and\nupdate the gamelist.json file.\n" ,

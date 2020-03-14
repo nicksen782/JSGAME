@@ -78,7 +78,7 @@ JSGAME.INIT={
 	/**
 	 * @summary   Remove wait-until-gesture restriction.
 	 * @memberof JSGAME.INIT
-	 * @param    {*} e
+	 * @param    {event} e
 	 * @example JSGAME.INIT.removeUserInteractionRestriction(e);
 	*/
 	removeUserInteractionRestriction : function(e){
@@ -147,12 +147,13 @@ JSGAME.INIT={
 	__PRE_INIT                       : function(){
 		// DISPLAY UPDATE DATES TO THE DEV CONSOLE.
 		let data = {
-			"JS GAME" : { "FILENAME":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name , "LAST_UPDATED_TXT":JSGAME.PRELOAD.PHP_VARS.age  + " ago", "LAST_UPDATED_DATE":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate  },
-			"GAME"    : { "FILENAME":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name2, "LAST_UPDATED_TXT":JSGAME.PRELOAD.PHP_VARS.age2 + " ago", "LAST_UPDATED_DATE":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate2 },
+			"JS GAME" : { "FILENAME":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name1, "LAST_UPDATED_TXT":JSGAME.PRELOAD.PHP_VARS.age1 + " ago", "LAST_UPDATED_DATE":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate1 },
 		};
+		if(JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name2){
+			data.GAME = { "FILENAME":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name2, "LAST_UPDATED_TXT":JSGAME.PRELOAD.PHP_VARS.age2 + " ago", "LAST_UPDATED_DATE":JSGAME.PRELOAD.PHP_VARS.file_lastUpdate2 };
+		}
 		try     { console.table(); console.log("JSGAME / GAME VERSION:"); console.table(data); }
 		catch(e){ console.log("JSGAME / GAME VERSION:", data);                }
-
 
 		console.log("\n"+ "=======================================\n");
 		console.log("JS GAME: __PRE_INIT...");
@@ -160,15 +161,6 @@ JSGAME.INIT={
 		// Handle errors (centralized.)
 		window.addEventListener('error'              , JSGAME.SHARED.listenerFunction, false);
 		window.addEventListener('unhandledrejection' , JSGAME.SHARED.listenerFunction, false);
-		// window.addEventListener('rejectionhandled'   , JSGAME.SHARED.listenerFunction, false);
-
-		// window.onerror = function (msg, url, lineNo, columnNo, error) {
-		// 	console.log("**********************");
-		// 	JSGAME.SHARED.GlobalErrorHandler({}, msg, url, lineNo, columnNo, error);
-
-		// 	return false;
-		// 	// return true;
-		// }
 
 		// Make sure this environment is Little Endian.
 		if(! JSGAME.INIT.endianness.isLittleEndian ){
@@ -184,16 +176,14 @@ JSGAME.INIT={
 
 		// Handle window resizing.
 		window.onresize  = JSGAME.SHARED.canvasResize_autofit_onFullscreenResize ;
-		// JSGAME.SHARED.canvasResize_autofit_onFullscreenResize();
 
 		// Handle hidden mode.
 		document.onmouseleave=JSGAME.SHARED.toggleDocumentHidden;
 		document.onmouseenter=JSGAME.SHARED.toggleDocumentHidden;
 
 		// DOM cache.
-		JSGAME.DOM.entireBodyDiv          = document.getElementById("entireBodyDiv")         ;
-
-		JSGAME.DOM.bottom_bar_gamepadDetected          = document.getElementById("bottom_bar_gamepadDetected")         ;
+		JSGAME.DOM.entireBodyDiv              = document.getElementById("entireBodyDiv")         ;
+		JSGAME.DOM.bottom_bar_gamepadDetected = document.getElementById("bottom_bar_gamepadDetected")         ;
 
 		JSGAME.DOM.gameSelector          = document.getElementById("gameSelector")         ;
 		JSGAME.DOM.gameControls          = document.getElementById("gameControls")         ;
@@ -228,19 +218,9 @@ JSGAME.INIT={
 		JSGAME.DOM.btn_togglePause        = document.getElementById  ("btn_togglePause");
 		JSGAME.DOM.btn_toggleFullscreen   = document.getElementById  ("btn_toggleFullscreen");
 
-		if(JSGAME.DOM.debug_mode.checked){
-			// try{
-			// 	let debug_navButtons = document.getElementById("debug_navButtons");
-			// 	debug_navButtons.classList.remove("hidden");
-			// }
-			// catch(e){
-			// 	console.log( "debug_navButtons not found!" );
-			// }
-		}
-
 		// Set the available buttons/keys.
-		JSGAME.consts.allowedKeys    = [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"     , "Enter"    , "KeyA" , "KeyS" , "ShiftLeft", "ShiftRight", "KeyQ" , "KeyW" , ];
-		JSGAME.consts.allowedButtons = [ "BTN_UP" , "BTN_DOWN" , "BTN_LEFT" , "BTN_RIGHT" , "BTN_SELECT", "BTN_START", "BTN_B", "BTN_A", "BTN_SL"   , "BTN_SR"    , "BTN_Y", "BTN_X", ];
+		JSGAME.consts.allowedKeys    = [ "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space"     , "Enter"    , "KeyA" , "KeyS" , "ShiftLeft", "ShiftRight", "KeyQ" , "KeyW"  ];
+		JSGAME.consts.allowedButtons = [ "BTN_UP" , "BTN_DOWN" , "BTN_LEFT" , "BTN_RIGHT" , "BTN_SELECT", "BTN_START", "BTN_B", "BTN_A", "BTN_SL"   , "BTN_SR"    , "BTN_Y", "BTN_X" ];
 
 		// Add the listeners for real gamepads.
 		JSGAME.GAMEPADS.CONFIG.init();
@@ -289,8 +269,6 @@ JSGAME.INIT={
 	*/
 	__LOADJSGAME                     : function() {
 		console.log("JSGAME: __LOADJSGAME...");
-		// JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
-		// JSGAME.GUI.preGame_indicator("loadingGame", "ON");
 
 		// Gamepad buttons
 		JSGAME.consts.BTN_NOBUTTONS = 0    ; // NOBUTTONS  decimal: 0   , binary: 0000000000000000, HEX: 0x0000, bitWise:  0 << 0
@@ -345,7 +323,7 @@ JSGAME.INIT={
 				JSGAME.FLAGS.paused          = false;
 				// JSGAME.FLAGS.manuallyPaused  = false;
 			}
-			else                             {
+			else                          {
 				JSGAME.FLAGS.windowIsFocused = false;
 				JSGAME.FLAGS.paused          = true;
 				// JSGAME.FLAGS.manuallyPaused  = true;
@@ -402,45 +380,36 @@ JSGAME.INIT={
 	 * @memberof JSGAME.INIT
 	 * @example  JSGAME.INIT.__GAMESTART();
 	*/
-	__GAMESTART                      : function(){
+	__GAMESTART                      : async function(){
+		// BEGIN GAME START!
 		console.log("JSGAME: __GAMESTART...");
-		// JSGAME.GUI.showPanel_internal("panel_loadingGame"  );
 		JSGAME.GUI.preGame_indicator("loadingGame", "ON");
 
-		// Run the game's runOnce function.
-		game.runOnce().then(
-			function(){
-				// Game ready to start.
-				// JSGAME.GUI.showPanel_internal("panel_game"         );
-				JSGAME.GUI.preGame_indicator("", "OFF");
-				//
+		// Run the game's "runOnce" function.
+		try{ await game.runOnce(); } catch(err){ console.error("ERROR: runOnce", err); }
 
-				// Run the first game loop. (Inits the video, sound, and game code.)
-				game.firstLoop().then(
-					function( gamestartFunction){
-						// console.log("GAME CORES ARE READY");
-						console.log("STARTING GAME...");
+		// Indicate game loaded.
+		JSGAME.GUI.preGame_indicator("loadedGame", "ON");
 
-						// Show the performance/timing data if in debug mode.
-						if(JSGAME.FLAGS.debug)       {
-							JSGAME.SHARED.PERFORMANCE.output();
-							JSGAME.SHARED.PERFORMANCE.clearAll();
-						}
+		// Run the game's "firstLoop" function. (Receiving the gamestartFunction.)
+		let gamestartFunction;
+		try{ gamestartFunction = await game.firstLoop(); } catch(err){ console.error("ERROR: firstLoop", err); }
+		JSGAME.GUI.preGame_indicator("gameInited", "ON");
 
-						// Display the JS GAME logo then start the game.
-						setTimeout(function(){
-							core.FUNCS.graphics.logo().then( function(){
-								console.log("=======================================\n\n");
-								JSGAME.SHARED.raf_id=requestAnimationFrame( gamestartFunction );
-								// gamestartFunction();
-							} );
-						},125);
-					},
-					function(err){ console.error("ERROR: ", err); }
-				);
-			}
-		);
+		// Show the performance/timing data if in debug mode.
+		if(JSGAME.FLAGS.debug)       {
+			JSGAME.SHARED.PERFORMANCE.output();
+			JSGAME.SHARED.PERFORMANCE.clearAll();
+		}
 
+		// Display the JS GAME logo.
+		// JSGAME.GUI.preGame_indicator("gameReady", "ON");
+		try{ await core.FUNCS.graphics.logo(); } catch(err){ console.error("ERROR: ", err); }
+		JSGAME.GUI.preGame_indicator("", "OFF");
+
+		// Start the game.
+		console.log("=======================================\n\n");
+		JSGAME.SHARED.raf_id=requestAnimationFrame( gamestartFunction );
 	},
 
 };

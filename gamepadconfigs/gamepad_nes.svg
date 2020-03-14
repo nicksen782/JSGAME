@@ -54,9 +54,11 @@
 	<rect pad="1" button="BTN_DOWN"   kb="ArrowDown"  class="hover_group" x="64"  y="110" width="28" height="29"></rect>
 	<rect pad="1" button="BTN_LEFT"   kb="ArrowLeft"  class="hover_group" x="35"  y="81"  width="28" height="28"></rect>
 	<rect pad="1" button="BTN_RIGHT"  kb="ArrowRight" class="hover_group" x="93"  y="81"  width="28" height="28"></rect>
+
 	<rect pad="1" button="BTN_SELECT" kb="Space"      class="hover_group" x="159" y="100" width="40" height="30"></rect>
 	<rect pad="1" button="BTN_START"  kb="Enter"      class="hover_group" x="204" y="100" width="40" height="30"></rect>
-	<rect pad="1" button="BTN_B"      kb="KeyA"       class="hover_group" x="270" y="92"  width="47" height="47"></rect>
-	<rect pad="1" button="BTN_A"      kb="KeyS"       class="hover_group" x="328" y="92"  width="47" height="47"></rect>
+
+	<rect pad="1" button="BTN_B"      kb="KeyA"       class="hover_group" x="268" y="90"  width="50" height="50"></rect>
+	<rect pad="1" button="BTN_A"      kb="KeyS"       class="hover_group" x="326" y="90"  width="50" height="50"></rect>
 
 </svg>

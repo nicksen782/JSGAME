@@ -1,3 +1,7 @@
+// ====================================
+// ==== FILE START: videoMode_C.js ====
+// ====================================
+
 'use strict';
 
 /**
@@ -176,7 +180,7 @@ core.GRAPHICS.WORKERS      = {
  * @summary Object for controlling whole-screen fades.
  * @global
 */
-core.GRAPHICS.FADE = {
+core.GRAPHICS.FADE         = {
 	"setFadeActive"     : false , // Set when setFade is used.
 	"alphas":[
 		0.00, 0.10, 0.20, 0.30, 0.40,
@@ -207,7 +211,7 @@ core.GRAPHICS.performance  = {
 	},
 };
 
-core.GRAPHICS.DEBUG = {
+core.GRAPHICS.DEBUG        = {
 	"keys":{
 	},
 
@@ -1168,12 +1172,10 @@ core.GRAPHICS.FUNCS        = {
 				// Add to colorSwap queue?
 				if(flags.colorSwaps.length){
 					// Clone the newVRAM_entry.
-					let clone_newVRAM_entry = JSON.parse(JSON.stringify(newVRAM_entry));
+					let cloned_newVRAM_entry = JSON.parse(JSON.stringify(newVRAM_entry));
 
 					// Do the work.
-					_CGFI.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), clone_newVRAM_entry);
-
-					// _CGFI.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), newVRAM_entry);
+					_CGFI.addColorSwapToQueue(imgObj.imgData.data.buffer.slice(0), cloned_newVRAM_entry);
 				}
 				// No colorswap, just rotation and/or flipping?
 				else if ( (flags.ROT !== false && flags.ROT !== 0) || flags.FLIP_X || flags.FLIP_Y ){
@@ -1269,11 +1271,10 @@ core.GRAPHICS.FUNCS        = {
 						core.GRAPHICS.DEBUG.end("doColorSwapping");
 						worker.inuse=false;
 
-						if(e.data.workerIndex!=worker.workerIndex){
-							console.log("worker at index:", e.data.workerIndex, worker.workerIndex, "has completed.", e.data);
+						if(e.data.workerIndex != worker.workerIndex){
+							console.log("Response came from the wrong worker!worker at index:", e.data.workerIndex, worker.workerIndex, "", e.data);
 							// alert("BAD!");
 						}
-
 
 						// Run the callback.
 						(async function RUNCALLBACK(){
@@ -1293,7 +1294,7 @@ core.GRAPHICS.FUNCS        = {
 					// Send the data to the worker.
 					worker.inuse=true;
 
-					worker.postMessage( msg , imgData_buffer );
+					worker.postMessage( msg , [imgData_buffer] );
 				}
 				else{
 					// Shouldn't have been sent here.
@@ -1428,8 +1429,6 @@ core.GRAPHICS.FUNCS        = {
 
 					core.GRAPHICS.DATA.VRAM[layer][addr].index_VRAM   = addr;
 					core.GRAPHICS.DATA.VRAM[layer][addr].index_SPRITE = undefined;
-
-					// console.log(__calledBy, layer, addr, newVRAM_entry);
 				}
 
 				// Adjust VRAM. (Multiple entries.)
@@ -1455,7 +1454,6 @@ core.GRAPHICS.FUNCS        = {
 
 							// First index gets the newVRAM_entry.
 							if(thisAddr==addr_1){
-								// console.log("activating this tile.", "start:", addr_1, "current:", thisAddr, "_x:", _x, "_y:", _y);
 								newVRAM_entry.flags.OFF = false ;
 								newVRAM_entry.index_VRAM=thisAddr;
 								newVRAM_entry.index_SPRITE=undefined;
@@ -1465,13 +1463,11 @@ core.GRAPHICS.FUNCS        = {
 							// Other indexes get turned off.
 							else{
 								// Set this tile to be OFF.
-								// console.log("DE_activating this tile.", "start:", addr_1, "current:", thisAddr, "_x:", _x, "_y:", _y);
 								let existingObj = core.GRAPHICS.DATA.VRAM[layer][thisAddr];
 
 								// Set this tile to be transparent.
 								existingObj.index_VRAM=thisAddr;
 								existingObj.index_SPRITE=undefined;
-								// newVRAM_entry.drawThis=true;
 								newVRAM_entry.drawThis=false;
 								existingObj.flags.OFF = false ;
 								existingObj.tileset   = "default_tileset" ;
@@ -1480,8 +1476,6 @@ core.GRAPHICS.FUNCS        = {
 							}
 						}
 					}
-
-					// console.log(__calledBy, layer, addr_1, newVRAM_entry);
 
 				}
 
@@ -1495,8 +1489,6 @@ core.GRAPHICS.FUNCS        = {
 				newVRAM_entry.index_VRAM   = flags.spriteIndex;
 				newVRAM_entry.index_SPRITE = undefined;
 				core.GRAPHICS.DATA.SPRITES[layer][flags.spriteIndex]=newVRAM_entry;
-
-				// console.log(__calledBy, layer, flags.spriteIndex, newVRAM_entry);
 			}
 
 			// Set the draw and layer update flags.
@@ -1527,10 +1519,10 @@ core.GRAPHICS.FUNCS        = {
 					core.GRAPHICS.DEBUG.start("layer_"+layers[i]);
 
 					// Get layer variables.
-					let layer           = layers[i];
+					let layer  = layers[i];
 
-					let UPDATE          = core.GRAPHICS.DATA.FLAGS[layer].UPDATE          ;
-					let REDRAW          = core.GRAPHICS.DATA.FLAGS[layer].REDRAW          ;
+					let UPDATE = core.GRAPHICS.DATA.FLAGS[layer].UPDATE          ;
+					let REDRAW = core.GRAPHICS.DATA.FLAGS[layer].REDRAW          ;
 
 					// Get layer variables.
 					let layerFlags              = core.GRAPHICS.DATA.FLAGS[layer]                         ;
@@ -1580,14 +1572,11 @@ core.GRAPHICS.FUNCS        = {
 								// Position and Dimension
 								let x = VRAM[t].x ;
 								let y = VRAM[t].y ;
-								// let w = VRAM[t].w ;
-								// let h = VRAM[t].h ;
 								let flags = VRAM[t].flags ;
 								let _textstrings=VRAM[t]._textstrings ;
 
 								// Source image data.
 								let tileset   = VRAM[t].tileset   ;
-								// let layer     = VRAM[t].layer     ;
 								let tilemap   = VRAM[t].tilemap   ;
 								let tileindex = VRAM[t].tileindex ;
 								let img_canvas  = (VRAM[t].canvas instanceof HTMLCanvasElement) ? VRAM[t].canvas  : false ;
@@ -1608,13 +1597,13 @@ core.GRAPHICS.FUNCS        = {
 									finalImage.numUsed+=1; // Update numUsed for this imgObj. ????
 								}
 								else if(_textstrings){
-									finalImage = _CGA.tilemaps[_textstrings.tileset][_textstrings.tilemap].canvas;   // Get the image.
-									_CGA.tilemaps[_textstrings.tileset][_textstrings.tilemap].numUsed+=1;            // Update numUsed for this imgObj.
+									finalImage = _CGA.tilemaps[_textstrings.tileset][_textstrings.tilemap].canvas; // Get the image.
+									_CGA.tilemaps[_textstrings.tileset][_textstrings.tilemap].numUsed+=1;          // Update numUsed for this imgObj.
 								}
 								// Draw the tilemap if it exists.
 								else if(tilemap   !== ""){
-									finalImage=_CGA.tilemaps[tileset][tilemap].canvas;   // Get the image.
-									_CGA.tilemaps[tileset][tilemap].numUsed+=1;          // Update numUsed for this imgObj.
+									finalImage=_CGA.tilemaps[tileset][tilemap].canvas;  // Get the image.
+									_CGA.tilemaps[tileset][tilemap].numUsed+=1;         // Update numUsed for this imgObj.
 								}
 								// Draw the tileindex if it exists.
 								else if(tileindex   !== ""){
@@ -1624,27 +1613,26 @@ core.GRAPHICS.FUNCS        = {
 								else{
 									// continue;
 									let str = ["=E= update_layers: (drawThis) invalid data.", JSON.stringify(VRAM[t],null,1)];
-									// console.error("============================", str, VRAM[t]);
 									console.info(
 										"============================",
-										"\n layer :"         , layer     , "----",
-										"\n finalImage     :", finalImage, "----",
-										"\n tileset        :", tileset   , "----",
-										"\n img_canvas     :", img_canvas, "----",
-										"\n tilemap        :", tilemap   , "----",
-										"\n tileindex      :", tileindex , "----",
-										"\n VRAM           :", VRAM[t] ,
-										"\n VRAM[t].canvas :", VRAM[t].canvas ,
-										"\n TEST1: "         ,img_canvas !== false ,
-										"\n TEST2: "         ,tilemap    !== ""    ,
-										"\n TEST3: "         ,tileindex  !== ""    ,
+										"\n layer :"         , layer     , "----"   ,
+										"\n finalImage     :", finalImage, "----"   ,
+										"\n tileset        :", tileset   , "----"   ,
+										"\n img_canvas     :", img_canvas, "----"   ,
+										"\n tilemap        :", tilemap   , "----"   ,
+										"\n tileindex      :", tileindex , "----"   ,
+										"\n VRAM           :", VRAM[t]              ,
+										"\n VRAM[t].canvas :", VRAM[t].canvas       ,
+										"\n TEST1: "         , img_canvas !== false ,
+										"\n TEST2: "         , tilemap    !== ""    ,
+										"\n TEST3: "         , tileindex  !== ""    ,
 
 										"\n instanceof HTMLImageElement :", VRAM[t].canvas instanceof HTMLCanvasElement,
 										"\n _CGA.tilemaps[tileset][tilemap]  :", _CGA.tilemaps[tileset][tilemap] ,
 										"\n _CGA.tilesets[tileset][tileindex]:", _CGA.tilesets[tileset][tileindex] ,
 										""
-										);
-										throw Error(str);
+									);
+									throw Error(str);
 								}
 
 								// Draw the tile.
@@ -1780,6 +1768,7 @@ core.GRAPHICS.FUNCS        = {
 					}
 				}
 
+				// rej();
 				// Done! Resolve.
 				if(1) { core.GRAPHICS.DEBUG.end("output_timings"); res(); }
 				else  { core.GRAPHICS.DEBUG.end("output_timings"); rej(); }
@@ -1843,7 +1832,7 @@ core.GRAPHICS.FUNCS        = {
 // *** LOGO FUNCTIONS.  ***
 
 // JS GAME logo for this video mode.
-core.FUNCS.graphics.logo = function(){
+core.FUNCS.graphics.logo   = function(){
 	return new Promise(function(res,rej){
 		// Display the JSGAME logo.
 		if(JSGAME.PRELOAD.PHP_VARS.INTRO_LOGO){
@@ -1881,7 +1870,7 @@ core.FUNCS.graphics.logo = function(){
 // *** INIT FUNCTIONS.  ***
 
 // One-time-use init function for the graphics.
-core.GRAPHICS.init = {
+core.GRAPHICS.init         = {
 	init : function(){
 		return new Promise(function(res_VIDEO_INIT, rej_VIDEO_INIT){
 			JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "START");
@@ -2667,7 +2656,6 @@ core.GRAPHICS.init = {
 			ctx.fillStyle = key;
 			// ctx.fillStyle = "#FF0000";
 			ctx.fillRect(0, 0, canvas.width, canvas.height);
-			// console.log(key, ctx);
 
 			imgData = ctx.getImageData(0,0,canvas.width, canvas.height);
 
@@ -2683,7 +2671,6 @@ core.GRAPHICS.init = {
 		*/
 
 		// core.GRAPHICS.DATA.lookups.colors
-
 
 	},
 
@@ -2731,19 +2718,9 @@ core.GRAPHICS.init = {
 					// Add the workerIndex flag.
 					worker.workerIndex=i;
 
-					// Add the shared onmessage callback to the worker.
-					// worker.onmessage=core.GRAPHICS.WORKERS.CALLBACK;
-
 					// Add the shared error callback to the worker.
 					worker.onerror=core.GRAPHICS.WORKERS.error_CALLBACK;
 
-					// Add a queue to w_colorswaps.
-					// core.GRAPHICS.WORKERS.w_colorswaps.queue [i] = [] ;
-
-					// Add a queue to (NEW_QUEUE_HERE).
-					// core.GRAPHICS.WORKERS.NEW_QUEUE_HERE.queue [i] = [] ;
-
-					// Add the worker to the worker array.
 					core.GRAPHICS.WORKERS.WORKERS[i] = worker ;
 				}
 			}
@@ -2808,4 +2785,6 @@ let _CGP  = core.GRAPHICS.performance;
 */
 let _CS   = core.SETTINGS;
 
-
+// ==================================
+// ==== FILE END: videoMode_C.js ====
+// ==================================

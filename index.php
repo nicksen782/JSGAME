@@ -18,7 +18,6 @@
 	<title>JS GAME</title>
 
 	<!-- JS GAME styling -->
-	<!-- <link rel="preload" href="index.css" as="style"> -->
 	<link rel="stylesheet" type="text/css" href="index.css">
 
 </head>
@@ -307,8 +306,7 @@
 	<div style="display:inline-block">
 
 	<div id="sideDiv" class="hide">
-		<div id="debug_container">
-		</div>
+		<div id="debug_container"></div>
 		<!-- </div> -->
 	</div>
 	</div>
@@ -316,70 +314,271 @@
 	<!-- Init via PHP : gameslist.json, gamesettings.json -->
 	<!-- Also includes the window.onload function. -->
 	<script>
-		(function(){
-			'use strict';
-			let indicator_preGame = document.getElementById("indicator_preGame");
-			indicator_preGame.classList.add("show");
-			indicator_preGame.innerText="... STARTING ...";
+		window.onload = function(){
+			window.onload=null;
 
-			// Parses the queryString in the url and returns the data as an object of key:value pairs.
-			let getQueryStringAsObj              = function() {
-				// Nickolas Andersen (nicksen782)
-				// NOTE: May fail for values that are JSON encoded and/or also include "=" or "&" in the value.
+			(async function(){
+				'use strict';
+				let indicator_preGame = document.getElementById("indicator_preGame");
 
-				let str = window.location.search ;
-				let obj = {} ;
-				let key ;
-				let val ;
-				let i ;
+				indicator_preGame.classList.add("show");
+				indicator_preGame.innerText="... WELCOME ...";
 
-				// Work with the string if there was one.
-				if(str=="" || str==null || str==undefined){ return {}; }
+				//
+				let addScript = function (data, key, filename){
+					return new Promise(function(res, rej){
+						let blob      = new Blob( [data], { type: 'text/javascript;charset=utf-8' } );
+						let script    = document.createElement('script');
+						script.onload = function(){ script.onload=null; res( {"filename":filename, "script":script, "key":key} ) };
+						script.setAttribute("filename", filename);
+						document.body.appendChild(script);
+						let d_url     = URL.createObjectURL(blob);
+						script.src    = d_url;
+						URL.revokeObjectURL(d_url);
+					});
+				};
+				//
+				let addCss    = function (data, key, filename){
+					return new Promise(function(res, rej){
+						// console.log(key, filename);
 
-				// Take off the "?".
-				str = str.slice(1);
+						// OPTION #0
+						// let css = document.createElement("link");
+						// css.setAttribute("filename", filename);
+						// css.rel = 'stylesheet';
+						// css.type = 'text/css';
+						// css.textContent=data;
+						// document.body.appendChild(css);
+						// res( {"filename":filename, "css":css, "key":key} );
 
-				// Split on "&".
-				str = str.split("&");
+						// OPTION #0.1
+						let blob = new Blob([data], { type: 'text/css;charset=utf-8' });
+						let css = document.createElement("link");
+						css.onload=null; res( {"filename":filename, "css":css, "key":key} );
+						css.setAttribute("filename", filename);
+						css.rel = 'stylesheet';
+						css.type = 'text/css';
+						document.body.appendChild(css);
 
-				// Go through all the key=value and split them on "=".
-				for(i=0; i<str.length; i+=1){
-					// Split on "=" to get the key and the value.
-					key = str[i].split("=")[0];
-					val = str[i].replace(key+"=", "");
+						// OPTION #1
+						// let reader = new FileReader();
+						// reader.onload=function(){
+						// 	reader.onload=null;
+						// 	// css.src = reader.result;
+						// 	css.href = reader.result;
+						// };
+						// reader.onerror=function(){
+						// 	console.log("error");
+						// };
+						// reader.readAsDataURL(blob);
 
-					// Add this to the return object.
-					obj[key] = decodeURIComponent(val);
-				}
+						// OPTION #2
+						let d_url = URL.createObjectURL(blob);
+						css.href = d_url;
+						URL.revokeObjectURL(d_url);
+					});
+				};
+				// Parses the queryString in the url and returns the data as an object of key:value pairs.
+				let getQueryStringAsObj = function() {
+					// Nickolas Andersen (nicksen782)
+					// NOTE: May fail for values that are JSON encoded and/or also include "=" or "&" in the value.
 
-				// Finally, return the object.
-				return obj;
-			};
+					let str = window.location.search ; // ?game=videoModeC_TESTS&debug=true
+					let obj = {} ;
+					let key ;
+					let val ;
+					let i ;
 
-			let addScript = function(src){
-				return new Promise(function(res,rej){
-					let script = document.createElement("script");
-					script.onload=function(){
-						script.onload=null;
-						res();
+					// Work with the string if there was one.
+					if(str=="" || str==null || str==undefined){ return {}; }
+
+					// Take off the "?".
+					str = str.slice(1); // game=videoModeC_TESTS&debug=true
+
+					// Split on "&".
+					str = str.split("&"); // [ "game=videoModeC_TESTS" , "debug=true" ]
+
+					// Go through all the key=value and split them on "=".
+					for(i=0; i<str.length; i+=1){
+						// Split on "=" to get the key and the value.
+						key = str[i].split("=")[0];        // First iteration: [ 0: "game" , 1: "videoModeC_TESTS" ]
+												           // 2nd   iteration: [ 0: "debug" , 1: "true" ]
+						val = str[i].replace(key+"=", ""); // First iteration: [ 0: "videoModeC_TESTS" ]
+												           // 2nd   iteration: [ 0: "true" ]
+
+						// Add this to the return object.
+						obj[key] = decodeURIComponent(val);
+					}
+
+					/*
+						obj = {
+							"game"  : "videoModeC_TESTS",
+							"debug" : "true",
+						};
+					*/
+
+					// Finally, return the object.
+					return obj;
+				};
+
+				// Get the values from the queryString.
+				let qs = getQueryStringAsObj();
+
+				// Create a new form. Add all values from the queryString.
+				let fd = new FormData();
+				let o  = "init2";
+				fd.append("o" , o );
+				fd.append("r" , (new Date()).getTime() );
+				for(let k in qs){ fd.append(k , qs[k] ); }
+
+				// Submit the form.
+				let url = "index_p.php" + "?o=" + o ;
+				let xhr = new XMLHttpRequest();
+
+				// Do this after the data is received.
+				xhr.onload= async function(){
+					xhr.onload=null;
+					let json = xhr.response;
+
+					// If there were minifications performed then list then in the dev console.
+					if(json._MINIFICATIONS.length){ console.log("Minifications performed:", json._MINIFICATIONS, "\n\n"); }
+
+					// This will be filled based on the code below which is for adding files and setting settings.
+					let proms = [];
+
+					function attachResources( json, key ){
+						if     (key=="jsgameCore")  {
+							return new Promise(function(res,rej){
+								let jsgameCore_proms = [] ;
+
+								//
+								let keys = Object.keys( json[key] ) ;
+
+								//
+								for(let i=0; i<keys.length; i+=1){
+									let rec = json[key][ keys[i] ] ;
+									jsgameCore_proms.push(
+										addScript( rec.data, key+"_"+rec.name, rec.name )
+									)
+								}
+
+								//
+								Promise.all( jsgameCore_proms ) .then(
+									function(success){ res(key);                 },
+									function(err)    { console.log("err:", err); }
+								);
+							});
+
+						}
+						else if(key=="PHP_VARS")    {
+							//
+							return new Promise(function(res,rej){
+								JSGAME.PRELOAD.PHP_VARS = json[key];
+								JSGAME.PRELOAD.gamelist_json      = JSON.parse( json.gamelist_json )     ;
+								res(key);
+							});
+						}
+						else if(key=="flagsAndJson"){
+							//
+							return new Promise(function(res,rej){
+								try{
+									JSGAME.PRELOAD.gamesettings_json  = JSON.parse( json.gamesettings_json ) ;
+									JSGAME.PRELOAD.gameselected_json  = JSON.parse( json.gameselected_json ) ;
+									JSGAME.FLAGS.debug                = json.PHP_VARS.debug     ;
+									JSGAME.PRELOAD.PHP_VARS.game      = json.PHP_VARS.game      ;
+									JSGAME.PRELOAD.PHP_VARS.hidden    = json.PHP_VARS.hidden    ;
+									JSGAME.PRELOAD.PHP_VARS.gamepads  = json.PHP_VARS.gamepads  ;
+									JSGAME.PRELOAD.PHP_VARS.mastervol = json.PHP_VARS.mastervol ;
+
+									JSGAME.PRELOAD.PHP_VARS.onscreengamepads = json.onscreengamepads;
+
+									res(key);
+								}
+								catch(err){ rej(key); }
+
+							});
+						}
+						else if(key=="game_files")  {
+							// The data varies.
+							let keys = Object.keys( json[key] );
+							for(let i=0; i<keys.length; i+=1){
+								let rec = json[key][ keys[i] ];
+
+								switch(keys[i]){
+									case "js_files"    : {
+										for(let f=0; f<rec.length; f+=1){
+											if(rec[f].type=="js"){ proms.push( addScript( rec[f].data, key+"_"+rec[f].name, rec[f].name ) ); }
+										}
+										break;
+									}
+									case "debug_files" : {
+										for(let f=0; f<rec.length; f+=1){
+											if     (rec[f].type=="js"  ){ proms.push( addScript( rec[f].data, key+"_"+rec[f].name, rec[f].name ) ); }
+											else if(rec[f].type=="css" ){ proms.push( addCss   ( rec[f].data, key+"_"+rec[f].name, rec[f].name ) ); }
+											else if(rec[f].type=="html"){
+												let debug_container  = document.getElementById("debug_container");
+												debug_container.innerHTML = "<!-- hello --> " + rec[f].data;
+											}
+										}
+										break;
+									}
+									case "game_files"  : {
+										for(let f=0; f<rec.length; f+=1){
+											if(rec[f].type=="js"){ proms.push( addScript( rec[f].data, key+"_"+rec[f].name, rec[f].name ) ); }
+											// else{
+											// 	console.log(rec[f].name, rec[f].data);
+											// }
+										}
+										break;
+									}
+									case "videomode"   : {
+										proms.push( addScript( rec.data, key, rec.name ) );
+										break;
+									}
+									case "soundmode"   : {
+										proms.push( addScript( rec.data, key, rec.name ) );
+										break;
+									}
+									default : { console.log("????"); break; }
+								}
+
+							}
+						}
 					};
-					script.src = src;
-					document.body.appendChild(script);
-				});
-			};
 
-			let qs = getQueryStringAsObj();
-			let url = "index_p.php/?o=init&qs="+JSON.stringify(qs);
+					indicator_preGame.innerText="... ADDING JSGAME CORE ...";
+					try{ await attachResources( json, "jsgameCore"   ); } catch(err){ console.log("Failure on jsgameCore   : " , err); }  ;
 
-			addScript( url );
-		})();
+					indicator_preGame.innerText="... CONFIGURING SETTINGS ...";
+					try{ await attachResources( json, "PHP_VARS"     ); } catch(err){ console.log("Failure on PHP_VARS     : " , err); }  ;
+
+					if(JSGAME.PRELOAD.PHP_VARS.file_lastUpdate_name2){
+						indicator_preGame.innerText="... CONFIGURING FLAGS ...";
+						try{ await attachResources( json, "flagsAndJson" ); } catch(err){ console.log("Failure on flagsAndJson : " , err); }  ;
+
+						indicator_preGame.innerText="... ADDING GAME FILES ...";
+						attachResources( json, "game_files"        ) ;
+					}
+
+					//
+					Promise.all( proms ).then(
+						function(success){
+							indicator_preGame.innerText="... STARTING JSGAME ...";
+
+							// Start JSGAME.
+							STARTJSGAME();
+						},
+						function(err)    { console.log("err:", err, proms); }
+					);
+				};
+
+				xhr.open( "POST", url, true );
+				xhr.responseType = "json";
+				xhr.send(fd);
+			})();
+		}
+
 	</script>
-
-	<!-- INLINE PHP VERSION -->
-	<!-- Init via PHP : gameslist.json, gamesettings.json -->
-	<!-- Also includes the window.onload function. -->
-	<!-- <script src='index_p.php/?o=init&qs=<?php // echo htmlentities(json_encode(($_GET))); ?>'></script> -->
-
 </body>
 
 </html>

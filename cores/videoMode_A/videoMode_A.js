@@ -1,4 +1,9 @@
+// ====================================
+// ==== FILE START: videoMode_A.js ====
+// ====================================
+
 'use strict';
+
 
 // Graphics assets.
 core.ASSETS.graphics = {
@@ -12,7 +17,6 @@ core.GRAPHICS        = {
 	FADER         : {} , //
 	debug         : {} , //
 	fonts         : {} , //
-	fontSettings  : {} , //
 	activeTileset : {
 		BG     : null , // String of the tileset used for this layer.
 		BG2    : null , // String of the tileset used for this layer.
@@ -20,7 +24,6 @@ core.GRAPHICS        = {
 		TEXT   : null , // String of the tileset used for this layer.
 		FADE   : null , // String of the tileset used for this layer.
 	} , //
-	flags         : {} , //
 
 	// PERFORMANCE MONITORING
 	performance   : {
@@ -112,7 +115,7 @@ core.CONSTS          = {
 	SPRITE_BANK2  : 2<<6 , // 2<<6 is 128 (B 10000000)
 	SPRITE_BANK3  : 3<<6 , // 3<<6 is 192 (B 11000000)
 
-	// Other constants: (
+	// Other constants:
 	OffscreenCanvas_supported : undefined ,
 };
 
@@ -381,11 +384,55 @@ core.GRAPHICS.FADER = {
 	stayDark       : false , // Stay dark after fade completes.
 };
 
+/**
+ * DRAW FUNCTIONS. (1)
+ * @summary   ACCESSIBLE DRAW FUNCTIONS. (2)
+ * @namespace core.FUNCS.graphics
+*/
 core.FUNCS.graphics = {
+	/**
+	 * USER-ACCESSIBLE DRAW FUNCTIONS.(1)
+	 * @summary   USER-ACCESSIBLE DRAW FUNCTIONS. (2)
+	 * @namespace core.FUNCS.graphics.USER
+	*/
+	USER : {
+		/**
+		 * testfunction1 (1)
+		 * @summary   testfunction1 (2)
+		 * @memberof core.FUNCS.graphics.USER
+		 *
+		 * @example _CGFU.testfunction1();
+		*/
+		testfunction1 : function(){
+
+		},
+
+		/**
+		 * testfunction2 (1)
+		 * @summary   testfunction2 (2)
+		 * @memberof core.FUNCS.graphics.USER
+		 *
+		 * @example _CGFU.testfunction2();
+		*/
+		testfunction2 : function(){
+
+		},
+
+	},
+
+	/**
+	 * INTERNAL-ACCESSIBLE DRAW FUNCTIONS.(1)
+	 * @summary   INTERNAL-ACCESSIBLE DRAW FUNCTIONS. (2)
+	 * @namespace core.FUNCS.graphics.INTERNAL
+	*/
+	INTERNAL : {
+	},
+
 	// *** Helper functions ***
 
 	// Clears each canvas.
 	clearAllCanvases       : function(){
+		console.log("what up?");
 		// BG layer
 		if(_CG.ctx.BG    ){
 			// _CG.ctx.BG.fillStyle = "rgba(0, 0, 0, 1.0)";
@@ -1440,7 +1487,6 @@ core.FUNCS.graphics = {
 
 	},
 
-
 	// *** VRAM functions.
 
 	// Sets the tileset to use when drawing bg tiles.
@@ -1941,6 +1987,32 @@ core.FUNCS.graphics = {
 		return destCanvas;
 	},
 
+	/**
+	 * @summary   Update a value using a bit mask. (Per call can only turn "ON" or "OFF" bits. Not both.)
+	 * @memberof core.FUNCS.graphics
+	 * @param    {number} originalValue
+	 * @param    {string} flagStr
+	 * @param    {string} newState (string or boolean)
+	 *
+	 * @example core.FUNCS.graphics.setSpriteFlag(0b00111111, "SPRITE_BANK1", "ON");
+	 * @example core.FUNCS.graphics.setSpriteFlag(0b00111111, "SPRITE_BANK1", 1);
+	*/
+	setSpriteFlag : function(originalValue, flagStr, newState){
+		// Pre-clear all spritebank bits if this is a sprite_bank flag. (That type of flag takes 2 bits.)
+		if(["SPRITE_BANK0","SPRITE_BANK1","SPRITE_BANK2","SPRITE_BANK3"].indexOf(flagStr) != -1){
+			// Clear the bits. (Clear the MSB and leave the other bits as they are.)
+			originalValue &= 0b00111111 ;
+		}
+
+		// Replace the bits.
+		if     (newState=="ON"  || newState==1){ originalValue |=  (core.CONSTS[flagStr]); }
+		else if(newState=="OFF" || newState==0){ originalValue &= ~(core.CONSTS[flagStr]); }
+		else                    { console.log("setSpriteFlag: newState not 0 or 1."); }
+
+		// Return the modified value.
+		return originalValue;
+	},
+
 	// *** TEXT update functions. ***
 
 	// Prints a line of text at the specified location.
@@ -2102,8 +2174,10 @@ let _CG   = core.GRAPHICS;
 let _CGF  = core.GRAPHICS.FADER;
 let _CGFF = core.GRAPHICS.FADER.FUNCS;
 let _CC   = core.CONSTS;
-let _CFG  = core.FUNCS.graphics;
 let _CS   = core.SETTINGS;
+let _CFG  = core.FUNCS.graphics;
+// let _CFGU  = core.FUNCS.graphics.USER;
+// let _CFGI  = core.FUNCS.graphics.INTERNAL;
 
 // JS GAME logo for this video mode.
 _CFG.logo = function(){
@@ -2790,3 +2864,7 @@ _CFG.init = function(){
 
 	});
 };
+
+// ==================================
+// ==== FILE END: videoMode_A.js ====
+// ==================================
