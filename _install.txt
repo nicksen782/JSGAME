@@ -3,6 +3,8 @@
 CREATEDOCKER=0
 if [ "$1" = "DOCKER" ]; then CREATEDOCKER=1; fi
 
+BRANCHNAME=$2
+
 ####################################################################################################
 # DIRECTIONS: Make a new folder for everything then run this script from that folder.
 # You will need to rename the script to install.sh and do chmod +x install.sh on it.
@@ -55,9 +57,20 @@ fi
 cd JS_GAME
 # Fix the git configs.
 git config --local core.fileMode false
-# Switch to the dev branch.
-git checkout dev
 
+# Switch to a different branch?
+if [ -z "$BRANCHNAME" ]
+then
+	echo "Using the master branch."
+else
+	echo "Using the $BRANCHNAME branch."
+	git checkout dev
+fi
+
+# Set permissions
+cd ..
+find . '(' -type f -exec chmod 666 {} ';' ')' -o '(' -type d -exec chmod 777 {} ';' ')'
+cd JS_GAME
 
 ##########################
 # DOCKER SECTION - START #

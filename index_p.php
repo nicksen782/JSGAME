@@ -527,7 +527,7 @@ function preFlightCheck2( $input=[] ){
 		if( !is_array( $output[$key] ) ) { $output[$key] = [] ; }
 
 		// Is the original file newer than the minified version?
-		if( $alwaysReMinify || ($lastUpdate_data_org >= $lastUpdate_data_min) ){
+		if( $alwaysReMinify || ($lastUpdate_data_org > $lastUpdate_data_min) ){
 			$arg1 = [$server_srcPath . $orgFile] ; // $files
 			$arg2 =  $server_srcPath . $minFile  ; // $newFile
 			$arg3 =  $web_srcPath                ; // $newBasepath
@@ -540,9 +540,9 @@ function preFlightCheck2( $input=[] ){
 			array_push($_MINIFICATIONS, [
 				"orgFile"            => $orgFile  ,
 				"minificationTime"   => floatval( number_format($time, 3, '.', '') ) ,
-				// "lastUpdate_data_org"=> $data_org ,
-				// "lastUpdate_data_min"=> $data_min ,
-				// "cmd"                => $cmd      ,
+				"lastUpdate_data_org"=> $data_org ,
+				"lastUpdate_data_min"=> $data_min ,
+				"cmd"                => $cmd      ,
 			]);
 		}
 
@@ -1413,7 +1413,5 @@ function preFlightCheck(){
 		"videoMode_C.js" => $videoMode_C_CoreCombinedFile ,
 	];
 };
-
-
 
 ?>

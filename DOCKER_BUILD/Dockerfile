@@ -85,8 +85,9 @@ RUN \
 RUN \
 	mkdir /var/www/site       && \
 	mkdir /var/www/site/MOUNT && \
-	find /var/www/site/MOUNT -type d -exec chmod 777 {} \; && \
-	find /var/www/site/MOUNT -type f -exec chmod 777 {} \; && \
+	# find /var/www/site/MOUNT '(' -type f -exec chmod 666 {} ';' ')' -o '(' -type d -exec chmod 777 {} ';' ')' && \
+	# find /var/www/site/MOUNT -type d -exec chmod 777 {} \; && \
+	# find /var/www/site/MOUNT -type f -exec chmod 777 {} \; && \
 	echo ""                   && \
 	echo DONE                 && \
 	echo ""
