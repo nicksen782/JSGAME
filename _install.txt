@@ -51,8 +51,13 @@ git clone https://github.com/nicksen782/JSGAME_Tetris.git           JS_GAMES/Tet
 git clone https://github.com/nicksen782/JSGAME_videoModeC_TESTS.git JS_GAMES/videoModeC_TESTS
 fi
 
+
+cd JS_GAME
 # Fix the git configs.
-cd JS_GAME && git config --local core.fileMode false
+git config --local core.fileMode false
+# Switch to the dev branch.
+git checkout dev
+
 
 ##########################
 # DOCKER SECTION - START #
@@ -60,7 +65,7 @@ cd JS_GAME && git config --local core.fileMode false
 
 if [ $CREATEDOCKER -eq 1 ]
 then
-	cd JS_GAME || return
+	# cd JS_GAME || return
 	cd DOCKER_BUILD || return
 	chmod +x 00A_buildCreateStart.sh
 	chmod +x 00B_stopRemoveAll.sh
