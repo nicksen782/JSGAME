@@ -28,6 +28,7 @@ let JSGAME={
 		"ends"   : {} ,
 		"times"  : {} ,
 	},
+	TEMP       : {} , // Temporarily holds data during JSGAME load.
 };
 let core = {
 	SETTINGS   : {} , // Core kernel settings.

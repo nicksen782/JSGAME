@@ -2710,7 +2710,10 @@ core.GRAPHICS.init         = {
 				// console.log("For web workers: Using " + coresToUse + " of " + window.navigator.hardwareConcurrency + ".");
 				for(let i=0; i<coresToUse; i+=1){
 					// Create a worker.
-					let worker = new Worker('cores/videoMode_C/videoMode_C_webworker.js') ;
+					// let worker = new Worker('cores/videoMode_C/videoMode_C_webworker.js') ;
+
+					// Create a worker.
+					let worker = new Worker( JSGAME.TEMP["videoMode_C_webworker.js"] ) ;
 
 					// Add the inuse flag.
 					worker.inuse=false;
@@ -2723,6 +2726,9 @@ core.GRAPHICS.init         = {
 
 					core.GRAPHICS.WORKERS.WORKERS[i] = worker ;
 				}
+
+				// Remove the objectURL for the worker. No longer needed.
+				URL.revokeObjectURL( JSGAME.TEMP["videoMode_C_webworker.js"] );
 			}
 			JSGAME.SHARED.PERFORMANCE.stamp(_perf_name+"_createWebworkers" , "END");
 

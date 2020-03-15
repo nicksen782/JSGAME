@@ -432,7 +432,6 @@ core.FUNCS.graphics = {
 
 	// Clears each canvas.
 	clearAllCanvases       : function(){
-		console.log("what up?");
 		// BG layer
 		if(_CG.ctx.BG    ){
 			// _CG.ctx.BG.fillStyle = "rgba(0, 0, 0, 1.0)";
@@ -2227,7 +2226,7 @@ core.EXTERNAL.GRAPHICS = function(ctx){ return new Promise(function(res,rej){ re
 // WEB WORKERS - EXPERIEMENT
 // core.FLAGS = {};
 core.WORKERS = {};
-core.WORKERS.VIDEO = new Worker("cores/videoMode_A/videoMode_A_webworker.js");
+// core.WORKERS.VIDEO = new Worker("cores/videoMode_A/videoMode_A_webworker.js");
 
 // *** Init conversion functions - Removed after use. ***
 
@@ -2848,6 +2847,11 @@ _CFG.init = function(){
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_clearAllCanvases"        , "START");
 				_CFG.clearAllCanvases();
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_clearAllCanvases"        , "END");
+
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_initWebworker"           , "START");
+				core.WORKERS.VIDEO = new Worker( JSGAME.TEMP["videoMode_A_webworker.js"] );
+				URL.revokeObjectURL( JSGAME.TEMP["videoMode_A_webworker.js"] );
+				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_initWebworker"           , "END");
 
 				// TOTAL VIDEO INIT PERFORMANCE:
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_ALL"                   , "END");

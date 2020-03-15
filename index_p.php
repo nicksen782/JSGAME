@@ -382,13 +382,19 @@ function minifiy_files($files, $newFile, $newBasepath){
 
 	global $_appdir;
 
-	//
-	$oldmask = umask(0);
-
 	// Start the command.
-	$cmd = " terser " . " " ;
+	$cmd = " cd $_appdir && terser " . " " ;
+
+	$newPath = $_appdir . "/" . $newBasepath . "/min";
+	if(! file_exists( $newPath ) ) {
+		$oldmask = umask(0);
+		mkdir($newPath, 0777);
+		chmod($newPath, 0777);
+		umask($oldmask);
+	}
 
 	// Add the files to the command.
+	// foreach($files as $k => $v){ $cmd .= ( $_appdir . "/" . $newBasepath . basename($files[$k]) ) . " "; }
 	foreach($files as $k => $v){ $cmd .= ( $newBasepath . basename($files[$k]) ) . " "; }
 
 	// Finish the command (adding in the output file value.)
@@ -402,34 +408,55 @@ function minifiy_files($files, $newFile, $newBasepath){
 	"  --verbose "   .
 	"  -m "          .
 	" --source-map \"root='".$sourcemapRoot."',url='".$sourcemapUrl."'\" " .
-	"  -o "          . $output ;
+	"  -o "          . $output . " 2>&1";
 
 	// Run the command.
-	shell_exec($cmd);
+	$oldmask = umask(0);
+	$exec_cmd=$cmd;
+	$exec_res = exec($exec_cmd, $exec_out, $exec_ret);
 
 	$js_output  = realpath($output);
 	$map_output = realpath($output) . ".map";
 
-	if( ! @chmod( $js_output , 0666) ){
+	if( ! @chmod( $js_output , 0777) ){
+		echo 'pwd   : ' . getcwd()  . "\n";
+		echo '_appdir   : ' . $_appdir  . "\n";
+		echo 'output   : ' . $output  . "\n";
 		echo 'js_output   : ' . $js_output  . "\n";
 		echo 'map_output  : ' . $map_output . "\n";
 		echo 'cmd         : ' . $cmd . "\n";
 		echo "files       : "; print_r($files); echo "\n";
 		echo "newFile     : " . $newFile     . "\n";
 		echo "newBasepath : " . $newBasepath . "\n";
+		echo "\n";
+		echo "exec_res:" ; print_r($exec_res); echo "\n";
+		echo "exec_cmd:" ; print_r($exec_cmd); echo "\n";
+		echo "exec_out:" ; print_r($exec_out); echo "\n";
+		echo "exec_ret:" ; print_r($exec_ret); echo "\n";
+
 		exit();
 	}
-	if( ! @chmod( $map_output, 0666) ){
+	if( ! @chmod( $map_output, 0777) ){
+		echo 'pwd   : ' . getcwd()  . "\n";
+		echo '_appdir   : ' . $_appdir  . "\n";
+		echo 'output   : ' . $output  . "\n";
 		echo 'js_output   : ' . $js_output  . "\n";
 		echo 'map_output  : ' . $map_output . "\n";
 		echo 'cmd         : ' . $cmd . "\n";
 		echo "files       : "; print_r($files); echo "\n";
 		echo "newFile     : " . $newFile     . "\n";
 		echo "newBasepath : " . $newBasepath . "\n";
+		echo "\n";
+		echo "exec_res:" ; print_r($exec_res); echo "\n";
+		echo "exec_cmd:" ; print_r($exec_cmd); echo "\n";
+		echo "exec_out:" ; print_r($exec_out); echo "\n";
+		echo "exec_ret:" ; print_r($exec_ret); echo "\n";
 		exit();
 	}
 
 	umask($oldmask);
+
+	return $cmd;
 }
 function preFlightCheck2( $input=[] ){
 	// Updates the minified versions of files as needed.
@@ -446,34 +473,36 @@ function preFlightCheck2( $input=[] ){
 	if( ! (is_array($input) && count($input)) ){
 		$input = [
 			// JSGAME CORE FILES
-			"PRESETUP.js"    => [ "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"PRESETUP.min.js"   , "orgFile"=>"PRESETUP.js"    ] ,
-			"PRE_INIT.js"    => [ "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"PRE_INIT.min.js"   , "orgFile"=>"PRE_INIT.js"    ] ,
-			"INIT.js"        => [ "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"INIT.min.js"       , "orgFile"=>"INIT.js"        ] ,
-			"DOM.js"         => [ "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"DOM.min.js"        , "orgFile"=>"DOM.js"         ] ,
-			"FLAGS.js"       => [ "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"FLAGS.min.js"      , "orgFile"=>"FLAGS.js"       ] ,
-			"GAMEPADS.js"    => [ "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"GAMEPADS.min.js"   , "orgFile"=>"GAMEPADS.js"    ] ,
-			"GUI.js"         => [ "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"GUI.min.js"        , "orgFile"=>"GUI.js"         ] ,
-			"SHARED.js"      => [ "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"SHARED.min.js"     , "orgFile"=>"SHARED.js"      ] ,
+			"PRESETUP.js"    => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"PRESETUP.min.js"   , "orgFile"=>"PRESETUP.js"    ] ,
+			"PRE_INIT.js"    => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"PRE_INIT.min.js"   , "orgFile"=>"PRE_INIT.js"    ] ,
+			"INIT.js"        => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"INIT.min.js"       , "orgFile"=>"INIT.js"        ] ,
+			"DOM.js"         => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"DOM.min.js"        , "orgFile"=>"DOM.js"         ] ,
+			"FLAGS.js"       => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"FLAGS.min.js"      , "orgFile"=>"FLAGS.js"       ] ,
+			"GAMEPADS.js"    => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"GAMEPADS.min.js"   , "orgFile"=>"GAMEPADS.js"    ] ,
+			"GUI.js"         => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"GUI.min.js"        , "orgFile"=>"GUI.js"         ] ,
+			"SHARED.js"      => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"SHARED.min.js"     , "orgFile"=>"SHARED.js"      ] ,
 
 			// SOUND A MODE FILES
-			"soundMode_A.js" => [ "web_srcPath"=>"cores/soundMode_A/", "server_srcPath"=>($_appdir . "/cores/soundMode_A/"), "minFile"=>"soundMode_A.min.js", "orgFile"=>"soundMode_A.js" ] ,
+			"soundMode_A.js"           => [ "key"=>"soundMode_A.js", "web_srcPath"=>"cores/soundMode_A/", "server_srcPath"=>($_appdir . "/cores/soundMode_A/"), "minFile"=>"soundMode_A.min.js"          , "orgFile"=>"soundMode_A.js"           ] ,
 
 			// SOUND B MODE FILES
-			"soundMode_B.js" => [ "web_srcPath"=>"cores/soundMode_B/", "server_srcPath"=>($_appdir . "/cores/soundMode_B/"), "minFile"=>"soundMode_B.min.js", "orgFile"=>"soundMode_B.js" ] ,
+			"soundMode_B.js"           => [ "key"=>"soundMode_B.js", "web_srcPath"=>"cores/soundMode_B/", "server_srcPath"=>($_appdir . "/cores/soundMode_B/"), "minFile"=>"soundMode_B.min.js"          , "orgFile"=>"soundMode_B.js"           ] ,
 
 			// VIDEO A MODE FILES
-			"videoMode_A.js" => [ "web_srcPath"=>"cores/videoMode_A/", "server_srcPath"=>($_appdir . "/cores/videoMode_A/"), "minFile"=>"videoMode_A.min.js", "orgFile"=>"videoMode_A.js" ] ,
+			"videoMode_A.js"           => [ "key"=>"videoMode_A.js", "web_srcPath"=>"cores/videoMode_A/", "server_srcPath"=>($_appdir . "/cores/videoMode_A/"), "minFile"=>"videoMode_A.min.js"          , "orgFile"=>"videoMode_A.js"           ] ,
+			"videoMode_A_webworker.js" => [ "key"=>"videoMode_A.js", "web_srcPath"=>"cores/videoMode_A/", "server_srcPath"=>($_appdir . "/cores/videoMode_A/"), "minFile"=>"videoMode_A_webworker.min.js", "orgFile"=>"videoMode_A_webworker.js" ] ,
 
 			// VIDEO B MODE FILES
-			"videoMode_B.js" => [ "web_srcPath"=>"cores/videoMode_B/", "server_srcPath"=>($_appdir . "/cores/videoMode_B/"), "minFile"=>"videoMode_B.min.js", "orgFile"=>"videoMode_B.js" ] ,
+			"videoMode_B.js"           => [ "key"=>"videoMode_B.js", "web_srcPath"=>"cores/videoMode_B/", "server_srcPath"=>($_appdir . "/cores/videoMode_B/"), "minFile"=>"videoMode_B.min.js"          , "orgFile"=>"videoMode_B.js"           ] ,
 
 			// VIDEO C MODE FILES
-			"videoMode_C.js" => [ "web_srcPath"=>"cores/videoMode_C/", "server_srcPath"=>($_appdir . "/cores/videoMode_C/"), "minFile"=>"videoMode_C.min.js", "orgFile"=>"videoMode_C.js" ] ,
+			"videoMode_C.js"           => [ "key"=>"videoMode_C.js", "web_srcPath"=>"cores/videoMode_C/", "server_srcPath"=>($_appdir . "/cores/videoMode_C/"), "minFile"=>"videoMode_C.min.js"          , "orgFile"=>"videoMode_C.js"           ] ,
+			"videoMode_C_webworker.js" => [ "key"=>"videoMode_C.js", "web_srcPath"=>"cores/videoMode_C/", "server_srcPath"=>($_appdir . "/cores/videoMode_C/"), "minFile"=>"videoMode_C_webworker.min.js", "orgFile"=>"videoMode_C_webworker.js" ] ,
 		];
 	}
 
 	$_MINIFICATIONS = [];
-	$_FILES         = [];
+	// $_FILES         = [];
 
 	$_TOTALMINTIME_time_start = microtime(true);
 	foreach($input as $k => $v){
@@ -482,12 +511,20 @@ function preFlightCheck2( $input=[] ){
 		$web_srcPath    = $rec["web_srcPath"]    ;
 		$orgFile        = $rec["orgFile"]        ;
 		$minFile        = $rec["minFile"]        ;
+		$key            = $rec["key"]            ;
+
+		// Skip the file if it does not exist.
+		$fullOrgFilePath = $server_srcPath . $orgFile ;
+		if( ! file_exists( $fullOrgFilePath ) ) { continue; }
 
 		$data_org = getLastUpdate2( $server_srcPath, $orgFile, false ) ;
 		$data_min = getLastUpdate2( $server_srcPath, "/min/" . $minFile, false ) ;
 
 		$lastUpdate_data_org = $data_org['file_lastUpdate_unix'] ;
 		$lastUpdate_data_min = $data_min['file_lastUpdate_unix'] ;
+
+		// Create the array key in $output if the key does not already exist.
+		if( !is_array( $output[$key] ) ) { $output[$key] = [] ; }
 
 		// Is the original file newer than the minified version?
 		if( $alwaysReMinify || ($lastUpdate_data_org >= $lastUpdate_data_min) ){
@@ -496,54 +533,46 @@ function preFlightCheck2( $input=[] ){
 			$arg3 =  $web_srcPath                ; // $newBasepath
 
 			$time_start = microtime(true);
-			minifiy_files($arg1, $arg2, $arg3);
+			$cmd = minifiy_files($arg1, $arg2, $arg3);
 			$time_end = microtime(true);
 			$time = $time_end - $time_start;
 
 			array_push($_MINIFICATIONS, [
 				"orgFile"            => $orgFile  ,
-				"minTime"            => $time     ,
-				"lastUpdate_data_org"=> $data_org ,
-				"lastUpdate_data_min"=> $data_min ,
+				"minificationTime"   => floatval( number_format($time, 3, '.', '') ) ,
+				// "lastUpdate_data_org"=> $data_org ,
+				// "lastUpdate_data_min"=> $data_min ,
+				// "cmd"                => $cmd      ,
 			]);
 		}
 
-		array_push($_FILES, [
-			"orgFile"            => $orgFile  ,
-			"lastUpdate_data_org"=> $data_org ,
-		]);
+		// Add the data to the $output.
+		$output[$key][$orgFile] =  $server_srcPath . 'min/' . $minFile;
+
+		// array_push($_FILES, [
+		// 	"orgFile"            => $orgFile  ,
+		// 	"lastUpdate_data_org"=> $data_org ,
+		// ]);
+
 	}
 	$_TOTALMINTIME_time_end = microtime(true);
 	$_TOTALMINTIME = $_TOTALMINTIME_time_end - $_TOTALMINTIME_time_start;
 
-	return [
-		"jsgameCore"     => [
-			'PRESETUP.js' => $input['PRESETUP.js']   ['server_srcPath'] . '/min/' . $input['PRESETUP.js']   ['minFile'] ,
-			'PRE_INIT.js' => $input['PRE_INIT.js']   ['server_srcPath'] . '/min/' . $input['PRE_INIT.js']   ['minFile'] ,
-			'INIT.js'     => $input['INIT.js']       ['server_srcPath'] . '/min/' . $input['INIT.js']       ['minFile'] ,
-			'DOM.js'      => $input['DOM.js']        ['server_srcPath'] . '/min/' . $input['DOM.js']        ['minFile'] ,
-			'FLAGS.js'    => $input['FLAGS.js']      ['server_srcPath'] . '/min/' . $input['FLAGS.js']      ['minFile'] ,
-			'GAMEPADS.js' => $input['GAMEPADS.js']   ['server_srcPath'] . '/min/' . $input['GAMEPADS.js']   ['minFile'] ,
-			'GUI.js'      => $input['GUI.js']        ['server_srcPath'] . '/min/' . $input['GUI.js']        ['minFile'] ,
-			'SHARED.js'   => $input['SHARED.js']     ['server_srcPath'] . '/min/' . $input['SHARED.js']     ['minFile'] ,
-		],
-		"soundMode_A.js"  => $input['soundMode_A.js']['server_srcPath'] . '/min/' . $input['soundMode_A.js']['minFile'] ,
-		"soundMode_B.js"  => $input['soundMode_B.js']['server_srcPath'] . '/min/' . $input['soundMode_B.js']['minFile'] ,
-		"videoMode_A.js"  => $input['videoMode_A.js']['server_srcPath'] . '/min/' . $input['videoMode_A.js']['minFile'] ,
-		"videoMode_B.js"  => $input['videoMode_B.js']['server_srcPath'] . '/min/' . $input['videoMode_B.js']['minFile'] ,
-		"videoMode_C.js"  => $input['videoMode_C.js']['server_srcPath'] . '/min/' . $input['videoMode_C.js']['minFile'] ,
+	$output["_TOTALMINTIME"]  = $_TOTALMINTIME  ;
+	$output["_MINIFICATIONS"] = $_MINIFICATIONS ;
+	// $output["_FILES"]         = $_FILES         ;
 
-		// Debug stuff.
-		"_TOTALMINTIME"  => $_TOTALMINTIME  ,
-		"_MINIFICATIONS" => $_MINIFICATIONS ,
-		"_FILES"         => $_FILES         ,
-	];
+	return $output;
 }
 
 function init2(){
 	global $_appdir;
 
 	$combinedFiles_jsgame = preFlightCheck2();
+
+	// echo "combinedFiles_jsgame:";
+	// print_r($combinedFiles_jsgame);
+	// exit();
 
 	$output   = [
 		// JSGAME core.
@@ -587,7 +616,7 @@ function init2(){
 		// Debug stuff.
 		"_TOTALMINTIME"  => $combinedFiles_jsgame['_TOTALMINTIME'],
 		"_MINIFICATIONS" => $combinedFiles_jsgame['_MINIFICATIONS'],
-		"_FILES"         => $combinedFiles_jsgame['_FILES'],
+		// "_FILES"         => $combinedFiles_jsgame['_FILES'],
 	];
 
 	$PHP_VARS = [];
@@ -737,15 +766,27 @@ function init2(){
 			// Get the video core.
 			$key = "videomode";
 			$key2 = basename($gamesettings['videokernel']);
-			$output['game_files'][$key] = [ "type" => "js", "name"=>$key2, "data" => file_get_contents( $combinedFiles_jsgame[$key2] ) ];
+			foreach($combinedFiles_jsgame[$key2] as $k => $v){
+				$filename = $combinedFiles_jsgame[$key2][$k];
+				$arr = [ "type" => "js", "name" => $k, "data" => file_get_contents( $combinedFiles_jsgame[$key2][$k] ) ];
+				if(strpos(basename($filename), "webworker") !==false){ $arr['worker'] = true  ; }
+				else                                                 { $arr['worker'] = false ; }
+				array_push( $output['game_files'][$key], $arr );
+			}
 
 			// Get the sound core.
 			$key = "soundmode";
 			$key2 = basename($gamesettings['soundkernel']);
-			$output['game_files'][$key] = [ "type" => "js", "name"=>$key2, "data" => file_get_contents( $combinedFiles_jsgame[$key2] ) ];
+			foreach($combinedFiles_jsgame[$key2] as $k => $v){
+				$filename = $combinedFiles_jsgame[$key2][$k];
+				$arr = [ "type" => "js", "name" => $k, "data" => file_get_contents( $combinedFiles_jsgame[$key2][$k] ) ];
+				if(strpos(basename($filename), "webworker") !==false){ $arr['worker'] = true  ; }
+				else                                                 { $arr['worker'] = false ; }
+				array_push( $output['game_files'][$key], $arr );
+			}
 
 			// Get the game code and support files.
-			$keys=["js_files", "debug_files", "game_files"];
+			$keys=["js_files", "debug_files", "game_files" ];
 			for($i=0; $i<count($keys); $i+=1){
 				$key = $keys[$i];
 				if(isset($gamesettings[$key])){
@@ -789,12 +830,14 @@ function init2(){
 		header('Content-Encoding: gzip');
 
 		// Send the data.
-		echo gzencode( json_encode($output) ) ;
+		// echo gzencode( json_encode($output) ) ;
+		echo gzencode( json_encode($output,JSON_PRETTY_PRINT) ) ;
 	}
 	// Or just send the data.
 	else{
 		// Send the data.
-		echo json_encode($output);
+		// echo json_encode($output);
+		echo json_encode($output, JSON_PRETTY_PRINT);
 	}
 }
 

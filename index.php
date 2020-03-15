@@ -340,18 +340,6 @@
 				//
 				let addCss    = function (data, key, filename){
 					return new Promise(function(res, rej){
-						// console.log(key, filename);
-
-						// OPTION #0
-						// let css = document.createElement("link");
-						// css.setAttribute("filename", filename);
-						// css.rel = 'stylesheet';
-						// css.type = 'text/css';
-						// css.textContent=data;
-						// document.body.appendChild(css);
-						// res( {"filename":filename, "css":css, "key":key} );
-
-						// OPTION #0.1
 						let blob = new Blob([data], { type: 'text/css;charset=utf-8' });
 						let css = document.createElement("link");
 						css.onload=null; res( {"filename":filename, "css":css, "key":key} );
@@ -359,20 +347,6 @@
 						css.rel = 'stylesheet';
 						css.type = 'text/css';
 						document.body.appendChild(css);
-
-						// OPTION #1
-						// let reader = new FileReader();
-						// reader.onload=function(){
-						// 	reader.onload=null;
-						// 	// css.src = reader.result;
-						// 	css.href = reader.result;
-						// };
-						// reader.onerror=function(){
-						// 	console.log("error");
-						// };
-						// reader.readAsDataURL(blob);
-
-						// OPTION #2
 						let d_url = URL.createObjectURL(blob);
 						css.href = d_url;
 						URL.revokeObjectURL(d_url);
@@ -441,7 +415,10 @@
 					let json = xhr.response;
 
 					// If there were minifications performed then list then in the dev console.
-					if(json._MINIFICATIONS.length){ console.log("Minifications performed:", json._MINIFICATIONS, "\n\n"); }
+					if(json._MINIFICATIONS.length){
+						console.log(json._MINIFICATIONS.length + " minifications performed:", json._MINIFICATIONS, "\n");
+						console.log("Minification time:", (json._TOTALMINTIME).toFixed(3) + " seconds", "\n\n");
+					}
 
 					// This will be filled based on the code below which is for adding files and setting settings.
 					let proms = [];
@@ -503,7 +480,6 @@
 							let keys = Object.keys( json[key] );
 							for(let i=0; i<keys.length; i+=1){
 								let rec = json[key][ keys[i] ];
-
 								switch(keys[i]){
 									case "js_files"    : {
 										for(let f=0; f<rec.length; f+=1){
@@ -525,18 +501,27 @@
 									case "game_files"  : {
 										for(let f=0; f<rec.length; f+=1){
 											if(rec[f].type=="js"){ proms.push( addScript( rec[f].data, key+"_"+rec[f].name, rec[f].name ) ); }
-											// else{
-											// 	console.log(rec[f].name, rec[f].data);
-											// }
 										}
 										break;
 									}
 									case "videomode"   : {
-										proms.push( addScript( rec.data, key, rec.name ) );
+										for(let f=0; f<rec.length; f+=1){
+											// Workers are added differently.
+											if( rec[f].worker && rec[f].type=="js" ){
+												// Create a blob objectURL and save it to TEMP.
+												let blob = new Blob( [ rec[f].data ], { type: 'text/javascript;charset=utf-8' } );
+												JSGAME.TEMP[rec[f].name] = URL.createObjectURL( blob ) ;
+											}
+											else{
+												if(rec[f].type=="js"){ proms.push( addScript( rec[f].data, key+"_"+rec[f].name, rec[f].name ) ); }
+											}
+										}
 										break;
 									}
 									case "soundmode"   : {
-										proms.push( addScript( rec.data, key, rec.name ) );
+										for(let f=0; f<rec.length; f+=1){
+											if(rec[f].type=="js"){ proms.push( addScript( rec[f].data, key+"_"+rec[f].name, rec[f].name ) ); }
+										}
 										break;
 									}
 									default : { console.log("????"); break; }
