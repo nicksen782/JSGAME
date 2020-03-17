@@ -115,10 +115,11 @@ JSGAME.SHARED={
 			perf.GROUP_ALL = _TOTALTIME.toFixed(3).padStart(pad_len_timestring, " ");
 
 			console.log(
-				"PERFORMANCE VALUES:",
-				"\n  GROUP_ALL  : ", JSON.stringify(perf.GROUP_ALL , null,2) ,
-				"\n  GROUP      : ", JSON.stringify(perf.GROUP     , null,2) ,
+				"PERFORMANCE : ",
 				"\n  INDIVIDUAL : ", JSON.stringify(perf.INDIVIDUAL, null,2) ,
+				"\n  GROUP_ALL  : ", perf.GROUP_ALL ,
+				"\n  GROUP      : ", JSON.stringify(perf.GROUP     , null,2) ,
+				"\nCOMPLETE : ", (performance.now().toFixed(3)), "" ,
 				""
 			);
 

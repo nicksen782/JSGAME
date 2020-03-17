@@ -93,7 +93,7 @@
 				<span id="topBar_line1_jsgame">JS GAME</span>
 				<span id="topBar_line1_gamename"></span>
 				<div id="topBar_line1_buttons">
-					<div class="reload" onclick="window.location.reload();" id="btn_reload"></div>
+					<div class="reload" onclick="if(typeof JSGAME != 'undefined'){ JSGAME.GUI.reloadGame(); } else{ window.location.reload(); }" id="btn_reload"></div>
 					<div class="pause" id="btn_togglePause"></div>
 				</div>
 			</div>
@@ -314,6 +314,8 @@
 	<!-- Init via PHP : gameslist.json, gamesettings.json -->
 	<!-- Also includes the window.onload function. -->
 	<script>
+		// console.log("1:", performance.now());
+		// let __jsgame_init_start=performance.now();
 		window.onload = function(){
 			window.onload=null;
 
@@ -340,15 +342,15 @@
 				//
 				let addCss    = function (data, key, filename){
 					return new Promise(function(res, rej){
-						let blob = new Blob([data], { type: 'text/css;charset=utf-8' });
-						let css = document.createElement("link");
-						css.onload=null; res( {"filename":filename, "css":css, "key":key} );
+						let blob   = new Blob([data], { type: 'text/css;charset=utf-8' });
+						let css    = document.createElement("link");
+						css.onload = null; res( {"filename":filename, "css":css, "key":key} );
 						css.setAttribute("filename", filename);
-						css.rel = 'stylesheet';
-						css.type = 'text/css';
+						css.rel    = 'stylesheet';
+						css.type   = 'text/css';
 						document.body.appendChild(css);
-						let d_url = URL.createObjectURL(blob);
-						css.href = d_url;
+						let d_url  = URL.createObjectURL(blob);
+						css.href   = d_url;
 						URL.revokeObjectURL(d_url);
 					});
 				};
@@ -384,7 +386,7 @@
 						obj[key] = decodeURIComponent(val);
 					}
 
-					/*
+					/* // EXAMPLE OUTPUT:
 						obj = {
 							"game"  : "videoModeC_TESTS",
 							"debug" : "true",
@@ -397,6 +399,10 @@
 
 				// Get the values from the queryString.
 				let qs = getQueryStringAsObj();
+
+				// Act upon the "hidden" key if it exists.
+				if(qs.hidden){ document.body.style.visibility="hidden" ; }
+				else         { document.body.style.visibility="visible"; }
 
 				// Create a new form. Add all values from the queryString.
 				let fd = new FormData();
@@ -411,6 +417,7 @@
 
 				// Do this after the data is received.
 				xhr.onload= async function(){
+					// console.log("2:", performance.now());
 					xhr.onload=null;
 					let json = xhr.response;
 
@@ -508,7 +515,6 @@
 										for(let f=0; f<rec.length; f+=1){
 											// Workers are added differently.
 											if( rec[f].worker && rec[f].type=="js" ){
-												// Create a blob objectURL and save it to TEMP.
 												let blob = new Blob( [ rec[f].data ], { type: 'text/javascript;charset=utf-8' } );
 												JSGAME.TEMP[rec[f].name] = URL.createObjectURL( blob ) ;
 											}
@@ -524,6 +530,38 @@
 										}
 										break;
 									}
+
+									case "graphics" : {
+										for(let f=0; f<rec.length; f+=1){
+											if(rec[f].type=="inc"){
+												// Create a blob objectURL and save it to TEMP.
+												let blob = new Blob( [ rec[f].data ], { type: 'text/plain;charset=utf-8' } );
+												JSGAME.TEMP[rec[f].fullname] = blob;
+											}
+										}
+										break;
+									}
+
+									case "sounds"   : {
+										for(let f=0; f<rec.length; f+=1){
+											if(rec[f].type=="mp3"){
+												// Convert to ArrayBuffer from base64.
+												JSGAME.TEMP[ rec[f].fullname ] = Uint8Array.from(atob(rec[f].data), function(c) {return c.charCodeAt(0);}).buffer;
+
+												// Create to blob from ArrayBuffer.
+												JSGAME.TEMP[ rec[f].fullname ] = new Blob( [ JSGAME.TEMP[ rec[f].fullname ] ], { type: 'audio/mpeg;charset=utf-8' } );
+
+												// Create Object URL.
+												JSGAME.TEMP[ rec[f].fullname ] = URL.createObjectURL( JSGAME.TEMP[ rec[f].fullname ] );
+											}
+											if(rec[f].type=="bin"){
+												// Convert to ArrayBuffer from base64.
+												JSGAME.TEMP[ rec[f].fullname ] = Uint8Array.from(atob(rec[f].data), function(c) {return c.charCodeAt(0);}).buffer;
+											}
+										}
+										break;
+									}
+
 									default : { console.log("????"); break; }
 								}
 
@@ -559,6 +597,7 @@
 
 				xhr.open( "POST", url, true );
 				xhr.responseType = "json";
+				// xhr.responseType = "ArrayBuffer";
 				xhr.send(fd);
 			})();
 		}

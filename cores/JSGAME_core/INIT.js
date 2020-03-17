@@ -381,6 +381,11 @@ JSGAME.INIT={
 	 * @example  JSGAME.INIT.__GAMESTART();
 	*/
 	__GAMESTART                      : async function(){
+		// let __jsgame_init_end=performance.now();
+		// let __jsgame_init_time=__jsgame_init_end - __jsgame_init_start;
+		// console.log("__jsgame_init_time:", __jsgame_init_time);
+		// console.log("1:", performance.now());
+
 		// BEGIN GAME START!
 		console.log("JSGAME: __GAMESTART...");
 		JSGAME.GUI.preGame_indicator("loadingGame", "ON");
@@ -394,7 +399,8 @@ JSGAME.INIT={
 		// Run the game's "firstLoop" function. (Receiving the gamestartFunction.)
 		let gamestartFunction;
 		try{ gamestartFunction = await game.firstLoop(); } catch(err){ console.error("ERROR: firstLoop", err); }
-		JSGAME.GUI.preGame_indicator("gameInited", "ON");
+		// JSGAME.GUI.preGame_indicator("gameInited", "ON");
+		JSGAME.GUI.preGame_indicator("", "OFF");
 
 		// Show the performance/timing data if in debug mode.
 		if(JSGAME.FLAGS.debug)       {

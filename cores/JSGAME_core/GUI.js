@@ -81,11 +81,11 @@ JSGAME.GUI={
 		let mastervol = JSGAME.PRELOAD.PHP_VARS.mastervol ;
 
 		let vals = {
-			"game"      : gamestring         ? gamestring : "" ,
-			"gamepads"  : gamepads           ? gamepads   : "" ,
-			"debug"     : debug && debug     ? debug      : "" ,
-			"hidden"    : debug && hidden    ? hidden     : "" ,
-			"mastervol" : debug && mastervol ? mastervol  : "" ,
+			"game"      : (gamestring       ) ? (gamestring) : ("") ,
+			"gamepads"  : (gamepads         ) ? (true)       : ("") ,
+			"debug"     : (debug            ) ? (true)       : ("") ,
+			"hidden"    : (hidden           ) ? (true)       : ("") ,
+			"mastervol" : (debug & mastervol) ? (mastervol)  : ("") ,
 		};
 		let keys = Object.keys(vals);
 
@@ -95,6 +95,7 @@ JSGAME.GUI={
 		for(let i=0; i<keys.length; i+=1){
 			let key = keys[i];
 			let val = vals[key];
+			if(val==""){ continue; }
 
 			if(val!=""){
 				if(firstKey==true){ qs+="?"; firstKey=false; }
@@ -143,7 +144,6 @@ JSGAME.GUI={
 
 			// Show the side div
 			JSGAME.DOM.sideDiv.classList.remove("hide");
-
 		}
 		// Are the game controls visible?
 		else         {
@@ -339,7 +339,6 @@ JSGAME.GUI={
 		if(newState=="OFF"){
 			JSGAME.DOM.indicator_preGame.classList.remove("show");
 			JSGAME.DOM.indicator_preGame.innerText="";
-
 		}
 		if(newState=="ON"){
 			JSGAME.DOM.indicator_preGame.classList.add("show");

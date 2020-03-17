@@ -2069,11 +2069,30 @@ core.GRAPHICS.init         = {
 
 			// Download the files.
 			let proms_gfx = [];
+			let TEMP_keys = Object.keys(JSGAME.TEMP);
 			core.SETTINGS.inputTilesetData.forEach(function(d){
-				let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ d;
-				proms_gfx.push(
-					JSGAME.SHARED.getFile_fromUrl(rel_url, true, "text")
-				);
+				// Do we have the file in the cache?
+				if( TEMP_keys.indexOf(d) != -1){
+					proms_gfx.push(
+						new Promise(function(res,rej){
+							JSGAME.TEMP[d].text().then(
+								function(text){
+									res(text);
+									delete JSGAME.TEMP[d];
+								} ,
+								function(err){
+									console.log("something went wrong.", err);
+									rej();
+								}
+							);
+						})
+					) ;
+				}
+				// No? Retrieve it normally.
+				else{
+					let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ d;
+					proms_gfx.push( JSGAME.SHARED.getFile_fromUrl(rel_url, true, "text") );
+				}
 			});
 
 			// After the files have downloaded...
@@ -2729,6 +2748,7 @@ core.GRAPHICS.init         = {
 
 				// Remove the objectURL for the worker. No longer needed.
 				URL.revokeObjectURL( JSGAME.TEMP["videoMode_C_webworker.js"] );
+				delete JSGAME.TEMP["videoMode_C_webworker.js"] ;
 			}
 			JSGAME.SHARED.PERFORMANCE.stamp(_perf_name+"_createWebworkers" , "END");
 

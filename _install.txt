@@ -11,17 +11,27 @@ BRANCHNAME=$2
 # The script renames itself afterwards.
 # The rest is handled automatically.
 # This will create the base directory structure and do a git clone of JS_GAME.
-# Since it will be a fresh clone there likely will not be a gameslist.json file
-# so a starter file will be created.
+# Since it will be a fresh clone there likely will not be a gameslist.json file so a starter
+# file will be created.
 # Additionally, the game JS_GAME: Tetris will be included.
+# Video Mode C TESTS will also be included.
 #
-# If you want a Docker container then uncomment the "DOCKER SECTION" near the bottom.
+# Arguments:
+# First : HOW TO INSTALL: LOCAL or DOCKER. LOCAL is default is not specified. DOCKER will create a Docker container.
+# Second: BRANCH TO USE : master is the default if not specified.
 #
 # If you just want to install directly from the Github repo you can use one of these commmands:
+# With wget:
+#   wget -O -  https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash -s LOCAL
+#   wget -O -  https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash -s LOCAL dev
 #   wget -O -  https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash -s DOCKER
+#   wget -O -  https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash -s DOCKER dev
+#
+# With curl:
+#   curl -s -L https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash -s LOCAL
+#   curl -s -L https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash -s LOCAL dev
 #   curl -s -L https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash -s DOCKER
-#   wget -O -  https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash
-#   curl -s -L https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash
+#   curl -s -L https://raw.githubusercontent.com/nicksen782/JSGAME/master/_install.txt | bash -s DOCKER dev
 ####################################################################################################
 
 # Make the directory structure.
@@ -36,21 +46,21 @@ git clone https://github.com/nicksen782/JSGAME.git JS_GAME
 # Test for the existence of the gamelist.json file.
 destfile=JS_GAME/gamelist.json
 if [ ! -f "$destfile" ]
-then
-# The file was not found. Create a starter gamelist.jsonfile with JS_GAME: Tetris.
-cat > "$destfile" <<- EOM
-{
-	"games": [
-		{  "gamename":""                  ,"header_gameChoice":""                ,"gamedesc":"","author":""          ,"gamedir":""                             ,"AVAILABLE":false }
-		,{ "gamename":"Tetris (JS)"       ,"header_gameChoice":"Tetris_(JS)"     ,"gamedesc":"","author":"nicksen782","gamedir":"../JS_GAMES/Tetris"           ,"AVAILABLE":true  }
-		,{ "gamename":"Video Mode C TESTS","header_gameChoice":"videoModeC_TESTS","gamedesc":"","author":"nicksen782","gamedir": "../JS_GAMES/videoModeC_TESTS","AVAILABLE":true  }
-	]
-}
-EOM
+	then
+	# The file was not found. Create a starter gamelist.jsonfile.
+	cat > "$destfile" <<- EOM
+	{
+		"games": [
+			{  "gamename":""                  ,"header_gameChoice":""                ,"gamedesc":"","author":""          ,"gamedir":""                            ,"AVAILABLE":false }
+			,{ "gamename":"Tetris (JS)"       ,"header_gameChoice":"Tetris_(JS)"     ,"gamedesc":"","author":"nicksen782","gamedir":"../JS_GAMES/Tetris"          ,"AVAILABLE":true  }
+			,{ "gamename":"Video Mode C TESTS","header_gameChoice":"videoModeC_TESTS","gamedesc":"","author":"nicksen782","gamedir":"../JS_GAMES/videoModeC_TESTS","AVAILABLE":true  }
+		]
+	}
+	EOM
 
-# Clone a copy of JS_GAME: Tetris and JS_GAME: videoModeC_TESTS too.
-git clone https://github.com/nicksen782/JSGAME_Tetris.git           JS_GAMES/Tetris
-git clone https://github.com/nicksen782/JSGAME_videoModeC_TESTS.git JS_GAMES/videoModeC_TESTS
+	# Clone a copy of JS_GAME: Tetris and JS_GAME: videoModeC_TESTS too.
+	git clone https://github.com/nicksen782/JSGAME_Tetris.git           JS_GAMES/Tetris
+	git clone https://github.com/nicksen782/JSGAME_videoModeC_TESTS.git JS_GAMES/videoModeC_TESTS
 fi
 
 
@@ -60,11 +70,11 @@ git config --local core.fileMode false
 
 # Switch to a different branch?
 if [ -z "$BRANCHNAME" ]
-then
-	echo "Using the master branch."
-else
-	echo "Using the $BRANCHNAME branch."
-	git checkout dev
+	then
+		echo "Using the master branch."
+	else
+		echo "Using the $BRANCHNAME branch."
+		git checkout dev
 fi
 
 # Set permissions
@@ -106,5 +116,5 @@ fi
 ##########################
 
 # Rename the install script so that it does not get accidentally run again.
-# if [ -f "../_install.sh" ] ; then cd .. && chmod -x _install.sh && mv _install.sh _install.txt ; fi
+if [ -f "../_install.sh" ] ; then cd .. && chmod -x _install.sh && mv _install.sh _install.txt ; fi
 

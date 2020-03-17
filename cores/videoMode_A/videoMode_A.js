@@ -2213,6 +2213,7 @@ _CFG.logo = function(){
 				// Hold the image for a moment. It should be cleared by the game.
 				// setTimeout( res , 1000);
 				setTimeout( res , 750);
+				// setTimeout( res , 500);
 			};
 			img.src = logo;
 		}
@@ -2514,17 +2515,37 @@ _CFG.init = function(){
 				}
 
 				let proms_gfx = [];
+				let TEMP_keys = Object.keys(JSGAME.TEMP);
 
 				JSGAME.PRELOAD.gamesettings_json.graphics_files.forEach(function(d){
-					let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ d;
-					proms_gfx.push(
-						JSGAME.SHARED.getFile_fromUrl(rel_url, true, "text")
-					);
+					// Do we have the file in the cache?
+					if( TEMP_keys.indexOf(d) != -1){
+						proms_gfx.push(
+							new Promise(function(res,rej){
+								JSGAME.TEMP[d].text().then(
+									function(text){
+										res(text);
+										delete JSGAME.TEMP[d];
+									} ,
+									function(err){
+										console.log("something went wrong.", err);
+										rej();
+									}
+								);
+							})
+						) ;
+					}
+					// No? Retrieve it normally.
+					else{
+						let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ d;
+						proms_gfx.push( JSGAME.SHARED.getFile_fromUrl(rel_url, true, "text") );
+					}
 				});
 
 				Promise.all(proms_gfx).then(function( r ){
 					for(let i=0; i<r.length; i+=1){
 						// Get the converted data.
+						// console.log(r[i]);
 						let converted = graphicsConvert( r[i] );
 
 						// Get the keys.
@@ -2574,6 +2595,7 @@ _CFG.init = function(){
 			// Getting here means that we do not have support for OffscreenCanvas.
 			return false;
 		};
+
 
 		// Determine if OffscreenCanvas is supported.
 		_CC.OffscreenCanvas_supported = featureDetect_OffscreenCanvas();
@@ -2851,6 +2873,7 @@ _CFG.init = function(){
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_initWebworker"           , "START");
 				core.WORKERS.VIDEO = new Worker( JSGAME.TEMP["videoMode_A_webworker.js"] );
 				URL.revokeObjectURL( JSGAME.TEMP["videoMode_A_webworker.js"] );
+				delete JSGAME.TEMP["videoMode_A_webworker.js"] ;
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_initWebworker"           , "END");
 
 				// TOTAL VIDEO INIT PERFORMANCE:

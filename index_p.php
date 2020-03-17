@@ -45,9 +45,10 @@ function API_REQUEST( $api, $type ){
 	$o_values = [] ;
 
 	// APIs
-	$o_values["init"]         = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
-	$o_values["gzip_getFile"] = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
-	$o_values["init2"]        = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
+	// $o_values["init"]            = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
+	$o_values["gzip_getFile"]    = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
+	$o_values["init2"]           = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
+	// $o_values["preFlightCheck2"] = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
 
 	// DETERMINE IF THE API IS AVAILABLE TO THE USER.
 
@@ -215,6 +216,8 @@ function combineFiles_typeByKey($keys){
 }
 
 function getLastUpdate($path){
+	// http://man7.org/linux/man-pages/man1/find.1.html
+
 	global $_appdir;
 
 	$skipThese = "" .
@@ -224,12 +227,13 @@ function getLastUpdate($path){
 	"-not -path '*/\docs**'   "         .
 	"";
 
-	$latestVersion = trim( shell_exec(" find " . $path . " -type f ".$skipThese." -printf '%CY-%Cm-%Cd %CH:%CM:00 (%CZ) %p\n'| sort -n | tail -n1 ") );
+	$latestVersion = trim( shell_exec(" find " . $path . " -type f ".$skipThese." -printf '%CY-%Cm-%Cd %CH:%CM:%CS (%CZ) %p\n'| sort -n | tail -n1 ") );
 	// 2020-02-28 19:21:00 (EST) ./index_p.php
 
 	$data = explode(" ", $latestVersion);
 	$date     = trim( $data[0] ) ;
 	$time     = trim( $data[1] ) ;
+	$time     = explode(".", $time)[0] ;
 	$tz       = trim( $data[2] ) ;
 	$file     = trim( $data[3] ) ;
 	$datetime = ($date . " " . $time) ;
@@ -251,10 +255,9 @@ function getLastUpdate($path){
 
 	//
 	return [
-		"file_lastUpdate"      => trim($file_lastUpdate)                             ,
+		"file_lastUpdate"      => trim($file_lastUpdate)                                ,
 		"file_lastUpdate_name" => trim(str_replace($path, ".", $file_lastUpdate_name) ) ,
-		// "file_lastUpdate_name" => trim($file_lastUpdate_name) ,
-		"age"                  => trim($age)                             ,
+		"age"                  => trim($age)                                            ,
 	];
 };
 
@@ -331,6 +334,8 @@ function gzip_getFile(){
 }
 
 function getLastUpdate2($path, $file, $skip){
+	// http://man7.org/linux/man-pages/man1/find.1.html
+
 	global $_appdir;
 
 	$oldFile = $file;
@@ -344,15 +349,17 @@ function getLastUpdate2($path, $file, $skip){
 
 	if($skip){ $skip = "-not -path '*/".$skip."'"; }
 
-	$cmd = " find " . ($path . $file)            . " -type f ".$skipThese." ".$skip." -printf '%CY-%Cm-%Cd %CH:%CM:00 (%CZ) %p\n'| sort -n | tail -n1 ";
+	$cmd = " find " . ($path . $file)            . " -type f ".$skipThese." ".$skip." -printf '%CY-%Cm-%Cd %CH:%CM:%CS (%CZ) %p\n'| sort -n | tail -n1 ";
 
 	$latestVersion = trim( shell_exec($cmd) );
 
 	$data       = explode(" ", $latestVersion);
 	$date       = trim( $data[0] ) ;
 	$time       = trim( $data[1] ) ;
+	$time       = explode(".", $time)[0] ;
 	$tz         = trim( $data[2] ) ;
 	$file       = trim( $data[3] ) ;
+
 	$datetime   = ($date . " " . $time) ;
 	$today      = date_create( date("Y-m-d H:i:s") );
 	$lastUpdate = date_create( date("Y-m-d H:i:s", strtotime( $datetime )) );
@@ -371,7 +378,7 @@ function getLastUpdate2($path, $file, $skip){
 
 	//
 	return [
-		"file_lastUpdate_unix" => strtotime(trim($file_lastUpdate))       ,
+		"file_lastUpdate_unix" => strtotime($file_lastUpdate)             ,
 		"file_lastUpdate"      => trim($file_lastUpdate)                  ,
 		"file_lastUpdate_name" => basename( trim($file_lastUpdate_name) ) ,
 		"age"                  => trim($age)                              ,
@@ -385,6 +392,7 @@ function minifiy_files($files, $newFile, $newBasepath){
 	// Start the command.
 	$cmd = " cd $_appdir && terser " . " " ;
 
+	// Create the "min" directory if it does not already exist.
 	$newPath = $_appdir . "/" . $newBasepath . "/min";
 	if(! file_exists( $newPath ) ) {
 		$oldmask = umask(0);
@@ -394,7 +402,6 @@ function minifiy_files($files, $newFile, $newBasepath){
 	}
 
 	// Add the files to the command.
-	// foreach($files as $k => $v){ $cmd .= ( $_appdir . "/" . $newBasepath . basename($files[$k]) ) . " "; }
 	foreach($files as $k => $v){ $cmd .= ( $newBasepath . basename($files[$k]) ) . " "; }
 
 	// Finish the command (adding in the output file value.)
@@ -403,12 +410,14 @@ function minifiy_files($files, $newFile, $newBasepath){
 	$sourcemapUrl  = $referer . ( $newBasepath . "min/" . basename($newFile) ) . ".map";
 	$output        = ( $newBasepath . "min/" . basename($newFile) ) ;
 
-	$cmd .= ""       .
-	"  -c "          .
-	"  --verbose "   .
-	"  -m "          .
-	" --source-map \"root='".$sourcemapRoot."',url='".$sourcemapUrl."'\" " .
-	"  -o "          . $output . " 2>&1";
+	$cmd .= ""            .                                                  //
+	" --compress "        .                                                  // Enable compressor
+	" --mangle "          .                                                  // Mangle names
+	" --keep-classnames " .                                                  // Do not mangle/drop class names.
+	" --keep-fnames "     .                                                  // Do not mangle/drop function names.
+	" --output "          . $output .                                        // Output file
+	" --source-map \"root='".$sourcemapRoot."',url='".$sourcemapUrl."'\" " . // Enable source map
+	" 2>&1" ;
 
 	// Run the command.
 	$oldmask = umask(0);
@@ -570,10 +579,6 @@ function init2(){
 
 	$combinedFiles_jsgame = preFlightCheck2();
 
-	// echo "combinedFiles_jsgame:";
-	// print_r($combinedFiles_jsgame);
-	// exit();
-
 	$output   = [
 		// JSGAME core.
 		"jsgameCore"        => [] ,
@@ -603,6 +608,12 @@ function init2(){
 
 			// Selected sound mode.
 			"soundmode"     => [] ,
+
+			//
+			"sounds"        => [] ,
+
+			//
+			"graphics"      => [] ,
 		] ,
 
 		"onscreengamepads" => [
@@ -773,6 +784,17 @@ function init2(){
 				else                                                 { $arr['worker'] = false ; }
 				array_push( $output['game_files'][$key], $arr );
 			}
+			// Get the graphics files.
+			if     ($key2=="videoMode_A.js"){ $files = $gamesettings['graphics_files']; }
+			else if($key2=="videoMode_C.js"){ $files = $gamesettings['graphics']['inputTilesetData']; }
+			foreach($files as $k => $v){
+				array_push($output['game_files']['graphics'] , [
+					"type" => pathinfo(basename($v), PATHINFO_EXTENSION),
+					"name" => basename($v),
+					"fullname" => $v,
+					"data" => file_get_contents($gamedir . "/" . $v),
+				]);
+			}
 
 			// Get the sound core.
 			$key = "soundmode";
@@ -784,11 +806,39 @@ function init2(){
 				else                                                 { $arr['worker'] = false ; }
 				array_push( $output['game_files'][$key], $arr );
 			}
+			// Get the audio files.
+			if     ($key2=="soundMode_A.js"){ $files1 = $gamesettings['mp3_files']; $files2 = $gamesettings['midi_bin']; }
+			foreach($files1 as $k => $v){
+				array_push($output['game_files']['sounds'] , [
+					"type" => pathinfo(basename($v['fileurl']), PATHINFO_EXTENSION),
+					"name" => basename($v['fileurl']),
+					"fullname" => $v['fileurl'],
+					"data" => base64_encode(file_get_contents($gamedir . "/" . $v['fileurl'])),
+					"extra"=>[
+						"key"     => $v['key']     ,
+						"fileurl" => $v['fileurl'] ,
+						"type"    => $v['type']    ,
+						"names"   => $v['names']   ,
+					]
+				]);
+			}
+			foreach([$files2] as $k => $v){
+				array_push($output['game_files']['sounds'] , [
+					"type" => pathinfo(basename($v), PATHINFO_EXTENSION),
+					"name" => basename($v),
+					"fullname" => $v,
+					"data" => base64_encode(file_get_contents($gamedir . "/" . $v)),
+				]);
+			}
 
 			// Get the game code and support files.
 			$keys=["js_files", "debug_files", "game_files" ];
 			for($i=0; $i<count($keys); $i+=1){
 				$key = $keys[$i];
+
+				// Do not include the game's debug files if debug is not on.
+				if($key=="debug_files" && !$debug){ continue; }
+
 				if(isset($gamesettings[$key])){
 					foreach($gamesettings[$key] as $k => $v){
 						array_push($output['game_files'][$key] , [
@@ -840,578 +890,5 @@ function init2(){
 		echo json_encode($output, JSON_PRETTY_PRINT);
 	}
 }
-
-// OLD CODE
-// Used when JSGAME loads.
-function init(){
-	global $_appdir;
-
-	// Create variables for the output and the error output.
-	$outputText        = "";
-	$outputText_errors = "";
-
-	$outputText .= "'use strict'; \n";
-
-	// Get the data for the last updated file.
-	// $data = getLastUpdate(".");
-	$data = getLastUpdate($_appdir);
-	$file_lastUpdate      = $data["file_lastUpdate"] ;
-	$file_lastUpdate_name = $data["file_lastUpdate_name"];
-	$age                  = $data["age"] ;
-
-	$outputText .= "// ******************************************** \n";
-	$outputText .= "// -------------------------------------------- \n";
-	$outputText .= "\n";
-
-	// Parse the passed querystring.
-	$qs = json_decode($_GET['qs'],true);
-
-	// Was the debug key set? (Debug is off by default.)
-	if($qs['debug']=="true"){ $debug=true;  }
-	else                    { $debug=false; }
-
-	// Was the hidden key set? (Hidden is off by default.)
-	if($qs['hidden']=="true"){ $hidden=true;  }
-	else                     { $hidden=false; }
-
-	// Was the gamepads key set? (Gamepads are off by default.)
-	if( isset($qs['gamepads']) ){ $gamepads = $qs['gamepads']=="true" ? true : false; }
-	else                        { $gamepads=false; }
-
-	//
-	$combine = [];
-
-	// Is the combine key set? If so json_decode it then fix it if needed.
-	if(isset($qs['combine'])){
-		$qs['combine'] = json_decode($qs['combine'], true);
-
-		// If debug normalize the combine flags.
-		if($debug){
-			// Set combine. Set qs.
-			$combine['jsg'] = $qs['combine']['jsg'] ? 1 : 0; $qs['combine']['jsg'] = $combine['jsg'] ;
-			$combine['v']   = $qs['combine']['v']   ? 1 : 0; $qs['combine']['v']   = $combine['v']   ;
-			$combine['a']   = $qs['combine']['a']   ? 1 : 0; $qs['combine']['a']   = $combine['a']   ;
-			$combine['gjs'] = $qs['combine']['gjs'] ? 1 : 0; $qs['combine']['gjs'] = $combine['gjs'] ;
-			$outputText .= ""."JSGAME.PRELOAD_PRE_COMBINE_TYPE0 = 'DEBUG, COMBINE USED IF/AS INDICATED.';\n";
-
-		}
-		else{
-			// Set combine. Set qs.
-			$combine['jsg'] = 1; $qs['combine']['jsg'] = $combine['jsg'] ;
-			$combine['v']   = 1; $qs['combine']['v']   = $combine['v']   ;
-			$combine['a']   = 1; $qs['combine']['a']   = $combine['a']   ;
-			$combine['gjs'] = 1; $qs['combine']['gjs'] = $combine['gjs'] ;
-			$outputText .= ""."JSGAME.PRELOAD_PRE_COMBINE_TYPE0 = 'NORMAL, COMBINE SET TO 1.';\n";
-		}
-	}
-	// Combine key was NOT set? Set it with default values.
-	else{
-		if($debug){
-			// Set combine. Set qs.
-			$combine['jsg'] = 0; $qs['combine']['jsg'] = $combine['jsg'] ;
-			$combine['v']   = 0; $qs['combine']['v']   = $combine['v']   ;
-			$combine['a']   = 0; $qs['combine']['a']   = $combine['a']   ;
-			$combine['gjs'] = 0; $qs['combine']['gjs'] = $combine['gjs'] ;
-			$outputText .= ""."JSGAME.PRELOAD_PRE_COMBINE_TYPE0 = 'DEBUG, COMBINE CREATED AND SET TO 0.';\n";
-		}
-		else{
-			// Set combine. Set qs.
-			$combine['jsg'] = 1; $qs['combine']['jsg'] = $combine['jsg'] ;
-			$combine['v']   = 1; $qs['combine']['v']   = $combine['v']   ;
-			$combine['a']   = 1; $qs['combine']['a']   = $combine['a']   ;
-			$combine['gjs'] = 1; $qs['combine']['gjs'] = $combine['gjs'] ;
-			$outputText .= ""."JSGAME.PRELOAD_PRE_COMBINE_TYPE0 = 'NORMAL, COMBINE CREATED AND SET TO 1.';\n";
-		}
-	}
-
-	// Correct the data types within the querystring.
-	foreach($qs as $k => $v){ $qs[$k] = correctDataTypes($qs[$k]); }
-
-	// These values will be copied to JavaScript. (There will be more.)
-	$PHP_VARS["queryString"]  = $qs                    ; // The query string provided.
-	$PHP_VARS['gamename']     = $qs['game']            ;
-	$PHP_VARS['debug']        = $debug  ? true : false ;
-	$PHP_VARS['hidden']       = $hidden ? true : false ;
-	$PHP_VARS['combine']      = $combine               ;
-
-	// Last update to the files of JSGAME.
-	$PHP_VARS['file_lastUpdate']      = $data["file_lastUpdate"]      ;
-	$PHP_VARS['file_lastUpdate_name'] = $data["file_lastUpdate_name"] ;
-	$PHP_VARS['age']                  = $data["age"]                  ;
-
-
-	// ***************************************
-	//  FIND AND LOAD THE gamelist.json FILE.
-	// ***************************************
-
-	// gamelist.json file.
-	$gamelist_json = [];
-
-	// Is there a gamelist.json file? If not then use the built-in blank one.
-	$gamelistjson_file = "gamelist.json";
-	if( ! file_exists ($gamelistjson_file) ) {
-		// Create the gamelist file from the template.
-		// Make sure that other users can write to it.
-
-		$oldmask = umask(0);
-		$src     = "template_gamelist.json" ;
-		$dest    = "gamelist.json" ;
-		copy( $src , $dest );
-		chmod($dest, 0666);
-		umask($oldmask);
-	}
-
-	// **********************************
-	//  Load the gamesettings.json file.
-	// **********************************
-
-	// Was the gamelist.json file found? Get it and json_decode it.
-	if( file_exists ($gamelistjson_file) )   {
-
-		// Set the flag indicating the gamelist.json file was found.
-		$PHP_VARS['gamelist_json']=true;
-
-		// Get a handle on the 'games' key in the gamelist.json file.
-		$games=json_decode(file_get_contents($gamelistjson_file), true)['games'];
-
-		// Output as JavaScript variable.
-		$outputText .= "JSGAME.PRELOAD.gamelist_json = " . json_encode($games) . ";\n" ;
-	}
-	// No gamelist.json? (Should never happen.)
-	else                                     {
-		$outputText .= "JSGAME.PRELOAD.gamelist_json = " . json_encode([])     . ";\n" ;
-		$outputText_errors .= 'NO GAMELIST.JSON' . "\n";
-	}
-
-	// *******************************************
-	//  Read and load the gamesettings.json file.
-	// *******************************************
-
-	// Was the $gamelistjson_file file found AND was a game selected?
-	// If so, get the game's gamesettings.json file and use it to start loading the values for the game.
-	if( $PHP_VARS['gamelist_json'] && ($PHP_VARS['gamename']) ){
-		// Get game dir.
-		$gamekey          = array_search($qs["game"], array_column($games, 'header_gameChoice'));
-		$thisgame         = $games[$gamekey];
-		$gamedir          = realpath($games[$gamekey]['gamedir']);
-		$relative_gamedir = $games[$gamekey]['gamedir'];
-
-		// Get gamesettings.json.
-		$gamesettings = json_decode(file_get_contents($gamedir."/gamesettings.json"), true);
-
-		// With the gamesettings we should be able to get the path to the game.
-
-		// Does the gamesettings.json file exist?
-		if( file_exists ($gamedir . '/gamesettings.json') ) {
-			$gamesettings = json_decode(file_get_contents($gamedir."/gamesettings.json"), true);
-
-			// Last update to the selected game.
-			$data2 = getLastUpdate($gamedir);
-
-			$PHP_VARS['file_lastUpdate2']      = $data2["file_lastUpdate"]      ;
-			$PHP_VARS['file_lastUpdate_name2'] = $data2["file_lastUpdate_name"] ;
-			$PHP_VARS['age2']                  = $data2["age"]                  ;
-
-			$PHP_VARS['gamesettings_json'] = true ;
-			$PHP_VARS['gameSelected']      = true ;
-			$PHP_VARS['gamedir']           = $gamedir ;
-			$PHP_VARS['relative_gamedir']  = $relative_gamedir ;
-			$PHP_VARS['gamepads']          = $gamepads ? true : false ;
-
-			// Fix the path for gamesettings.
-			//
-
-			// Set the default settings.
-			$PHP_VARS['typeGamepads']                = "nes";
-			$PHP_VARS['numGamepads']                 = 1    ;
-			$PHP_VARS['fps']                         = 30   ;
-			$PHP_VARS['videokernel']                 = "cores/videoMode_A/videoMode_A.js"   ;
-			$PHP_VARS['soundkernel']                 = "cores/soundMode_A/soundMode_A.js"   ;
-			$PHP_VARS['fonts']                       = []   ;
-			$PHP_VARS['mp3_files']                   = []   ;
-			$PHP_VARS['midi_bin']                    = []   ;
-			$PHP_VARS['midi_synths']                 = []   ;
-			$PHP_VARS['graphics_conversionSettings'] = []   ;
-			$PHP_VARS['links']                       = []   ;
-			$PHP_VARS['canvas_scaleFactor']          = 2.0  ;
-			$PHP_VARS['js_files']                    = []   ;
-			$PHP_VARS['debug_files']                 = []   ;
-			$PHP_VARS['INTRO_LOGO']                  = 1    ;
-			$PHP_VARS['VRAM_ADDR_SIZE']              = 1    ;
-			$PHP_VARS['useBG2']                      = false;
-
-			// Override the default settings with values from gamesettings.json.
-			if( isset($gamesettings["typeGamepads"])                ) { $PHP_VARS['typeGamepads']                = $gamesettings["typeGamepads"];                }
-			if( isset($gamesettings["numGamepads"])                 ) { $PHP_VARS['numGamepads']                 = $gamesettings["numGamepads"];                 }
-			if( isset($gamesettings["fps"])                         ) { $PHP_VARS['fps']                         = $gamesettings["fps"];                         }
-			if( isset($gamesettings["videokernel"])                 ) { $PHP_VARS['videokernel']                 = $gamesettings["videokernel"];                 }
-			if( isset($gamesettings["soundkernel"])                 ) { $PHP_VARS['soundkernel']                 = $gamesettings["soundkernel"];                 }
-			if( isset($gamesettings["fonts"])                       ) { $PHP_VARS['fonts']                       = $gamesettings["fonts"];                       }
-			if( isset($gamesettings["mp3_files"])                   ) { $PHP_VARS['mp3_files']                   = $gamesettings["mp3_files"];                   }
-			if( isset($gamesettings["midi_bin"])                    ) { $PHP_VARS['midi_bin']                    = $gamesettings["midi_bin"];                    }
-			if( isset($gamesettings["midi_synths"])                 ) { $PHP_VARS['midi_synths']                 = $gamesettings["midi_synths"];                 }
-			if( isset($gamesettings["graphics_conversionSettings"]) ) { $PHP_VARS['graphics_conversionSettings'] = $gamesettings["graphics_conversionSettings"]; }
-			if( isset($gamesettings["links"])                       ) { $PHP_VARS['links']                       = $gamesettings["links"];                       }
-			if( isset($gamesettings["canvas_scaleFactor"])          ) { $PHP_VARS['canvas_scaleFactor']          = $gamesettings["canvas_scaleFactor"];          }
-			if( isset($gamesettings["js_files"])                    ) { $PHP_VARS['js_files']                    = $gamesettings["js_files"];                    }
-			if( isset($gamesettings["debug_files"])                 ) { $PHP_VARS['debug_files']                 = $gamesettings["debug_files"];                 }
-			if( isset($gamesettings["INTRO_LOGO"])                  ) { $PHP_VARS['INTRO_LOGO']                  = $gamesettings["INTRO_LOGO"];                  }
-			if( isset($gamesettings["VRAM_ADDR_SIZE"])              ) { $PHP_VARS['VRAM_ADDR_SIZE']              = $gamesettings["VRAM_ADDR_SIZE"];              }
-			if( isset($gamesettings["useBG2"])                      ) { $PHP_VARS['useBG2']                      = $gamesettings["useBG2"];                      }
-			if( isset($gamesettings["authors"])                     ) { $PHP_VARS['authors']                     = $gamesettings["authors"];                     }
-
-			// Start-up logo: Get the files from PHP as base64.
-			switch( $PHP_VARS['INTRO_LOGO'] ){
-				case    0 : { $img_filename = '';                                                             break; }
-				case    1 : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = true;  break; }
-				case    2 : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = false; break; }
-				default   : { $img_filename = 'img/jsgamelogo1.png'; $PHP_VARS['INTRO_LOGO_STRETCH'] = true;  break; }
-			};
-			if($img_filename){
-				$image     = file_get_contents($img_filename);
-				$imageData = base64_encode($image);
-				$src       = 'data:'.mime_content_type($img_filename).';base64,'.$imageData;
-				$PHP_VARS['INTRO_LOGO_IMGB64'] = $src;
-			}
-
-			// Output as JavaScript variables.
-			$outputText .= "JSGAME.PRELOAD.gamesettings_json = " . json_encode($gamesettings) . ";\n" ;
-			$outputText .= "JSGAME.PRELOAD.gameselected_json = " . json_encode($thisgame)     . ";\n";
-			$outputText .= "\n";
-
-			// Set the game can load flag.
-			$PHP_VARS['CANLOADGAME']  = true;
-		}
-		else                                    {
-			$outputText        .= "console.log('gamedir:', '".$gamedir."' );" . "\n";
-			$outputText_errors .= "// no gamesettings.json " . "\n";
-		}
-	}
-	else{
-		$outputText_errors .= 'GAME HAS NOT BEEN SELECTED' . "\n";
-	}
-
-	// *** File loading ***
-
-	// If the game can be loaded...
-	if($PHP_VARS['CANLOADGAME']){
-		// Download files combined if specified.
-		if($debug){
-			// Get the list of JSGAME core files?
-			if($combine['jsg'] == 0){
-				$keys = [
-					"game"         => $PHP_VARS['gamename'],
-					"filelistonly" => 1 ,
-					"jsgame"       => 1 ,
-					"video"        => 0 ,
-					"audio"        => 0 ,
-					"gamejs"       => 0 ,
-					"debug"        => 0 ,
-				];
-				$outputText .= ""."JSGAME.PRELOAD_TYPE='DEBUG, game. keys: ".json_encode($keys)."';"."\n\n";
-				$combined = combineFiles_typeByKey($keys);
-
-				foreach($combined as $k => $v){
-					for($i=0; $i<sizeof($combined[$k]); $i+=1){
-						$combined[$k][$i] = str_replace($_appdir."/", "", $combined[$k][$i]);
-					}
-				}
-
-				$PHP_VARS['jsgamefiles'] = $combined['js'] ;
-			}
-
-			// Get the rest of the files.
-			$keys = [
-				"game"         => $PHP_VARS['gamename'],
-				"filelistonly" => 0 ,
-				"jsgame"       => $combine['jsg'] ,
-				"video"        => $combine['v']   ,
-				"audio"        => $combine['a']   ,
-				"gamejs"       => $combine['gjs'] ,
-				"debug"        => 0 , // Debug currently cannot be combined because of the varying file types.
-			];
-			$outputText .= ""."JSGAME.PRELOAD_TYPE='DEBUG, game specified. keys: ".json_encode($keys)."';"."\n\n";
-			$combined = combineFiles_typeByKey($keys);
-			if( isset($combined['js']) ){ $outputText .= $combined['js']; }
-		}
-		// Download all files combined.
-		else{
-			// Only get the JSGAME files. (combined.)
-			$keys = [
-				"game"         => $PHP_VARS['gamename'],
-				"filelistonly" => 0 ,
-				"jsgame"       => $combine['jsg'] , // 1 ,
-				"video"        => $combine['v']   , // 0 ,
-				"audio"        => $combine['a']   , // 0 ,
-				"gamejs"       => $combine['gjs'] , // 0 ,
-				"debug"        => 0 ,
-			];
-			$outputText .= ""."JSGAME.PRELOAD_TYPE='(1) Normal, game specified. keys: ".json_encode($keys)."';"."\n\n";
-			$combined = combineFiles_typeByKey($keys);
-			if( isset($combined['js']) ){ $outputText .= $combined['js']; }
-		}
-	}
-	// If a game has not been specified...
-	else{
-		// Download files combined if specified.
-		if($debug){
-			// Get the list of JSGAME core files?
-			if($debug && $combine['jsg'] == 0){
-				$keys = [
-					"game"         => "", // No game so the video,audio,gamejs,debug will be ignored.
-					"filelistonly" => 1 ,
-					"jsgame"       => 1 ,
-					"video"        => 0 ,
-					"audio"        => 0 ,
-					"gamejs"       => 0 ,
-					"debug"        => 0 ,
-				];
-				$outputText .= ""."JSGAME.PRELOAD_TYPE='DEBUG, no game specified. keys: ".json_encode($keys)."';"."\n\n";
-				$combined = combineFiles_typeByKey($keys);
-
-				foreach($combined as $k => $v){
-					for($i=0; $i<sizeof($combined[$k]); $i+=1){
-						$combined[$k][$i] = str_replace($_appdir."/", "", $combined[$k][$i]);
-					}
-				}
-
-				if( isset($combined['js']) ){ $PHP_VARS['jsgamefiles'] = $combined['js'] ; }
-			}
-
-			// Get the rest of the files.
-			$keys = [
-				"game"         => "", // No game so the video,audio,gamejs,debug will be ignored.
-				"filelistonly" => 0 ,
-				"jsgame"       => $combine['jsg'] ,
-				"video"        => $combine['v']   ,
-				"audio"        => $combine['a']   ,
-				"gamejs"       => $combine['gjs'] ,
-				"debug"        => 0 ,
-			];
-			$outputText .= ""."JSGAME.PRELOAD_TYPE='NORMAL, no game specified. keys: ".json_encode($keys)."';"."\n\n";
-			$combined = combineFiles_typeByKey($keys);
-			if( isset($combined['js']) ){ $outputText .= $combined['js']; }
-		}
-		// Download all files combined.
-		else{
-			// Only get the JSGAME files. (combined.)
-			$keys = [
-				"game"         => "", // No game so the video,audio,gamejs,debug will be ignored.
-				"filelistonly" => 0 ,
-				"jsgame"       => 1 ,
-				"video"        => 0 ,
-				"audio"        => 0 ,
-				"gamejs"       => 0 ,
-				"debug"        => 0 ,
-			];
-			$outputText .= ""."JSGAME.PRELOAD_TYPE='(2) No game specified. keys: ".json_encode($keys)."';"."\n\n";
-			$combined = combineFiles_typeByKey($keys);
-			if( isset($combined['js']) ){ $outputText .= $combined['js']; }
-		}
-	}
-
-	$vars = [
-		"array"   => [] ,
-		"string"  => [] ,
-		"null"    => [] ,
-		"numeric" => [] ,
-		"true"    => [] ,
-		"false"   => [] ,
-		"other"   => [] ,
-	];
-
-	// Add each PHP_VARS value to $vars.
-	foreach($PHP_VARS as $k => $v){
-		if     ( is_array  ($PHP_VARS[$k]) ) { $vars['array'  ][$k] = $PHP_VARS[$k]; }
-		else if( is_string ($PHP_VARS[$k]) ) { $vars['string' ][$k] = $PHP_VARS[$k]; }
-		else if( is_null   ($PHP_VARS[$k]) ) { $vars['null'   ][$k] = $PHP_VARS[$k]; }
-		else if( is_numeric($PHP_VARS[$k]) ) { $vars['numeric'][$k] = $PHP_VARS[$k]; }
-		else{
-			// Make sure that specifically true or false values are not written as 1 or zero.
-			if     ($PHP_VARS[$k]===true) { $vars['true'][$k] = $PHP_VARS[$k];  }
-			else if($PHP_VARS[$k]===false){ $vars['false'][$k] = $PHP_VARS[$k]; }
-			// Other values.
-			else                          { $vars['other'][$k] = $PHP_VARS[$k]; }
-		}
-	}
-
-	// Output and correct the $vars. Use string padding to neaten the output.
-	foreach($vars["array"]   as $k => $v){
-		$js_key = str_pad('JSGAME.PRELOAD.PHP_VARS["'.$k.'"]', 54, " ", STR_PAD_RIGHT);
-		$outputText .= "" . $js_key . " = "  . json_encode($PHP_VARS[$k]) . " ;\n";
-	}
-	foreach($vars["string"]  as $k => $v){
-		$js_key = str_pad('JSGAME.PRELOAD.PHP_VARS["'.$k.'"]', 54, " ", STR_PAD_RIGHT);
-		$outputText .= "" . $js_key . " = '" . $PHP_VARS[$k] . "' ;\n";
-	}
-	foreach($vars["null"]    as $k => $v){
-		$js_key = str_pad('JSGAME.PRELOAD.PHP_VARS["'.$k.'"]', 54, " ", STR_PAD_RIGHT);
-		$outputText .= "" . $js_key . " = null ;\n"  ;
-	}
-	foreach($vars["numeric"] as $k => $v){
-		$js_key = str_pad('JSGAME.PRELOAD.PHP_VARS["'.$k.'"]', 54, " ", STR_PAD_RIGHT);
-		$outputText .= "" . $js_key . " = " . $PHP_VARS[$k] . " ;\n";
-	}
-	foreach($vars["true"]    as $k => $v){
-		$js_key = str_pad('JSGAME.PRELOAD.PHP_VARS["'.$k.'"]', 54, " ", STR_PAD_RIGHT);
-		$outputText .= "" . $js_key . " = true ;\n";
-	}
-	foreach($vars["false"]   as $k => $v){
-		$js_key = str_pad('JSGAME.PRELOAD.PHP_VARS["'.$k.'"]', 54, " ", STR_PAD_RIGHT);
-		$outputText .= "" . $js_key . " = false ;\n";
-	}
-	foreach($vars["other"]   as $k => $v){
-		$js_key = str_pad('JSGAME.PRELOAD.PHP_VARS["'.$k.'"]', 54, " ", STR_PAD_RIGHT);
-		$outputText .= "/*(OTHER)*/ " . $js_key . " = " . $PHP_VARS[$k] . " ;\n";
-	}
-
-	// END: Output the PHP vars as JavaScript vars.
-	$outputText .= "\n";
-	$outputText .= "// ******************************************** \n";
-	$outputText .= "// -------------------------------------------- \n";
-	$outputText .= "\n";
-
-	// Include the PRESETUP.JS
-	$PRESETUP = file_get_contents("cores/JSGAME_core/PRESETUP.js");
-
-	// Include the PRE_INIT.JS
-	$PRE_INIT = file_get_contents("cores/JSGAME_core/PRE_INIT.js");
-
-	$outputText = $PRE_INIT . $PRESETUP . $outputText;
-
-	// $outputText = file_get_contents("cores/JSGAME_core/PRESETUP.js") . $outputText;
-	// $outputText = file_get_contents("cores/JSGAME_core/PRE_INIT.js") . $outputText;
-
-	//
-	$outputText .= "\n";
-
-	// Add the error status(es).
-	if($outputText_errors != ""){
-		$outputText .= "\n\n// ERRORS: \n";
-		$outputText .= "/*\n";
-		$outputText .= trim($outputText_errors);
-		$outputText .= "\n*/\n\n";
-		$outputText .= 'console.log("ERRORS:");' . "\n";
-		$outputText .= 'console.log('.json_encode(($outputText_errors)) . ')';
-		$outputText .= "\n";
-	}
-
-	// If gzencode is availble then use it to compress and send the data.
-	// This may be redundant because Apache does this by default on text files.
-	if (function_exists('gzencode')) {
-		// Set the headers.
-		header('Content-Encoding: gzip');
-		// header("Content-type: plain/text");
-		echo gzencode( $outputText ) ;
-	}
-	// Or just send the data.
-	else{
-		echo $outputText  ;
-	}
-
-}
-
-function preFlightCheck(){
-	global $_appdir;
-
-	$alwaysReMinify=false;
-	// $alwaysReMinify=true;
-
-	// JSGAME core files.
-	$jsgameCoreFiles                = [
-		$_appdir . "/cores/JSGAME_core/" . "PRESETUP.js" ,
-		$_appdir . "/cores/JSGAME_core/" . "PRE_INIT.js" ,
-		$_appdir . "/cores/JSGAME_core/" . "INIT.js"     ,
-		$_appdir . "/cores/JSGAME_core/" . "DOM.js"      ,
-		$_appdir . "/cores/JSGAME_core/" . "FLAGS.js"    ,
-		$_appdir . "/cores/JSGAME_core/" . "GAMEPADS.js" ,
-		$_appdir . "/cores/JSGAME_core/" . "GUI.js"      ,
-		$_appdir . "/cores/JSGAME_core/" . "SHARED.js"   ,
-	];
-	$jsgameCoreCombinedFile         = $_appdir . "/cores/JSGAME_core/core_combined.min.js";
-	$jsgame_CoreCombinedFile_newest = strtotime(getLastUpdate2( dirname($jsgameCoreCombinedFile)      .'/', basename($jsgameCoreCombinedFile)      , false )['file_lastUpdate']);
-	foreach($jsgameCoreFiles       as $k => $v){
-		$data       = getLastUpdate2( dirname($v).'/', basename($v), false ) ;
-		$lastUpdate = strtotime($data['file_lastUpdate']);
-		if($alwaysReMinify || $lastUpdate >= $jsgame_CoreCombinedFile_newest){
-			minifiy_files($jsgameCoreFiles , $jsgameCoreCombinedFile, "cores/JSGAME_core/");
-			break;
-		}
-	}
-
-	// JSGAME: soundMode_A
-	$soundMode_A_CoreFiles               = [$_appdir . "/cores/soundMode_A/" . "soundMode_A.js" ] ;
-	$soundMode_A_CoreCombinedFile        = $_appdir . "/cores/soundMode_A/soundMode_A_combined.min.js" ;
-	$soundMode_A_CoreCombinedFile_newest = strtotime(getLastUpdate2( dirname($soundMode_A_CoreCombinedFile).'/', basename($soundMode_A_CoreCombinedFile), false )['file_lastUpdate']);
-	foreach($soundMode_A_CoreFiles as $k => $v){
-		$data       = getLastUpdate2( dirname($v).'/', basename($v), false ) ;
-		$lastUpdate = strtotime($data['file_lastUpdate']);
-		if($alwaysReMinify || $lastUpdate >= $soundMode_A_CoreCombinedFile_newest){
-			minifiy_files($soundMode_A_CoreFiles , $soundMode_A_CoreCombinedFile, "cores/soundMode_A/");
-			break;
-		}
-	}
-
-	// JSGAME: soundMode_B
-	$soundMode_B_CoreFiles        = [$_appdir . "/cores/soundMode_B/" . "soundMode_B.js" ] ;
-	$soundMode_B_CoreCombinedFile = $_appdir . "/cores/soundMode_B/soundMode_B_combined.min.js" ;
-	$soundMode_B_CoreCombinedFile_newest = strtotime(getLastUpdate2( dirname($soundMode_B_CoreCombinedFile).'/', basename($soundMode_B_CoreCombinedFile), false )['file_lastUpdate']);
-	foreach($soundMode_B_CoreFiles as $k => $v){
-		$data       = getLastUpdate2( dirname($v).'/', basename($v), false ) ;
-		$lastUpdate = strtotime($data['file_lastUpdate']);
-		if($alwaysReMinify || $lastUpdate >= $soundMode_B_CoreCombinedFile_newest){
-			minifiy_files($soundMode_B_CoreFiles , $soundMode_B_CoreCombinedFile, "cores/soundMode_B/");
-			break;
-		}
-	}
-
-	// JSGAME: videoMode_A
-	$videoMode_A_CoreFiles        = [$_appdir . "/cores/videoMode_A/" . "videoMode_A.js" ] ;
-	$videoMode_A_CoreCombinedFile = $_appdir . "/cores/videoMode_A/videoMode_A_combined.min.js" ;
-	$videoMode_A_CoreCombinedFile_newest = strtotime(getLastUpdate2( dirname($videoMode_A_CoreCombinedFile).'/', basename($videoMode_A_CoreCombinedFile), false )['file_lastUpdate']);
-	foreach($videoMode_A_CoreFiles as $k => $v){
-		$data       = getLastUpdate2( dirname($v).'/', basename($v), false ) ;
-		$lastUpdate = strtotime($data['file_lastUpdate']);
-		if($alwaysReMinify || $lastUpdate >= $videoMode_A_CoreCombinedFile_newest){
-			minifiy_files($videoMode_A_CoreFiles , $videoMode_A_CoreCombinedFile, "cores/videoMode_A/");
-			break;
-		}
-	}
-
-	// JSGAME: videoMode_B
-	$videoMode_B_CoreFiles        = [$_appdir . "/cores/videoMode_B/" . "videoMode_B.js" ] ;
-	$videoMode_B_CoreCombinedFile = $_appdir . "/cores/videoMode_B/videoMode_B_combined.min.js" ;
-	$videoMode_B_CoreCombinedFile_newest = strtotime(getLastUpdate2( dirname($videoMode_B_CoreCombinedFile).'/', basename($videoMode_B_CoreCombinedFile), false )['file_lastUpdate']);
-	foreach($videoMode_B_CoreFiles as $k => $v){
-		$data       = getLastUpdate2( dirname($v).'/', basename($v), false ) ;
-		$lastUpdate = strtotime($data['file_lastUpdate']);
-		if($alwaysReMinify || $lastUpdate >= $videoMode_B_CoreCombinedFile_newest){
-			minifiy_files($videoMode_B_CoreFiles , $videoMode_B_CoreCombinedFile, "cores/videoMode_B/");
-			break;
-		}
-	}
-
-	// JSGAME: videoMode_C
-	$videoMode_C_CoreFiles        = [$_appdir . "/cores/videoMode_C/" . "videoMode_C.js" ] ;
-	$videoMode_C_CoreCombinedFile = $_appdir . "/cores/videoMode_C/videoMode_C_combined.min.js" ;
-	$videoMode_C_CoreCombinedFile_newest = strtotime(getLastUpdate2( dirname($videoMode_C_CoreCombinedFile).'/', basename($videoMode_C_CoreCombinedFile), false )['file_lastUpdate']);
-	foreach($videoMode_C_CoreFiles as $k => $v){
-		$data       = getLastUpdate2( dirname($v).'/', basename($v), false ) ;
-		$lastUpdate = strtotime($data['file_lastUpdate']);
-		if($alwaysReMinify || $lastUpdate >= $videoMode_C_CoreCombinedFile_newest){
-			minifiy_files($videoMode_C_CoreFiles , $videoMode_C_CoreCombinedFile, "cores/videoMode_C/");
-			break;
-		}
-	}
-
-	return [
-		"jsgameCore"     => $jsgameCoreCombinedFile       ,
-		"soundMode_A.js" => $soundMode_A_CoreCombinedFile ,
-		"soundMode_B.js" => $soundMode_B_CoreCombinedFile ,
-		"videoMode_A.js" => $videoMode_A_CoreCombinedFile ,
-		"videoMode_B.js" => $videoMode_B_CoreCombinedFile ,
-		"videoMode_C.js" => $videoMode_C_CoreCombinedFile ,
-	];
-};
 
 ?>
