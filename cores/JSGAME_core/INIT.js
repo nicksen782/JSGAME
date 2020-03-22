@@ -415,6 +415,7 @@ JSGAME.INIT={
 
 		// Start the game.
 		console.log("=======================================\n\n");
+
 		JSGAME.SHARED.raf_id=requestAnimationFrame( gamestartFunction );
 	},
 

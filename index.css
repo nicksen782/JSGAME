@@ -301,15 +301,22 @@ div#btn_reload {
     transform-origin: right;
 }
 
-.pause { background: url("img/spritemap.png") -0px  -0px no-repeat; }
-.play  { background: url("img/spritemap.png") -16px -0px no-repeat; }
-.caret { background: url("img/spritemap.png") -32px -0px no-repeat; }
-.reload{ background: url("img/spritemap.png") -48px -0px no-repeat; }
+.pause { background-color:#5d5c5c !important; background: url("img/spritemap.png") -0px  -0px no-repeat; cursor:pointer; }
+.play  { background-color:#5d5c5c !important; background: url("img/spritemap.png") -16px -0px no-repeat; cursor:pointer; }
+.caret { background-color:#5d5c5c !important; background: url("img/spritemap.png") -32px -0px no-repeat; cursor:pointer; }
+.reload{ background-color:#5d5c5c !important; background: url("img/spritemap.png") -48px -0px no-repeat; cursor:pointer; }
 
+.pause :hover{ background-color:#5d5c5ca3 !important; }
+.play  :hover{ background-color:#5d5c5ca3 !important; }
+.caret :hover{ background-color:#5d5c5ca3 !important; }
+.reload:hover{ background-color:#5d5c5ca3 !important; }
+
+/*
 .pause:hover  { background: url("img/spritemap.png") -0px  -16px no-repeat; }
 .play:hover   { background: url("img/spritemap.png") -16px -16px no-repeat; }
 .caret:hover  { background: url("img/spritemap.png") -32px -16px no-repeat; }
 .reload:hover { background: url("img/spritemap.png") -48px -16px no-repeat; }
+*/
 
 div#topBar_line1_buttons {
     position: absolute;

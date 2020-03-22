@@ -45,10 +45,8 @@ function API_REQUEST( $api, $type ){
 	$o_values = [] ;
 
 	// APIs
-	// $o_values["init"]            = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
 	$o_values["gzip_getFile"]    = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
 	$o_values["init2"]           = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
-	// $o_values["preFlightCheck2"] = [ "p"=>( ( $public ) ? true : false ), 'get'=>1, 'post'=>1, 'cmd'=>0 ] ;
 
 	// DETERMINE IF THE API IS AVAILABLE TO THE USER.
 
@@ -84,147 +82,17 @@ function API_REQUEST( $api, $type ){
 
 }
 
-// Can return a file list or file data based on the keys provided.
-function combineFiles_typeByKey($keys){
-	global $_appdir;
-
-	$output=[
-		"js"    => "" ,
-		"css"   => "" ,
-		"php"   => "" ,
-		"html"  => "" ,
-	];
-
-	$filesByExt=[
-		"js"   => [] ,
-		"css"  => [] ,
-		"php"  => [] ,
-		"html" => [] ,
-	];
-
-	$filesToGet=[
-	];
-
-	$game         = $keys["game"]         ? $keys["game"] : "" ;
-	$filelistonly = $keys["filelistonly"] ? 1             : 0  ;
-	$get_jsgame   = $keys["jsgame"]       ? 1             : 0  ;
-	$get_video    = $keys["video"]        ? 1             : 0  ;
-	$get_audio    = $keys["audio"]        ? 1             : 0  ;
-	$get_gamejs   = $keys["gamejs"]       ? 1             : 0  ;
-	$get_debug    = $keys["debug"]        ? 1             : 0  ;
-
-	// Add JSGAME core files.
-	if($get_jsgame){
-		// array_push($filesToGet, $_appdir . "/cores/JSGAME_core/PRESETUP.js"   );
-		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/FLAGS.js"   );
-		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/SHARED.js"  );
-		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/DOM.js"     );
-		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/INIT.js"    );
-		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/GUI.js"     );
-		array_push($filesToGet, $_appdir . "/cores/JSGAME_core/GAMEPADS.js");
-	}
-
-	// If a game was specified then try to load game files.
-	if($game){
-		// Get gamelist.json.
-		$gamelist = json_decode(file_get_contents("gamelist.json"), true)['games'];
-		$gamekey  = array_search($game, array_column($gamelist, 'header_gameChoice'));
-		$gamedir  = realpath($gamelist[$gamekey]['gamedir']);
-
-		// Get gamesettings.json.
-		$gamesettings = json_decode(file_get_contents($gamedir."/gamesettings.json"), true);
-
-		// Add video core.
-		if($get_video){
-			if(isset($gamesettings["videokernel"])){
-				$file = realpath( $_appdir . "/" . $gamesettings["videokernel"] );
-				if($file !== false){ array_push($filesToGet, $file); }
-				// else { exit("file not found: " . $file); }
-			}
-		}
-
-		// Add sound core.
-		if($get_audio){
-			if(isset($gamesettings["soundkernel"])){
-				$file = realpath( $_appdir . "/" . $gamesettings["soundkernel"] );
-				if($file !== false){ array_push($filesToGet, $file); }
-				// else { exit("file not found: " . $file); }
-			}
-		}
-
-		// Add game js files.
-		if($get_gamejs){
-			if(isset($gamesettings["js_files"])){
-				for($i=0; $i<sizeof($gamesettings["js_files"]); $i+=1){
-					$file = realpath( $gamedir . "/" . $gamesettings["js_files"][$i] );
-					if($file !== false){ array_push($filesToGet, $file); }
-					// else { exit("file not found: " . $file); }
-				}
-			}
-		}
-
-		// Maybe later?
-		// midi_bin
-		// graphics_files
-		// mp3_files
-
-		// Add the debug files (do not use yet.)
-		// if($get_debug){
-		// 	if(isset($gamesettings["debug_files"])){
-		// 		for($i=0; $i<sizeof($gamesettings["debug_files"]); $i+=1){
-		// 			$file = realpath( $gamedir . "/" . $gamesettings["debug_files"][$i] );
-		// 			if($file !== false){ array_push($filesToGet, $file); }
-		// 			// else { exit("file not found: " . $file); }
-		// 		}
-		// 	}
-		// }
-
-	}
-
-	// Make sure there are files.
-	if(!sizeof($filesToGet)){ return ""; }
-
-	// Combine the files.
-	for($i=0; $i<sizeof($filesToGet); $i+=1){
-		// Get this file.
-		$file = $filesToGet[$i];
-
-		// Block invalid paths.
-		if (strpos($file, '..') !== false) { exit( "NOT ALLOWED!" ); }
-
-		// Get the extension.
-		$ext = pathinfo($file, PATHINFO_EXTENSION);
-
-		// Add the file to $filesByExt[$ext].
-		if($filelistonly){
-			// Create the extension key if it does not exist.
-			if( ! isset($filesByExt[$ext]) ){ $filesByExt[$ext] = []; }
-			array_push($filesByExt[$ext], $file);
-		}
-
-		// Add the data to $output[$ext] key.
-		else{
-			// Create the extension key if it does not exist.
-			if( ! isset($output[$ext])     ){ $output[$ext] = ""; }
-			$output[$ext] .= file_get_contents($file) . "\n\n\n" ;
-		}
-	}
-
-	// Return the data.
-	if($filelistonly){ return $filesByExt; }
-	else             { return $output;     }
-}
-
 function getLastUpdate($path){
 	// http://man7.org/linux/man-pages/man1/find.1.html
 
 	global $_appdir;
 
 	$skipThese = "" .
-	"-not -name '*.min.js*' " .
-	"-not -path '*/test.php' "          .
-	"-not -path '*/\.git*'    "         .
-	"-not -path '*/\docs**'   "         .
+	"-not -name '*.min.js*' "        .
+	"-not -name 'JSGAME-error.txt' " .
+	"-not -path '*/test.php' "       .
+	"-not -path '*/\.git*'  "        .
+	"-not -path '*/\docs**' "        .
 	"";
 
 	$latestVersion = trim( shell_exec(" find " . $path . " -type f ".$skipThese." -printf '%CY-%Cm-%Cd %CH:%CM:%CS (%CZ) %p\n'| sort -n | tail -n1 ") );
@@ -260,7 +128,6 @@ function getLastUpdate($path){
 		"age"                  => trim($age)                                            ,
 	];
 };
-
 
 // Utility to correct data types (used by: init).
 function correctDataTypes($data){
@@ -306,12 +173,6 @@ function gzip_getFile(){
 			strpos($realpath, $_gamesdir) === false
 		){
 			exit( "PATH IS NOT ALLOWED!");
-			// exit( "PATH IS NOT ALLOWED!" .
-				// "\nfile     : " . $file .
-				// "\nrealpath : " . $realpath .
-				// "\n_appdir  : " . $_appdir .
-				// "\n_gamesdir: " . $_gamesdir
-			// );
 		}
 	}
 
@@ -342,6 +203,7 @@ function getLastUpdate2($path, $file, $skip){
 
 	$skipThese = "" .
 	"-not -name 'combined.min.js.map' " .
+	"-not -name 'JSGAME-error.txt'    " .
 	"-not -path '*/test.php' "          .
 	"-not -path '*/\.git*'   "          .
 	"-not -path '*/\docs**'  "          .
@@ -376,25 +238,27 @@ function getLastUpdate2($path, $file, $skip){
 		( ($age->s !=0) ? ($age->s . " Seconds"  ) : "")
 	;
 
-	//
 	return [
-		"file_lastUpdate_unix" => strtotime($file_lastUpdate)             ,
-		"file_lastUpdate"      => trim($file_lastUpdate)                  ,
-		"file_lastUpdate_name" => basename( trim($file_lastUpdate_name) ) ,
-		"age"                  => trim($age)                              ,
+		"file_lastUpdate_unix" => strtotime($file_lastUpdate)            ,
+		"file_lastUpdate"      => trim     ($file_lastUpdate)            ,
+		"file_lastUpdate_name" => basename (trim($file_lastUpdate_name)) ,
+		"age"                  => trim     ($age)                        ,
 	];
-};
-function minifiy_files($files, $newFile, $newBasepath){
-	// Minifies the specified files. Stores the results in a "min" directory.
 
+};
+
+function minifiy_file2($orgFile, $minFile, $sourceMappingURL, $sourcesURL, $mapsURL, $appstart){
+	// Minifies the specified files. Stores the results in a "min" directory.
 	global $_appdir;
 
 	// Start the command.
-	$cmd = " cd $_appdir && terser " . " " ;
+	$cmd = " cd " . ($appstart) . " && terser " . " " ;
 
-	// Create the "min" directory if it does not already exist.
-	$newPath = $_appdir . "/" . $newBasepath . "/min";
-	if(! file_exists( $newPath ) ) {
+	// NORMAL USAGE
+	// Create the "minified" directory if it does not already exist.
+	$newPath = $appstart . '/cores/minified' ;
+
+	if(! file_exists($newPath) ) {
 		$oldmask = umask(0);
 		mkdir($newPath, 0777);
 		chmod($newPath, 0777);
@@ -402,72 +266,50 @@ function minifiy_files($files, $newFile, $newBasepath){
 	}
 
 	// Add the files to the command.
-	foreach($files as $k => $v){ $cmd .= ( $newBasepath . basename($files[$k]) ) . " "; }
+	$cmd .= str_replace( $_appdir.'/', "", $orgFile ) . " ";
 
 	// Finish the command (adding in the output file value.)
-	$referer       = explode("?", $_SERVER['HTTP_REFERER'])[0];
-	$sourcemapRoot = $referer ;
-	$sourcemapUrl  = $referer . ( $newBasepath . "min/" . basename($newFile) ) . ".map";
-	$output        = ( $newBasepath . "min/" . basename($newFile) ) ;
-
-	$cmd .= ""            .                                                  //
-	" --compress "        .                                                  // Enable compressor
-	" --mangle "          .                                                  // Mangle names
-	" --keep-classnames " .                                                  // Do not mangle/drop class names.
-	" --keep-fnames "     .                                                  // Do not mangle/drop function names.
-	" --output "          . $output .                                        // Output file
-	" --source-map \"root='".$sourcemapRoot."',url='".$sourcemapUrl."'\" " . // Enable source map
-	" 2>&1" ;
+	$cmd .= ""            .
+	" --compress "        .                            // Enable compressor
+	" --mangle "          .                            // Mangle names
+	" --keep-classnames " .                            // Do not mangle/drop class names.
+	" --keep-fnames "     .                            // Do not mangle/drop function names.
+	" --output "          . $minFile .                 // Output file
+	" --source-map "      .                            // Enable source map
+	"\"" .
+	" root='"             . $sourcesURL ."'," .        // Source map settings
+	" url='"              . $sourceMappingURL  ."' " . // Source map settings
+	"\"" . "" ;
+	$cmd .= " 2>&1" ;
 
 	// Run the command.
 	$oldmask = umask(0);
 	$exec_cmd=$cmd;
 	$exec_res = exec($exec_cmd, $exec_out, $exec_ret);
 
-	$js_output  = realpath($output);
-	$map_output = realpath($output) . ".map";
+	$js_output  = ( dirname($minFile) . '/' . basename($minFile) );
+	$map_output = ( dirname($minFile) . '/' . basename($minFile) ) . ".map";
 
+	// Change the permissions on the new minified file.
 	if( ! @chmod( $js_output , 0777) ){
-		echo 'pwd   : ' . getcwd()  . "\n";
-		echo '_appdir   : ' . $_appdir  . "\n";
-		echo 'output   : ' . $output  . "\n";
-		echo 'js_output   : ' . $js_output  . "\n";
-		echo 'map_output  : ' . $map_output . "\n";
-		echo 'cmd         : ' . $cmd . "\n";
-		echo "files       : "; print_r($files); echo "\n";
-		echo "newFile     : " . $newFile     . "\n";
-		echo "newBasepath : " . $newBasepath . "\n";
-		echo "\n";
-		echo "exec_res:" ; print_r($exec_res); echo "\n";
-		echo "exec_cmd:" ; print_r($exec_cmd); echo "\n";
-		echo "exec_out:" ; print_r($exec_out); echo "\n";
-		echo "exec_ret:" ; print_r($exec_ret); echo "\n";
-
+		echo "ERROR WITH CHMOD AND MINIFIED OUTPUT\n";
+		print_r($exec_out); echo "\n";
+		echo $exec_ret; echo "\n";
 		exit();
 	}
+	// Change the permissions on the new source map file.
 	if( ! @chmod( $map_output, 0777) ){
-		echo 'pwd   : ' . getcwd()  . "\n";
-		echo '_appdir   : ' . $_appdir  . "\n";
-		echo 'output   : ' . $output  . "\n";
-		echo 'js_output   : ' . $js_output  . "\n";
-		echo 'map_output  : ' . $map_output . "\n";
-		echo 'cmd         : ' . $cmd . "\n";
-		echo "files       : "; print_r($files); echo "\n";
-		echo "newFile     : " . $newFile     . "\n";
-		echo "newBasepath : " . $newBasepath . "\n";
-		echo "\n";
-		echo "exec_res:" ; print_r($exec_res); echo "\n";
-		echo "exec_cmd:" ; print_r($exec_cmd); echo "\n";
-		echo "exec_out:" ; print_r($exec_out); echo "\n";
-		echo "exec_ret:" ; print_r($exec_ret); echo "\n";
+		echo "ERROR WITH CHMOD AND MINIFIED OUTPUT MAP\n";
+		print_r($exec_out); echo "\n";
+		echo $exec_ret; echo "\n";
 		exit();
 	}
-
 	umask($oldmask);
 
 	return $cmd;
 }
-function preFlightCheck2( $input=[] ){
+
+function preFlightCheck3( ){
 	// Updates the minified versions of files as needed.
 	// Also returns the filenames of each minified file.
 
@@ -478,106 +320,175 @@ function preFlightCheck2( $input=[] ){
 
 	$output=[];
 
-	// If an input array was specified then use it. Otherwise, use the built-in input array.
-	if( ! (is_array($input) && count($input)) ){
-		$input = [
-			// JSGAME CORE FILES
-			"PRESETUP.js"    => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"PRESETUP.min.js"   , "orgFile"=>"PRESETUP.js"    ] ,
-			"PRE_INIT.js"    => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"PRE_INIT.min.js"   , "orgFile"=>"PRE_INIT.js"    ] ,
-			"INIT.js"        => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"INIT.min.js"       , "orgFile"=>"INIT.js"        ] ,
-			"DOM.js"         => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"DOM.min.js"        , "orgFile"=>"DOM.js"         ] ,
-			"FLAGS.js"       => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"FLAGS.min.js"      , "orgFile"=>"FLAGS.js"       ] ,
-			"GAMEPADS.js"    => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"GAMEPADS.min.js"   , "orgFile"=>"GAMEPADS.js"    ] ,
-			"GUI.js"         => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"GUI.min.js"        , "orgFile"=>"GUI.js"         ] ,
-			"SHARED.js"      => [ "key"=>"jsgameCore", "web_srcPath"=>"cores/JSGAME_core/", "server_srcPath"=>($_appdir . "/cores/JSGAME_core/"), "minFile"=>"SHARED.min.js"     , "orgFile"=>"SHARED.js"      ] ,
+	// Use the built-in input array.
+	$referrer = explode("?", $_SERVER['HTTP_REFERER'])[0];
+	$input = [
+		// "force"      // Force minification of this file.
+		// "key"        // Output key.
+		// "appstart"   // Path that other paths should be relative to.
+		// "orgFile"    // Server path to the original file.
+		// "minFile"    // Server path to the minified file.
+		// "sourcesURL" //
+		// "mapFile"    // Web absolute path to the source map.
+		// "mapsURL"    //
 
-			// SOUND A MODE FILES
-			"soundMode_A.js"           => [ "key"=>"soundMode_A.js", "web_srcPath"=>"cores/soundMode_A/", "server_srcPath"=>($_appdir . "/cores/soundMode_A/"), "minFile"=>"soundMode_A.min.js"          , "orgFile"=>"soundMode_A.js"           ] ,
-
-			// SOUND B MODE FILES
-			"soundMode_B.js"           => [ "key"=>"soundMode_B.js", "web_srcPath"=>"cores/soundMode_B/", "server_srcPath"=>($_appdir . "/cores/soundMode_B/"), "minFile"=>"soundMode_B.min.js"          , "orgFile"=>"soundMode_B.js"           ] ,
-
-			// VIDEO A MODE FILES
-			"videoMode_A.js"           => [ "key"=>"videoMode_A.js", "web_srcPath"=>"cores/videoMode_A/", "server_srcPath"=>($_appdir . "/cores/videoMode_A/"), "minFile"=>"videoMode_A.min.js"          , "orgFile"=>"videoMode_A.js"           ] ,
-			"videoMode_A_webworker.js" => [ "key"=>"videoMode_A.js", "web_srcPath"=>"cores/videoMode_A/", "server_srcPath"=>($_appdir . "/cores/videoMode_A/"), "minFile"=>"videoMode_A_webworker.min.js", "orgFile"=>"videoMode_A_webworker.js" ] ,
-
-			// VIDEO B MODE FILES
-			"videoMode_B.js"           => [ "key"=>"videoMode_B.js", "web_srcPath"=>"cores/videoMode_B/", "server_srcPath"=>($_appdir . "/cores/videoMode_B/"), "minFile"=>"videoMode_B.min.js"          , "orgFile"=>"videoMode_B.js"           ] ,
-
-			// VIDEO C MODE FILES
-			"videoMode_C.js"           => [ "key"=>"videoMode_C.js", "web_srcPath"=>"cores/videoMode_C/", "server_srcPath"=>($_appdir . "/cores/videoMode_C/"), "minFile"=>"videoMode_C.min.js"          , "orgFile"=>"videoMode_C.js"           ] ,
-			"videoMode_C_webworker.js" => [ "key"=>"videoMode_C.js", "web_srcPath"=>"cores/videoMode_C/", "server_srcPath"=>($_appdir . "/cores/videoMode_C/"), "minFile"=>"videoMode_C_webworker.min.js", "orgFile"=>"videoMode_C_webworker.js" ] ,
-		];
-	}
+		// JSGAME CORE FILES
+		"PRESETUP.js"              => [ "force"=>false, "key"=>"jsgameCore"    , "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/JSGAME_core/PRESETUP.js"             , "minFile"=>$_appdir . "/cores/minified/PRESETUP.min.js"             , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/PRESETUP.min.js.map",              "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"PRE_INIT.js"              => [ "force"=>false, "key"=>"jsgameCore"    , "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/JSGAME_core/PRE_INIT.js"             , "minFile"=>$_appdir . "/cores/minified/PRE_INIT.min.js"             , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/PRE_INIT.min.js.map",              "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"INIT.js"                  => [ "force"=>false, "key"=>"jsgameCore"    , "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/JSGAME_core/INIT.js"                 , "minFile"=>$_appdir . "/cores/minified/INIT.min.js"                 , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/INIT.min.js.map",                  "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"DOM.js"                   => [ "force"=>false, "key"=>"jsgameCore"    , "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/JSGAME_core/DOM.js"                  , "minFile"=>$_appdir . "/cores/minified/DOM.min.js"                  , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/DOM.min.js.map",                   "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"FLAGS.js"                 => [ "force"=>false, "key"=>"jsgameCore"    , "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/JSGAME_core/FLAGS.js"                , "minFile"=>$_appdir . "/cores/minified/FLAGS.min.js"                , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/FLAGS.min.js.map",                 "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"GAMEPADS.js"              => [ "force"=>false, "key"=>"jsgameCore"    , "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/JSGAME_core/GAMEPADS.js"             , "minFile"=>$_appdir . "/cores/minified/GAMEPADS.min.js"             , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/GAMEPADS.min.js.map",              "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"GUI.js"                   => [ "force"=>false, "key"=>"jsgameCore"    , "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/JSGAME_core/GUI.js"                  , "minFile"=>$_appdir . "/cores/minified/GUI.min.js"                  , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/GUI.min.js.map",                   "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"SHARED.js"                => [ "force"=>false, "key"=>"jsgameCore"    , "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/JSGAME_core/SHARED.js"               , "minFile"=>$_appdir . "/cores/minified/SHARED.min.js"               , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/SHARED.min.js.map",                "mapsURL"=>$referrer . "cores/minified/", ] ,
+		// SOUND A MODE FILES
+		"soundMode_A.js"           => [ "force"=>false, "key"=>"soundMode_A.js", "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/soundMode_A/soundMode_A.js"          , "minFile"=>$_appdir . "/cores/minified/soundMode_A.min.js"          , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/soundMode_A.min.js.map",           "mapsURL"=>$referrer . "cores/minified/", ] ,
+		// SOUND B MODE FILES
+		"soundMode_B.js"           => [ "force"=>false, "key"=>"soundMode_B.js", "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/soundMode_B/soundMode_B.js"          , "minFile"=>$_appdir . "/cores/minified/soundMode_B.min.js"          , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/soundMode_B.min.js.map",           "mapsURL"=>$referrer . "cores/minified/", ] ,
+		// VIDEO A MODE FILES
+		"videoMode_A.js"           => [ "force"=>false, "key"=>"videoMode_A.js", "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/videoMode_A/videoMode_A.js"          , "minFile"=>$_appdir . "/cores/minified/videoMode_A.min.js"          , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/videoMode_A.min.js.map",           "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"videoMode_A_webworker.js" => [ "force"=>false, "key"=>"videoMode_A.js", "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/videoMode_A/videoMode_A_webworker.js", "minFile"=>$_appdir . "/cores/minified/videoMode_A_webworker.min.js", "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/videoMode_A_webworker.min.js.map", "mapsURL"=>$referrer . "cores/minified/", ] ,
+		// VIDEO B MODE FILES
+		"videoMode_B.js"           => [ "force"=>false, "key"=>"videoMode_B.js", "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/videoMode_B/videoMode_B.js"          , "minFile"=>$_appdir . "/cores/minified/videoMode_B.min.js"          , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/videoMode_B.min.js.map",           "mapsURL"=>$referrer . "cores/minified/", ] ,
+		// VIDEO C MODE FILES
+		"videoMode_C.js"           => [ "force"=>false, "key"=>"videoMode_C.js", "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/videoMode_C/videoMode_C.js"          , "minFile"=>$_appdir . "/cores/minified/videoMode_C.min.js"          , "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/videoMode_C.min.js.map",           "mapsURL"=>$referrer . "cores/minified/", ] ,
+		"videoMode_C_webworker.js" => [ "force"=>false, "key"=>"videoMode_C.js", "appstart"=>$_appdir, "orgFile"=>$_appdir  . "/cores/videoMode_C/videoMode_C_webworker.js", "minFile"=>$_appdir . "/cores/minified/videoMode_C_webworker.min.js", "sourcesURL"=>$referrer, "mapFile"=>$referrer . "cores/minified/videoMode_C_webworker.min.js.map", "mapsURL"=>$referrer . "cores/minified/", ] ,
+	];
 
 	$_MINIFICATIONS = [];
-	// $_FILES         = [];
 
 	$_TOTALMINTIME_time_start = microtime(true);
 	foreach($input as $k => $v){
-		$rec            = $input[$k]             ;
-		$server_srcPath = $rec["server_srcPath"] ;
-		$web_srcPath    = $rec["web_srcPath"]    ;
-		$orgFile        = $rec["orgFile"]        ;
-		$minFile        = $rec["minFile"]        ;
-		$key            = $rec["key"]            ;
+		$rec        = $input[$k]         ;
+		$force      = $rec["force"]      ;
+		$key        = $rec["key"]        ;
+		$orgFile    = $rec["orgFile"]    ;
+		$minFile    = $rec["minFile"]    ;
+		$mapFile    = $rec["mapFile"]    ;
+		$sourcesURL = $rec["sourcesURL"] ;
+		$mapsURL    = $rec["mapsURL"]    ;
+		$appstart   = $rec["appstart"]   ;
 
 		// Skip the file if it does not exist.
-		$fullOrgFilePath = $server_srcPath . $orgFile ;
-		if( ! file_exists( $fullOrgFilePath ) ) { continue; }
+		if( ! file_exists( $orgFile ) ) { continue; }
 
-		$data_org = getLastUpdate2( $server_srcPath, $orgFile, false ) ;
-		$data_min = getLastUpdate2( $server_srcPath, "/min/" . $minFile, false ) ;
+		$data_org = getLastUpdate2( dirname($orgFile).'/', basename($orgFile), false ) ;
+		$data_min = getLastUpdate2( dirname($minFile).'/', basename($minFile), false ) ;
 
+		// If the minified version does not exist then the 'file_lastUpdate' value will be blank.
+		// This means the minified version is missing and must be created.
+		$createMissingMinifiedFile = false;
+		if( !$data_min['file_lastUpdate'] ){ $createMissingMinifiedFile = true; }
+
+		//
 		$lastUpdate_data_org = $data_org['file_lastUpdate_unix'] ;
 		$lastUpdate_data_min = $data_min['file_lastUpdate_unix'] ;
 
 		// Create the array key in $output if the key does not already exist.
+		$basename   = basename($orgFile) ;
 		if( !is_array( $output[$key] ) ) { $output[$key] = [] ; }
+		if( !is_array( $output[$key][$basename] ) ) { $output[$key][$basename] = [] ; }
 
 		// Is the original file newer than the minified version?
-		if( $alwaysReMinify || ($lastUpdate_data_org > $lastUpdate_data_min) ){
-			$arg1 = [$server_srcPath . $orgFile] ; // $files
-			$arg2 =  $server_srcPath . $minFile  ; // $newFile
-			$arg3 =  $web_srcPath                ; // $newBasepath
+		if(
+			($alwaysReMinify      || $createMissingMinifiedFile) ||
+			($lastUpdate_data_org >  $lastUpdate_data_min) ||
+			$force==true
+		){
+			$arg1 = $orgFile    ; //
+			$arg2 = $minFile    ; //
+			$arg3 = $mapFile    ; //
+			$arg4 = $sourcesURL ; //
+			$arg5 = $mapsURL    ; //
+			$arg6 = $appstart   ; //
 
 			$time_start = microtime(true);
-			$cmd = minifiy_files($arg1, $arg2, $arg3);
-			$time_end = microtime(true);
-			$time = $time_end - $time_start;
+			$cmd        = minifiy_file2($arg1, $arg2, $arg3, $arg4, $arg5, $arg6);
+			$time_end   = microtime(true);
+			$time       = $time_end - $time_start;
 
-			array_push($_MINIFICATIONS, [
-				"orgFile"            => $orgFile  ,
+			// Create the new record.
+			$newRecord = [
+				"orgFile"            => basename($orgFile)  ,
 				"minificationTime"   => floatval( number_format($time, 3, '.', '') ) ,
 				"lastUpdate_data_org"=> $data_org ,
 				"lastUpdate_data_min"=> $data_min ,
-				"cmd"                => $cmd      ,
-			]);
+			];
+
+			// Add the minifiy command if this is the devServer.
+			if($devServer){ $newRecord['cmd'] = $cmd; }
+
+			// Add the record.
+			array_push($_MINIFICATIONS, $newRecord);
+
+			// Clear the temporary record.
+			unset($newRecord);
 		}
 
 		// Add the data to the $output.
-		$output[$key][$orgFile] =  $server_srcPath . 'min/' . $minFile;
-
-		// array_push($_FILES, [
-		// 	"orgFile"            => $orgFile  ,
-		// 	"lastUpdate_data_org"=> $data_org ,
-		// ]);
-
+		$output[$key][ basename($orgFile) ] = $minFile;
 	}
 	$_TOTALMINTIME_time_end = microtime(true);
 	$_TOTALMINTIME = $_TOTALMINTIME_time_end - $_TOTALMINTIME_time_start;
 
 	$output["_TOTALMINTIME"]  = $_TOTALMINTIME  ;
 	$output["_MINIFICATIONS"] = $_MINIFICATIONS ;
-	// $output["_FILES"]         = $_FILES         ;
+	$output["_referrer"]      = $referrer ;
 
 	return $output;
+}
+
+function removeCommentsFromFile( $filepath ){
+	// Regex patterns.
+	$regex = [
+		// (pattern                            , replace)
+		[ '/\r\n/'                             , "\n"   ] , // Normalize to Unix line endings.
+		[ '/  +/'                              , ""     ] , // Multiple spaces (to become 0 spaces)
+		[ '/^\s+|\s+$/'                        , ""     ] , // Strip leading and trailing spaces
+		[ '/\t/'                               , ""     ] , // Remove tabs.
+		['#^\s*//.+$#m'                        , ""     ] , // Single-line comments ( // )   // https://stackoverflow.com/a/5419241/2731377
+		[ '/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/' , ""     ] , // Multi-line comments ( /* */ ) // https://www.regextester.com/94246
+		[ '/^\s*[\r\n]/m'                      , ""     ] , // Blank lines.
+	];
+
+	// Text of the output file.
+	$file_text="";
+
+	// File list.
+	$filesIn = [ $filepath ] ;
+
+	// Operate on each file in the list.
+	for($i=0; $i<sizeof($filesIn); $i+=1){
+		// Bring file in.
+		$data = file_get_contents($filesIn[$i]);
+
+		// Do the regex.
+		for($r=0; $r<sizeof($regex); $r+=1){
+			// $data = preg_replace($patterns[$p], $replace[$p], $data);
+			$data = preg_replace($regex[$r][0], $regex[$r][1], $data);
+			$data = trim($data);
+		}
+
+		// Add this text to the combined text.
+		$file_text .= $data . "\n";
+	}
+
+	// Return the file_text.
+	return $file_text;
 }
 
 function init2(){
 	global $_appdir;
 
-	$combinedFiles_jsgame = preFlightCheck2();
+	$combinedFiles_jsgame = preFlightCheck3();
+	$referrer = $combinedFiles_jsgame['_referrer'] ;
+
+	// if(1){
+	if(!count($combinedFiles_jsgame)){
+		echo "something went wrong.\n";
+		print_r($combinedFiles_jsgame);
+		exit();
+	}
 
 	$output   = [
 		// JSGAME core.
@@ -595,25 +506,17 @@ function init2(){
 		// Files specific to the game. (Can also use JSGAME core resources such as video and sound modes.)
 		"game_files" => [
 			// Game's JavaScript.
-			"js_files"      => [] ,
-
 			// Game's Debug files.
-			"debug_files"   => [] ,
-
-			// Game's other files.
-			"game_files"    => [] ,
+			// Game's sound files.
+			// Game's grx inc files.
+			// Game's img files.
+			"filelist"      => [] ,
 
 			// Selected video mode.
 			"videomode"     => [] ,
 
 			// Selected sound mode.
 			"soundmode"     => [] ,
-
-			//
-			"sounds"        => [] ,
-
-			//
-			"graphics"      => [] ,
 		] ,
 
 		"onscreengamepads" => [
@@ -647,17 +550,23 @@ function init2(){
 		chmod($dest, 0666);   // Make sure that other users can write to it.
 		umask($oldmask);
 	}
+
 	// Was the gamelist.json file found? Get it and json_decode it.
 	if( file_exists ($gamelistjson_file) )   {
 		// Set the flag indicating the gamelist.json file was found.
 		$PHP_VARS['gamelist_json']=true;
 
+		// Strip out all comments.
 		// Get a handle on the 'games' key in the gamelist.json file.
-		$games=json_decode(file_get_contents($gamelistjson_file), true)['games'];
+		$games=json_decode(
+			removeCommentsFromFile( $gamelistjson_file ),
+			true
+		)['games'];
 
 		// Output as JavaScript variable.
 		$output['gamelist_json'] = json_encode($games) ;
 	}
+
 	// This is likely to be impossible.
 	else{
 		exit("missing gamelist.json file!");
@@ -677,6 +586,7 @@ function init2(){
 	$PHP_VARS['gamepads']  = $gamepads ;
 	$PHP_VARS['mastervol'] = $mastervol;
 
+	// Determine the last update within the JS_GAME directory.
 	$data1 = getLastUpdate($_appdir);
 	$PHP_VARS['file_lastUpdate1']      = $data1["file_lastUpdate"]      ;
 	$PHP_VARS['file_lastUpdate_name1'] = $data1["file_lastUpdate_name"] ;
@@ -684,8 +594,20 @@ function init2(){
 
 	// Add the JSGAME core files.
 	foreach($combinedFiles_jsgame['jsgameCore'] as $k => $v){
-		array_push( $output['jsgameCore'], [ "type" => "js", "name" => $k, "data" => file_get_contents( $combinedFiles_jsgame['jsgameCore'][$k] ) ] ) ;
+		$filename_org = $k;
+		$filename_min = $combinedFiles_jsgame['jsgameCore'][$k];
+		$data = file_get_contents( $filename_min );
+
+		array_push(
+			$output['jsgameCore'],
+			[
+				"type" => "js",
+				"name" => $filename_org,
+				"data" => $data
+			]
+		) ;
 	}
+	unset($data);
 
 	// Now get the game's files and the video/sound core files (if a game was specified.)
 	if($game){
@@ -698,7 +620,7 @@ function init2(){
 		$relative_gamedir = $games[$gamekey]['gamedir'];
 
 		// Get gamesettings.json.
-		$gamesettings = json_decode(file_get_contents($gamedir."/gamesettings.json"), true);
+		$gamesettings = json_decode(removeCommentsFromFile( $gamedir."/gamesettings.json" ), true);
 
 		// Set the PHP_VARS flags.
 		$PHP_VARS['gamesettings_json'] = true ;
@@ -774,80 +696,37 @@ function init2(){
 			$PHP_VARS['file_lastUpdate_name2'] = $data2["file_lastUpdate_name"] ;
 			$PHP_VARS['age2']                  = $data2["age"]                  ;
 
-			// Get the video core.
-			$key = "videomode";
-			$key2 = basename($gamesettings['videokernel']);
-			foreach($combinedFiles_jsgame[$key2] as $k => $v){
-				$filename = $combinedFiles_jsgame[$key2][$k];
-				$arr = [ "type" => "js", "name" => $k, "data" => file_get_contents( $combinedFiles_jsgame[$key2][$k] ) ];
-				if(strpos(basename($filename), "webworker") !==false){ $arr['worker'] = true  ; }
-				else                                                 { $arr['worker'] = false ; }
-				array_push( $output['game_files'][$key], $arr );
-			}
-			// Get the graphics files.
-			if     ($key2=="videoMode_A.js"){ $files = $gamesettings['graphics_files']; }
-			else if($key2=="videoMode_C.js"){ $files = $gamesettings['graphics']['inputTilesetData']; }
-			foreach($files as $k => $v){
-				array_push($output['game_files']['graphics'] , [
-					"type" => pathinfo(basename($v), PATHINFO_EXTENSION),
-					"name" => basename($v),
-					"fullname" => $v,
-					"data" => file_get_contents($gamedir . "/" . $v),
-				]);
-			}
+			// Get the core video and core sound file(s).
+			$soundAndVideoKeys = [
+				["videomode", basename($gamesettings['videokernel'])],
+				["soundmode", basename($gamesettings['soundkernel'])],
+			];
+			for($arrKey=0; $arrKey<count($soundAndVideoKeys); $arrKey+=1){
+				$key  = $soundAndVideoKeys[$arrKey][0]; // "videomode";
+				$key2 = $soundAndVideoKeys[$arrKey][1]; // basename($gamesettings['videokernel']);
 
-			// Get the sound core.
-			$key = "soundmode";
-			$key2 = basename($gamesettings['soundkernel']);
-			foreach($combinedFiles_jsgame[$key2] as $k => $v){
-				$filename = $combinedFiles_jsgame[$key2][$k];
-				$arr = [ "type" => "js", "name" => $k, "data" => file_get_contents( $combinedFiles_jsgame[$key2][$k] ) ];
-				if(strpos(basename($filename), "webworker") !==false){ $arr['worker'] = true  ; }
-				else                                                 { $arr['worker'] = false ; }
-				array_push( $output['game_files'][$key], $arr );
-			}
-			// Get the audio files.
-			if     ($key2=="soundMode_A.js"){ $files1 = $gamesettings['mp3_files']; $files2 = $gamesettings['midi_bin']; }
-			foreach($files1 as $k => $v){
-				array_push($output['game_files']['sounds'] , [
-					"type" => pathinfo(basename($v['fileurl']), PATHINFO_EXTENSION),
-					"name" => basename($v['fileurl']),
-					"fullname" => $v['fileurl'],
-					"data" => base64_encode(file_get_contents($gamedir . "/" . $v['fileurl'])),
-					"extra"=>[
-						"key"     => $v['key']     ,
-						"fileurl" => $v['fileurl'] ,
-						"type"    => $v['type']    ,
-						"names"   => $v['names']   ,
-					]
-				]);
-			}
-			foreach([$files2] as $k => $v){
-				array_push($output['game_files']['sounds'] , [
-					"type" => pathinfo(basename($v), PATHINFO_EXTENSION),
-					"name" => basename($v),
-					"fullname" => $v,
-					"data" => base64_encode(file_get_contents($gamedir . "/" . $v)),
-				]);
-			}
+				foreach($combinedFiles_jsgame[$key2] as $k => $v){
+					$filename_org = $k;
+					$filename_min = $combinedFiles_jsgame[$key2][$k];
+					$data = file_get_contents( $filename_min );
 
-			// Get the game code and support files.
-			$keys=["js_files", "debug_files", "game_files" ];
-			for($i=0; $i<count($keys); $i+=1){
-				$key = $keys[$i];
+					// Create the new record.
+					$arr = [
+						"type" => "js",
+						"name" => $filename_org,
+						"data" => $data
+					];
 
-				// Do not include the game's debug files if debug is not on.
-				if($key=="debug_files" && !$debug){ continue; }
+					// Add a key to the record if this is a webworker file.
+					if(strpos(basename($filename_org), "webworker") !==false){ $arr['worker'] = true  ; }
+					else                                                     { $arr['worker'] = false ; }
 
-				if(isset($gamesettings[$key])){
-					foreach($gamesettings[$key] as $k => $v){
-						array_push($output['game_files'][$key] , [
-							"type" => $gamesettings[$key][$k]["type"],
-							"name" => basename($gamesettings[$key][$k]["location"]),
-							"data" => file_get_contents($gamedir . "/" . $gamesettings[$key][$k]["location"]),
-						]);
-					}
+					// Add the data.
+					array_push( $output['game_files'][$key], $arr );
+
+					unset($data);
 				}
+
 			}
 
 			// Gamepads.
@@ -865,14 +744,95 @@ function init2(){
 					];
 				}
 			}
+
+			// Get the files from the filelist.
+			if(isset($gamesettings['filelist'])){
+				$combinedjs        = "" ;
+				$numcombinedjs     = 0  ;
+				$filesInCombinedJs = [] ;
+
+				foreach($gamesettings['filelist'] as $k => $v){
+					$rec    = $gamesettings['filelist'][$k];
+
+					// Do not include the game's debug files if debug is not on.
+					if($rec["key"]=="debug_files" && ! $debug){ continue; }
+
+					// If debug is off and deliverAs is "xhr" and type is "js" then override it to be "combinedjs".
+					if(!$debug && $rec["deliverAs"]=="xhr" && $rec["type"]=="js"){ $rec["deliverAs"]="combinedjs"; }
+
+					// Is this deliverAs "combinedjs"?
+					if( $rec["deliverAs"]=="combinedjs" ){
+						// Add the data to combinedjs.
+						$combinedjs .= file_get_contents($gamedir . "/" . $gamesettings['filelist'][$k]["location"]) . "\n\n";
+
+						// Add the filename to the filesInCombinedJs list.
+						array_push($filesInCombinedJs, $gamesettings['filelist'][$k]["location"]);
+
+						// Increment the count of number of combined files.
+						$numcombinedjs += 1;
+
+						// Nothing left to do for this iteration.
+						continue;
+					}
+
+					// Add this way:
+					else{
+						$data="";
+
+						// Data will be base64 encoded.
+						if     ( $rec["deliverAs"] == "base64"){ $data = base64_encode( file_get_contents( $gamedir . "/" . $rec["location"] )); }
+
+						// Data will be the web url to download the file (on the front-end.)
+						else if( $rec["deliverAs"] == "xhr"   ){ $data = $thisgame['gamedir'] . '/' . $rec["location"] ; }
+
+						// Data will be text-based.
+						else                                   { $data = file_get_contents( $gamedir . "/" . $rec["location"] ); }
+
+						// Create the new record.
+						$newRecord = [
+							"key"       => $rec["key"]       ,
+							"type"      => $rec["type"]      ,
+							"deliverAs" => $rec["deliverAs"] ,
+							"location"  => $rec["location"]  ,
+							"name"      => basename( $rec["location"] ) ,
+							"data"      => $data ,
+						];
+
+						// Add the new record.
+						array_push($output['game_files']['filelist'] , $newRecord);
+
+						unset($data);
+					}
+				}
+
+				// Add the combinedjs.
+				if($numcombinedjs){
+					array_push($output['game_files']['filelist'] , [
+						"key"               => "combinedjs"   ,
+						"type"              => "js"           ,
+						"deliverAs"         => "combinedjs"   ,
+						"location"          => "combinedjs"   ,
+						"name"              => "combinedjs"   ,
+						"data"              => $combinedjs    ,
+						"filesInCombinedJs" => $filesInCombinedJs ,
+					]);
+				}
+			}
+
 		}
 	}
-	else{
-		// echo "NOOOOOOOOOOOOOOOOOOOOOOOOOO " . $game . "\n\n";
-	}
 
-	//
+	// Add the PHP_VARS to the output.
 	$output['PHP_VARS'] = $PHP_VARS;
+
+	// Add some debug to the output.
+	if($debug){
+		$output['__DEBUG']  = [
+			"combinedFiles_jsgame" => $combinedFiles_jsgame ,
+			"_appdir"              => $_appdir              ,
+			"referrer"             => $referrer             ,
+		];
+	}
 
 	// Compress and then send the data.
 	if (function_exists('gzencode')) {
@@ -880,13 +840,11 @@ function init2(){
 		header('Content-Encoding: gzip');
 
 		// Send the data.
-		// echo gzencode( json_encode($output) ) ;
 		echo gzencode( json_encode($output,JSON_PRETTY_PRINT) ) ;
 	}
-	// Or just send the data.
+	// Or just send the data if the gzencode function does not exist.
 	else{
 		// Send the data.
-		// echo json_encode($output);
 		echo json_encode($output, JSON_PRETTY_PRINT);
 	}
 }

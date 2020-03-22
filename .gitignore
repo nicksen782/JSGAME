@@ -83,7 +83,8 @@ cores/soundMode_B/soundMode_B.txt
 # ADDITIONAL ENTRIES #
 ######################
 
-*.min.js.map
-*.min.js
+# *.min.js.map
+# *.min.js
 webpack.config.js
 test.php
+cores/minified/*

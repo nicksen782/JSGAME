@@ -60,18 +60,15 @@ core.FUNCS.audio.init = function(){
 				return new Promise(function(res_soundsSetup_mp3, rej_soundsSetup_mp3){
 					JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_soundsSetup_mp3","START");
 
-					// let gamedir     = parentPath + JSGAME.PRELOAD.gameselected_json['gamedir'].replace("../", "");
-					let audio_proms = [];
-					let TEMP_keys = Object.keys(JSGAME.TEMP);
 					core.AUDIO.elems          = {};
 					core.ASSETS.audio.lookups = {};
+					let audio_proms = [];
+
+					let TEMP_keys = Object.keys(JSGAME.TEMP);
 
 					let mp3_files_len = JSGAME.PRELOAD.gamesettings_json.mp3_files.length;
 					for(let i=0; i<mp3_files_len; i+=1){
-						// let d = JSGAME.PRELOAD.gamesettings_json.mp3_files[i];
 						let d = JSGAME.PRELOAD.gamesettings_json.mp3_files[i];
-						let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ d.fileurl;
-						// console.log("+--------- mp3 file:", rel_url, JSGAME.PRELOAD.gameselected_json['gamedir'], d);
 
 						// Add entry to the lookup table.
 						d.names.forEach(function(dd){
@@ -86,15 +83,13 @@ core.FUNCS.audio.init = function(){
 						let audioElem = document.createElement("audio");
 						audioElem.setAttribute("preload", "auto");
 
-						// audioElem.load();
-						// https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Media_events
-						// audioElem.oncanplay = function(){ audioElem.oncanplay=null; this.pause(); this.currentTime=0; };
-
 						// Add this to the audio proms array.
 						audio_proms.push(
 							new Promise(function(res_in, rej_in){
+								// Try to find the file in the temp cache.
 								if( TEMP_keys.indexOf( d.fileurl ) != -1){
 									audioElem.oncanplaythrough = function(dat){
+										console.log("can play this sound:", d.fileurl);
 										audioElem.oncanplaythrough = null;
 										URL.revokeObjectURL( JSGAME.TEMP[d.fileurl] ) ;
 										delete JSGAME.TEMP[d.fileurl] ;
@@ -104,26 +99,25 @@ core.FUNCS.audio.init = function(){
 									// Create an object url on the arraybuffer converted to blob and set it as the src of the audio element. (faster.)
 									audioElem.src = JSGAME.TEMP[d.fileurl] ;
 								}
+								// Not available? Load the file the traditional way.
 								else{
+									let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ d.fileurl;
 									JSGAME.SHARED.getFile_fromUrl( rel_url, true, "blob" )
 									.then(
 										function(res){
 											// OLD WAY
-											// audioElem.src = gamedir + "/" + d['fileurl'];
-
 											let d_url = URL.createObjectURL( res );
 
 											audioElem.oncanplaythrough = function(){
+												console.log("can play this sound:", rel_url);
 												audioElem.oncanplaythrough = null;
 												URL.revokeObjectURL(audioElem.src) ;
 												res_in();
 											};
 
 											// Create an object url on the arraybuffer converted to blob and set it as the src of the audio element. (faster.)
-											// audioElem.src = URL.createObjectURL( res );
 											audioElem.src = d_url ;
 											res_in();
-
 										},
 										function(err){
 											rej_in();
@@ -137,7 +131,6 @@ core.FUNCS.audio.init = function(){
 							})
 						);
 
-						// audioElem.src = gamedir + "/" + d['fileurl'];
 						core.AUDIO.elems[ d.key ] = audioElem;
 					}
 
@@ -164,6 +157,7 @@ core.FUNCS.audio.init = function(){
 		};
 
 		let sounds_midi = {};
+
 		// Parse the MIDI binary.
 		sounds_midi.parse_midi_bin = function(bin){
 			return new Promise(function(res_parse_midi_bin, rej_parse_midi_bin){
@@ -275,6 +269,7 @@ core.FUNCS.audio.init = function(){
 				// rej_parse_midi_bin();
 			});
 		};
+
 		// Get the MIDI binary.
 		sounds_midi.load_midi_bin    = function(){
 			return new Promise(function(res_load_midi_bin, rej_load_midi_bin){
@@ -282,12 +277,12 @@ core.FUNCS.audio.init = function(){
 
 				// Determine the relative filepath to the file.
 				let filename = JSGAME.PRELOAD.gamesettings_json.midi_bin;
-				let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ filename;
 
 				// Each file download is a promise. Keep an array of the promises.
 				let proms = [];
 				let TEMP_keys = Object.keys(JSGAME.TEMP);
 
+				// Try to find the file in the temp cache.
 				if( TEMP_keys.indexOf( filename ) != -1){
 					proms.push(
 						new Promise(function(res,rej){
@@ -296,8 +291,10 @@ core.FUNCS.audio.init = function(){
 						})
 					);
 				}
+				// Not available? Load the file the traditional way.
 				else{
 					// Start file download.
+					let rel_url = JSGAME.PRELOAD.gameselected_json.gamedir + "/"+ filename;
 					proms.push( JSGAME.SHARED.getFile_fromUrl( rel_url, true, "arraybuffer" ) );
 				}
 
@@ -327,6 +324,7 @@ core.FUNCS.audio.init = function(){
 				;
 			});
 		};
+
 		// Get the Webaudio TinySynth library.
 		sounds_midi.import_tinysynth = function(){
 			return new Promise(function(res_import_tinysynth, rej_import_tinysynth){
@@ -353,6 +351,7 @@ core.FUNCS.audio.init = function(){
 				document.body.appendChild(script);
 			});
 		};
+
 		// Setup the synths.
 		sounds_midi.setup_tinysynth  = function(){
 			return new Promise(function(res_setup_tinysynth, rej_setup_tinysynth){
@@ -434,6 +433,7 @@ core.FUNCS.audio.init = function(){
 				);
 			});
 		};
+
 		//
 		sounds_midi.soundsSetup_midi = function(){
 			return new Promise(function(res_soundsSetup_midi, rej_soundsSetup_midi){
@@ -492,18 +492,18 @@ core.FUNCS.audio.init = function(){
 				// audio_init_reject();
 			}
 			// ,function(err){ console.log("ERROR:", err); audio_init_reject("REJECTED: audio_init"); }
-			)
-			.catch  ( function(catchErr){
-				audio_init_reject("REJECTED: audio_init" + ", " + catchErr);
-				JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_ALL","END");
+		)
+		.catch  ( function(catchErr){
+			audio_init_reject("REJECTED: audio_init" + ", " + catchErr);
+			JSGAME.SHARED.PERFORMANCE.stamp("SOUND_INIT_ALL","END");
 
-				let str = ["audio_init_reject: ", JSON.stringify(catchErr)];
-				throw Error(str);
-			} )
-			.finally( function(){
-				// console.log("F SOUND_INIT_ALL");
-			} )
-			;
+			let str = ["audio_init_reject: ", JSON.stringify(catchErr)];
+			throw Error(str);
+		} )
+		.finally( function(){
+			// console.log("F SOUND_INIT_ALL");
+		} )
+		;
 	});
 
 };

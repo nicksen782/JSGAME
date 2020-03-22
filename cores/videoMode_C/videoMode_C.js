@@ -1856,7 +1856,11 @@ core.FUNCS.graphics.logo   = function(){
 				output.drawImage( img  , 0  , 0 , img.width, img.height, xpos , ypos , width , height  );
 
 				// Hold the image for a moment. It should be cleared by the game.
-				setTimeout( res , 750);
+
+				// If debug then hold the image for a shorter period.
+				// Otherwise, do the default hold time.
+				if(JSGAME.FLAGS.debug){ setTimeout( res , 100); }
+				else                  { setTimeout( res , 750); }
 			};
 			img.src = logo;
 		}

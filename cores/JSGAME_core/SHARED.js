@@ -553,7 +553,7 @@ JSGAME.SHARED={
 	 *
 	 * @example JSGAME.SHARED.GlobalErrorHandler(event);
 	*/
-	GlobalErrorHandler : function(event){
+	GlobalErrorHandler : async function(event){
 		// console.log(
 		// 	"\n event   :", event    ,
 		// 	"\n msg     :", msg      ,
@@ -618,6 +618,7 @@ JSGAME.SHARED={
 			}
 			else {
 				link = (event.filename || "")+":"+(event.lineno || "")+":"+(event.colno || "");
+
 				if(event.message !== undefined) { top_str+="\n -=> message    : " + event.message;        } else { top_str+="\n -=> message    : " + "<UNAVAILABLE>"; }
 				if(link.length>5)               { top_str+="\n -=> link       : " + link;                 } else { top_str+="\n -=> link       : " + "<UNAVAILABLE>"; }
 				if(event.lineno  !== undefined) { top_str+="\n -=> lineno     : " + event.lineno;         } else { top_str+="\n -=> lineno     : " + "<UNAVAILABLE>"; }

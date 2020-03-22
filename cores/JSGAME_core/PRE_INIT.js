@@ -43,7 +43,11 @@ let core = {
 };
 core.FUNCS.graphics = {};
 
+// Will hold the game.
 let game={};
+
+// Will hold each individual game state.
+game.gs = {};
 
 JSGAME.PRELOAD.PHP_VARS = {
 	"gamelist_json"     : null ,
