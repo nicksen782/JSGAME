@@ -1,0 +1,23 @@
+{
+  "name": "jsgame_v2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicksen782/JSGAME.git"
+  },
+  "author": "Nickolas Andersen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nicksen782/JSGAME/issues"
+  },
+  "homepage": "https://github.com/nicksen782/JSGAME#readme",
+  "dependencies": {
+    "express": "^4.18.1",
+    "ws": "^8.8.1"
+  }
+}

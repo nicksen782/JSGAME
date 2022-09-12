@@ -1,0 +1,39 @@
+*{ box-sizing: border-box; }
+
+html {
+    /* background-color: #051c27; */
+    background-color: #005c80;
+    /* background-color: #051c27; */
+    /* background-color:
+    black; */
+    height: 100%;
+    width: 100%;
+    padding: 5px;
+}
+body {
+    background-color:aliceblue;
+    height: 100%;
+    width: 100%;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    padding:5px
+}
+
+header {
+    height: 50px;
+}
+
+main {
+    flex: auto;
+    background-color: #ccc;
+/*     margin:5px; */
+}
+
+footer {
+    height: 50px;
+}
+#authorDiv1{
+    font-size: 12px;
+    line-height: 20px;
+}

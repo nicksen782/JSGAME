@@ -1,0 +1,12 @@
+{
+    "toggles": {
+        "show_APP_consolelog": true,
+        "isActive_nodeWsServer": true
+    },
+    "node": {
+        "http": {
+            "host": "127.0.0.1",
+            "port": 111111
+        }
+    }
+}
