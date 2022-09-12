@@ -3,7 +3,7 @@ _APP = {
     loadedAppKey: "",
     loadedConfig: {},
     loadFiles: async function(gameRec){
-        return new Promise(async function(res,rej){
+        return new Promise(async function(resolve,reject){
             if(!gameRec){ console.log("ERROR: loadFiles: Invalid gameRec:", gameRec); return; }
 
             // Get the game config.
@@ -13,105 +13,98 @@ _APP = {
             _APP.loadedAppKey = gameRec.appKey;
 
             // Create the game object if it doesn't exist. 
-            if(!_APP[_APP.loadedAppKey]){
-                _APP[_APP.loadedAppKey] = {};
-            }
+            if(!_APP[_APP.loadedAppKey]){ _APP[_APP.loadedAppKey] = {}; }
 
             // Stop here if the game is already loaded.
             if(_APP[_APP.loadedAppKey].filesLoaded){ console.log("Already loaded!"); return; }
 
-            // This keeps promises for each file to load.
-            let proms = [];
+            let addFile = function(rec){
+                return new Promise(async function(res,rej){
+                    switch(rec.t){
+
+                        case "js": { 
+                            // Create the script. 
+                            let script = document.createElement('script');
+
+                            // Set the name. 
+                            if(rec.n){ script.setAttribute("name", rec.n); }
+                            else{ script.setAttribute("name", rec.f); }
+
+                            // Set defer.
+                            script.defer=true;
+
+                            // Onload.
+                            script.onload = function () { res(); script.onload = null; };
+
+                            // Append the element. 
+                            document.head.appendChild(script);
+
+                            // Set source. 
+                            script.src = `${gameRec.gamePath}/${rec.f}`;
+                            
+                            break; 
+                        }
+
+                        case "html": { 
+                            // Get the data.
+                            let data = await( await fetch(`${gameRec.gamePath}/${rec.f}`) ).text();
+
+                            // Determine the data name. 
+                            let dataName;
+                            if(rec.n){ dataName = rec.n; }
+                            else{ dataName = rec.f }
+
+                            // Create the html key in the game if it doesn't exist. 
+                            if(!_APP[_APP.loadedAppKey].html){ _APP[_APP.loadedAppKey].html = {"_WARNING":"_WARNING"}};
+
+                            // Save the data to the html object. 
+                            _APP[_APP.loadedAppKey].html[dataName] = data;
+
+                            res();
+                            break; 
+                        }
+
+                        case "css": { 
+                            // Create CSS link.
+                            let link = document.createElement('link');
+
+                            // Set type and rel. 
+                            link.type   = 'text/css';
+                            link.rel    = 'stylesheet';
+
+                            // Set the name.
+                            if(rec.n){ link.setAttribute("name", rec.n); }
+                            else{ link.setAttribute("name", rec.f); }
+
+                            // Onload.
+                            link.onload = function() { res(); link.onload = null; };
+                            
+                            // Append the element. 
+                            document.head.appendChild( link );
+
+                            // Set source.
+                            link.href   = `${gameRec.gamePath}/${rec.f}`;
+
+                            break; 
+                        }
+
+                        default  : { 
+                            console.log(`Cannot load: ${rec.f}. Unknown file type: ${rec.t}`);
+                            rej();
+                            break; 
+                        }
+                    };
+                });
+            };
 
             // Go through each file. 
             for(let i=0; i<_APP.loadedConfig.files.length; i+=1){
-                // Get this file record.
-                let rec = _APP.loadedConfig.files[i];
-                
-                // Add to the proms array. 
-                proms.push(
-                    // Determine what type of file this is and load it.
-                    new Promise(async function(res_i,rej_i){
-                        switch(rec.t){
-
-                            case "js": { 
-                                // Create the script. 
-                                let script = document.createElement('script');
-
-                                // Set defer.
-                                script.defer=true;
-
-                                // Onload.
-                                script.onload = function () { script.onload = null; res_i(); };
-
-                                // Set source. 
-                                script.src = `${gameRec.gamePath}/${rec.f}`;
-
-                                // Set the name. 
-                                if(rec.n){ script.setAttribute("name", rec.n); }
-                                else{ script.setAttribute("name", rec.f); }
-
-                                // Append the element. 
-                                document.head.appendChild(script);
-                                
-                                break; 
-                            }
-
-                            case "html": { 
-                                // Get the data.
-                                let data = await( await fetch(`${gameRec.gamePath}/${rec.f}`) ).text();
-
-                                // Determine the data name. 
-                                let dataName;
-                                if(rec.n){ dataName = rec.n; }
-                                else{ dataName = rec.f }
-
-                                // Create the html key in the game if it doesn't exist. 
-                                if(!_APP[_APP.loadedAppKey].html){ _APP[_APP.loadedAppKey].html = {"T":"T"}};
-
-                                // Save the data to the html object. 
-                                _APP[_APP.loadedAppKey].html[dataName] = data;
-
-                                res_i();
-                                break; 
-                            }
-
-                            case "css": { 
-                                // Create CSS link.
-                                let link = document.createElement('link');
-
-                                // Set type and rel. 
-                                link.type   = 'text/css';
-                                link.rel    = 'stylesheet';
-
-                                // Onload.
-                                link.onload = function() { link.onload = null; res_i(); };
-
-                                // Set source.
-                                link.href   = `${gameRec.gamePath}/${rec.f}`;
-
-                                // Set the name.
-                                if(rec.n){ link.setAttribute("name", rec.n); }
-                                else{ link.setAttribute("name", rec.f); }
-
-                                // Append the element. 
-                                document.head.appendChild( link );
-                                break; 
-                            }
-
-                            default  : { 
-                                console.log(`Cannot load: ${rec.f}. Unknown file type: ${rec.t}`);
-                                rej_i();
-                                break; 
-                            }
-                        };
-                    })
-                );
+                // Determine what type of file this is and load it.
+                await addFile(_APP.loadedConfig.files[i]);
             }
     
-            await Promise.all(proms);
             _APP[_APP.loadedAppKey].filesLoaded = true;
-            res();
+            resolve();
         });
     },
     loadGameMenus : function(){
@@ -125,8 +118,8 @@ _APP = {
             button.title = rec.desc;
             button.addEventListener("click", async (ev) => { 
                 await _APP.loadFiles(rec); 
-                _APP[rec.appKey].init(); 
                 _APP.updateAuthorData(rec);
+                _APP[rec.appKey].init(); 
             }, false);
             frag.append(button);
         }
