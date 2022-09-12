@@ -135,16 +135,17 @@ _APP = {
     },
     updateAuthorData: function(rec){
         rec = rec.repo;
+        let authorDiv2 = document.getElementById("authorDiv2");
 
-        let author_title  = document.getElementById("author_title");  author_title .innerHTML = ""
-        let author_C      = document.getElementById("author_C");      author_C     .innerHTML = ""
-        let author_year   = document.getElementById("author_year");   author_year  .innerHTML = ""
-        let author_name   = document.getElementById("author_name");   author_name  .innerHTML = ""
-        let author_handle = document.getElementById("author_handle"); author_handle.innerHTML = ""
-        let repoType      = document.getElementById("repoType");      repoType     .innerHTML = ""
-        let repoLink      = document.getElementById("repoLink");      repoLink     .innerHTML = ""
+        let author_title  = document.getElementById("author2_title");  author_title .innerHTML = ""
+        let author_C      = document.getElementById("author2_C");      author_C     .innerHTML = ""
+        let author_year   = document.getElementById("author2_year");   author_year  .innerHTML = ""
+        let author_name   = document.getElementById("author2_name");   author_name  .innerHTML = ""
+        let author_handle = document.getElementById("author2_handle"); author_handle.innerHTML = ""
+        let repoType      = document.getElementById("repo2Type");      repoType     .innerHTML = ""
+        let repoLink      = document.getElementById("repo2Link");      repoLink     .innerHTML = ""
 
-        if(!rec){ return;}
+        if(!rec){ authorDiv2.classList.add("hide"); return;}
         if(rec.author_title ){ author_title .innerText = rec["author_title"] + ": "; }
         if(rec.author_C     ){ author_C     .innerText = "(C)"; }
         if(rec.author_year  ){ author_year  .innerText = rec["author_year"]        ; }
@@ -159,6 +160,8 @@ _APP = {
             alink.target = "_blank";
             repoLink.append(alink);
         }
+
+        authorDiv2.classList.remove("hide"); 
     },
 };
 
@@ -166,7 +169,7 @@ window.onload = async function(){
     window.onload = null;
 
     // Get the apps.json.
-    _APP.apps = await( await fetch(`apps.json`) ).json();
+    _APP.apps = await( await fetch(`shared/apps.json`) ).json();
 
     // Display the game menus.
     _APP.loadGameMenus();

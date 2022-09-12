@@ -1,7 +1,6 @@
 _IGNORE/*
 node_modules/*
 
-public/games/*
 !public/games/.gitkeep
 
 public/shared/config.json

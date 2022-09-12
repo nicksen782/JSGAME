@@ -21,19 +21,38 @@ body {
 }
 
 header {
-    height: 50px;
+    height: 25px;
+    border-bottom: 1px solid black;
+    margin-bottom: 2px;
 }
 
 main {
     flex: auto;
     background-color: #ccc;
-/*     margin:5px; */
 }
 
 footer {
     height: 50px;
+    padding: 5px;
+    border-top: 1px solid black;
+    margin-top: 2px;
 }
-#authorDiv1{
+
+#gameSelectDiv{
+    display:inline-block;
+    vertical-align: top;
+}
+#authorDiv1,
+#authorDiv2{
     font-size: 12px;
     line-height: 20px;
+    display:inline-block;
+    vertical-align: top;
+    border: 1px solid black;
 }
+#authorDiv2.hide{
+    display:none;
+}
+
+span#author_title,
+span#author2_title {font-weight: bold;font-family: monospace;}
