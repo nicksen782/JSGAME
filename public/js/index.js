@@ -45,6 +45,48 @@ _APP = {
                             break; 
                         }
 
+                        case "image": {
+                            // Get the data.
+                            let img = new Image();
+                            img.onload = function(){
+                                // Determine the data name. 
+                                let dataName;
+                                if(rec.n){ dataName = rec.n; }
+                                else{ dataName = rec.f }
+        
+                                // Create the files key in the game if it doesn't exist. 
+                                if(!_APP[_APP.loadedAppKey].files){ _APP[_APP.loadedAppKey].files = {"_WARNING":"_WARNING"}};
+                                
+                                // Save the data to the files object. 
+                                _APP[_APP.loadedAppKey].files[dataName] = img;
+                                
+                                res();
+                                img.onload = null;
+                            };
+                            img.src = `${gameRec.gamePath}/${rec.f}`;
+    
+                            break; 
+                        }
+
+                        case "json": { 
+                            // Get the data.
+                            let data = await( await fetch(`${gameRec.gamePath}/${rec.f}`) ).json();
+
+                            // Determine the data name. 
+                            let dataName;
+                            if(rec.n){ dataName = rec.n; }
+                            else{ dataName = rec.f }
+
+                            // Create the files key in the game if it doesn't exist. 
+                            if(!_APP[_APP.loadedAppKey].files){ _APP[_APP.loadedAppKey].files = {"_WARNING":"_WARNING"}};
+
+                            // Save the data to the files object. 
+                            _APP[_APP.loadedAppKey].files[dataName] = data;
+
+                            res();
+                            break; 
+                        }
+                        
                         case "html": { 
                             // Get the data.
                             let data = await( await fetch(`${gameRec.gamePath}/${rec.f}`) ).text();
@@ -54,11 +96,11 @@ _APP = {
                             if(rec.n){ dataName = rec.n; }
                             else{ dataName = rec.f }
 
-                            // Create the html key in the game if it doesn't exist. 
-                            if(!_APP[_APP.loadedAppKey].html){ _APP[_APP.loadedAppKey].html = {"_WARNING":"_WARNING"}};
+                            // Create the files key in the game if it doesn't exist. 
+                            if(!_APP[_APP.loadedAppKey].files){ _APP[_APP.loadedAppKey].files = {"_WARNING":"_WARNING"}};
 
-                            // Save the data to the html object. 
-                            _APP[_APP.loadedAppKey].html[dataName] = data;
+                            // Save the data to the files object. 
+                            _APP[_APP.loadedAppKey].files[dataName] = data;
 
                             res();
                             break; 
