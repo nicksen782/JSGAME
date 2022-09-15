@@ -1,21 +1,45 @@
 _APP = {
-    apps: {},
-    loadedAppKey: "",
-    loadedConfig: {},
-    loadFiles: async function(gameRec){
-        return new Promise(async function(resolve,reject){
-            if(!gameRec){ console.log("ERROR: loadFiles: Invalid gameRec:", gameRec); return; }
+    parent: null,
 
-            // Get the game config.
-            _APP.loadedConfig = await( await fetch(`${gameRec.configFile}`) ).json();
+    // Contains config settings for "modules".
+    configObjs : {
+        net: {
+            DOM: {
+                coloredElems: {
+                    main         : "net_ws_status" ,
+                    statusSquare : "net_ws_status_square",
+                },
+                elems: {
+                    statusText   : "net_ws_status_text", 
+                },
+            }
+        }
+    },
+
+    // Stores apps.json.
+    apps: {},
+
+    // Stores the loaded appKey
+    loadedAppKey: "",
+    
+    // Stores the loaded app config.
+    loadedConfig: {},
+    
+    // Loads the files specified by the appRec.
+    loadFiles: async function(appRec){
+        return new Promise(async function(resolve,reject){
+            if(!appRec){ console.log("ERROR: loadFiles: Invalid appRec:", appRec); return; }
+
+            // Get the app config.
+            _APP.loadedConfig = await _APP.net.http.send(`${appRec.configFile}`, { type:"json", method:"GET" }, 5000);
 
             // Set and save the loadedAppKey.
-            _APP.loadedAppKey = gameRec.appKey;
+            _APP.loadedAppKey = appRec.appKey;
 
-            // Create the game object if it doesn't exist. 
+            // Create the app object if it doesn't exist. 
             if(!_APP[_APP.loadedAppKey]){ _APP[_APP.loadedAppKey] = {}; }
 
-            // Stop here if the game is already loaded.
+            // Stop here if the app is already loaded.
             if(_APP[_APP.loadedAppKey].filesLoaded){ console.log("Already loaded!"); return; }
 
             let addFile = function(rec){
@@ -40,7 +64,7 @@ _APP = {
                             document.head.appendChild(script);
 
                             // Set source. 
-                            script.src = `${gameRec.gamePath}/${rec.f}`;
+                            script.src = `${appRec.appPath}/${rec.f}`;
                             
                             break; 
                         }
@@ -63,14 +87,14 @@ _APP = {
                                 res();
                                 img.onload = null;
                             };
-                            img.src = `${gameRec.gamePath}/${rec.f}`;
+                            img.src = `${appRec.appPath}/${rec.f}`;
     
                             break; 
                         }
 
                         case "json": { 
                             // Get the data.
-                            let data = await( await fetch(`${gameRec.gamePath}/${rec.f}`) ).json();
+                            let data = await _APP.net.http.send(`${appRec.appPath}/${rec.f}`, { type:"json", method:"GET" }, 5000);
 
                             // Determine the data name. 
                             let dataName;
@@ -89,7 +113,7 @@ _APP = {
                         
                         case "html": { 
                             // Get the data.
-                            let data = await( await fetch(`${gameRec.gamePath}/${rec.f}`) ).text();
+                            let data = await _APP.net.http.send(`${appRec.appPath}/${rec.f}`, { type:"text", method:"GET" }, 5000);
 
                             // Determine the data name. 
                             let dataName;
@@ -125,7 +149,7 @@ _APP = {
                             document.head.appendChild( link );
 
                             // Set source.
-                            link.href   = `${gameRec.gamePath}/${rec.f}`;
+                            link.href   = `${appRec.appPath}/${rec.f}`;
 
                             break; 
                         }
@@ -149,25 +173,68 @@ _APP = {
             resolve();
         });
     },
-    loadGameMenus : function(){
-        if(!Object.keys(_APP.apps).length){ console.log("ERROR: loadGameMenus: Error in apps.json."); return; }
-        let gameSelectDiv = document.getElementById("gameSelectDiv")
-        let frag = document.createDocumentFragment();
-        for(let key in _APP.apps){
-            let rec = _APP.apps[key];
-            let button = document.createElement("button");
-            button.innerText = "LOAD: " + rec.displayName;
-            button.title = rec.desc;
-            button.addEventListener("click", async (ev) => { 
-                await _APP.loadFiles(rec); 
-                _APP.updateAuthorData(rec);
-                _APP[rec.appKey].init(); 
-            }, false);
-            frag.append(button);
+    
+    // Loads the selected app.
+    loadApp: async function(rec){
+        let select = document.querySelector("#gameSelectDiv select");
+        select.value = rec.appKey;
+
+        await _APP.loadFiles(rec); 
+        _APP.updateAuthorData(rec);
+        if(_APP[rec.appKey].init){ _APP[rec.appKey].init(); }
+        else{
+            console.log("ERROR: Missing init function in:", rec.appKey, _APP[rec.appKey]);
         }
-        gameSelectDiv.innerHTML = "";
-        gameSelectDiv.append(frag);
     },
+    
+    // Generates the app select menu.
+    loadAppMenus : function(){
+        return new Promise((resolve,reject)=>{
+            if(!Object.keys(_APP.apps).length){ console.log("ERROR: loadAppMenus: Error in apps.json."); return; }
+            let gameSelectDiv = document.getElementById("gameSelectDiv");
+
+            let select = document.createElement("select");
+            select.addEventListener("change", async (ev) => { 
+                let thisOption = select.options[select.selectedIndex];
+                let appKey = thisOption.getAttribute("appKey");
+                
+                // Reload with the game selected.
+                if(appKey){ window.location.href= `?appKey=${appKey}`; }
+                
+                // Reload with no game selected.
+                else{ window.location.href = `?`; }
+            }, false);
+
+            let button = document.createElement("button");
+            button.innerText = "Reload";
+            button.addEventListener("click", (ev)=>{ select.dispatchEvent(new Event("change")) }, false);
+
+            let option = document.createElement("option");
+            option.value = "";
+            option.innerText = "... Choose an application";
+            select.append(option);
+
+            let frag1 = document.createDocumentFragment();
+            for(let key in _APP.apps){
+                let rec = _APP.apps[key];
+                
+                let option = document.createElement("option");
+                option.value = rec.appKey;
+                option.innerText = "APP: " + rec.displayName;
+                option.setAttribute("appKey", rec.appKey);
+                option.title = rec.desc;
+                frag1.append(option);
+            }
+            gameSelectDiv.innerHTML = "";
+
+            select.append(frag1);
+            gameSelectDiv.append(select);
+            gameSelectDiv.append(button);
+            resolve();
+        });
+    },
+    
+    // Updates the displayed author/app data.
     updateAuthorData: function(rec){
         rec = rec.repo;
         let authorDiv2 = document.getElementById("authorDiv2");
@@ -198,17 +265,72 @@ _APP = {
 
         authorDiv2.classList.remove("hide"); 
     },
+    
+    // Get url params.
+	getUrlParams                     : function(){
+		const urlSearchParams = new URLSearchParams(window.location.search);
+		const params          = Object.fromEntries(urlSearchParams.entries());
+		return params;
+	},
+
+    // Utility functions intended to be shared.
+    shared: {
+        parent: null,
+        // Pass the DOM object and it's text entries will be replaced with the coresponding DOM elements.
+        parseObjectStringDOM: function(DOM={}, showWarnings=false){
+            return new Promise((resolve,reject)=>{
+                for(let key in DOM){
+                    if(typeof DOM[key] == "string"){
+                        let elem = document.getElementById( DOM[key] );
+                        if(elem != null){ DOM[key] = elem; }
+                        else{
+                            if(showWarnings){
+                                console.log(`parseObjectStringDOM: ${key} not found in the DOM.`); 
+                            }
+                        }
+                    }
+                    // else{
+                    //     if(showWarnings){
+                    //         console.log(`parseObjectStringDOM: ${key} was not a string. Was: ${typeof DOM[key]}`, DOM[key]); 
+                    //     }
+                    // }
+                }
+    
+                resolve();
+            });
+        },
+    },
+
+    // 
+    init: async function(parent){
+        // Set parents. 
+        this.parent = parent;
+        this.shared.parent = this;
+
+        // Init net.
+        _APP.net.init(_APP, _APP.configObjs.net);
+
+        // Get the apps.json.
+        _APP.apps = await _APP.net.http.send("shared/apps.json", { type:"json", method:"GET" }, 5000);
+
+        // Display the game menus with the apps.json data.
+        await _APP.loadAppMenus();
+        
+        // Auto-load app?
+        let params = _APP.getUrlParams();
+        if(Object.keys(params).length){
+            if(params.appKey){
+                if(_APP.apps[params.appKey]){ 
+                    let rec = _APP.apps[params.appKey];
+                    if(rec){ _APP.loadApp(rec); }
+                }
+                else { console.log("Game not found in apps.json:", params.appKey); }
+            }
+        }
+    },
 };
 
 window.onload = async function(){
     window.onload = null;
-
-    // Get the apps.json.
-    _APP.apps = await( await fetch(`shared/apps.json`) ).json();
-
-    // Display the game menus.
-    _APP.loadGameMenus();
-
-    // Auto-load game?
-    // TODO
+    await _APP.init(_APP);
 };
