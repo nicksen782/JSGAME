@@ -111,53 +111,20 @@ let _MOD = {
         },
     },
 
-    handlers: {
-        JSON:{
-            tests: ["UPDATE_MY_DETAILS", "CHAT_MSG_TO_ALL", "ECHO"],
-            lobby    : [
-                //
-                "LOBBY_JOIN", 
-                "LOBBY_CHAT_GET_ALL", 
-                "LOBBY_CHAT_SEND",
-                //
-                "LOBBY_JOIN_GAME", 
-                "LOBBY_HOST_GAME",
-                //
-                "GET_HOSTS_BY_GAME_ACTIVE",
-                "GET_HOSTS_BY_GAME_INACTIVE",
-                "GET_CLIENTS_BY_HOST",
-
-                "SEND_MSG_TO_HOST",
-                "SEND_MSG_TO_CLIENT",
-                "SEND_MSG_TO_HOST_CLIENT",
-                "SEND_MSG_TO_HOST_ALL_CLIENTS",
-                "GET_HOSTS_BY_GAME_ACTIVE",
-                "GET_HOSTS_BY_GAME_INACTIVE",
-                "GET_CLIENTS_BY_HOST",
-                "SEND_MSG_TO_HOST",
-                "SEND_MSG_TO_CLIENT",
-                "SEND_MSG_TO_HOST_CLIENT",
-                "SEND_MSG_TO_HOST_ALL_CLIENTS",
-            ],
-        },
-        TEXT:{
-            tests: ["GET_ALL_CLIENTS"],
-            connectivity: [ "PING", "PONG" ],
-            lobby: [ 
-                "GET_CLIENTS_ATTACHED",
-                "GET_CLIENTS_UNATTACHED",
-                "GET_HOSTS_INACTIVE",
-                "GET_HOSTS_ACTIVE",
-            ]
-        },
+    // Populated during init via data from ws_event_handlers.
+    allowedMessageTypes: {
+        JSON:{},
+        TEXT:{},
     },
     handlerLookup: function(mode, type){
-        let keys = Object.keys(_MOD.handlers[type]);
-        for(let i=0; i<keys.length; i+=1){ if(_MOD.handlers[type][keys[i]].indexOf(mode) != -1){ return keys[i]; } }
+        let keys = Object.keys(_MOD.allowedMessageTypes[type]);
+        for(let i=0; i<keys.length; i+=1){ if(_MOD.allowedMessageTypes[type][keys[i]].indexOf(mode) != -1){ return keys[i]; } }
         return false;
     },
     ws_event_handlers:{
         JSON:{
+            JSGAME_:{
+            },
             tests:{
                 ECHO:  async function(ws, data){ 
                     ws.send( JSON.stringify({mode:"ECHO", data:data.data}) );
@@ -187,6 +154,8 @@ let _MOD = {
             },
         },
         TEXT:{
+            JSGAME_:{
+            },
             tests:{
                 GET_ALL_CLIENTS:async function(ws, data){ 
                     let clients = [];
@@ -293,6 +262,22 @@ let _MOD = {
     },
 
     initWss: function(){
+        // Websockets config:
+
+        // let keys = ["JSON","TEXT"];
+        let keys = Object.keys(this.ws_event_handlers);
+        for(let key0 of keys){
+            for(let key1 in this.ws_event_handlers[key0]){
+                for(let key2 in this.ws_event_handlers[key0][key1]){
+                    // Create the entries in allowedMessageTypes.
+                    if(!_MOD.allowedMessageTypes[key0][key1]){ _MOD.allowedMessageTypes[key0][key1] = []; }
+                    
+                    // Add to allowedMessageTypes.
+                    _MOD.allowedMessageTypes[key0][key1].push(key2);
+                }
+            }
+        }
+
         // Run this for each new websocket connection. 
         let userCount = 0;
         _MOD.ws.on("connection", function connection(ws, res){

@@ -133,13 +133,10 @@ _APP.net = {
         ws_event_handler:{
             parent: null,
 
+            // Populated during init via data from handlers.
             allowedMessageTypes: {
-                JSON:{
-                    init: ["NEWCONNECTION","WELCOMEMESSAGE"],
-                },
-                TEXT:{
-                    connectivity: ["PING","PONG"],
-                },
+                JSON:{},
+                TEXT:{},
             },
             handlerLookup: function(mode, type){
                 let keys = Object.keys(this.allowedMessageTypes[type]);
@@ -149,7 +146,7 @@ _APP.net = {
 
             handlers:{
                 JSON:{
-                    init: {
+                    JSGAME_init: {
                         NEWCONNECTION : async function(data) { 
                             console.log("MODE:", data.mode, ", DATA:", data.data); 
 
@@ -165,7 +162,7 @@ _APP.net = {
                     },
                 },
                 TEXT:{
-                    connectivity:{
+                    JSGAME_connectivity:{
                         PING: async function(data) { 
                             console.log("MODE:", data); 
                         },
@@ -174,6 +171,24 @@ _APP.net = {
                         },
                     },
                 },
+            },
+            
+            init: function(){
+                // Websockets config:
+
+                // let keys = ["JSON","TEXT"];
+                let keys = Object.keys(this.handlers);
+                for(let key0 of keys){
+                    for(let key1 in this.handlers[key0]){
+                        for(let key2 in this.handlers[key0][key1]){
+                            // Create the entries in allowedMessageTypes.
+                            if(!_APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1]){ _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1] = []; }
+                            
+                            // Add to allowedMessageTypes.
+                            _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1].push(key2);
+                        }
+                    }
+                }
             }
         },
 
@@ -497,6 +512,7 @@ _APP.net = {
             this.status              .parent = this;
 
             // Init status.
+            await this.ws.ws_event_handler.init();
             await this.status.init(configObj);
             
             resolve();
