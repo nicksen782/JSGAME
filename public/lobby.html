@@ -1,0 +1,107 @@
+
+    <!-- HOLDS THE APP'S LOBBY/CHAT. -->
+    <div class="lobby_nav">
+        <div class="lobby_nav_tab" id="lobby_nav_tab_login"    view="lobby_nav_view_login"   >LOGIN</div>
+        <div class="lobby_nav_tab" id="lobby_nav_tab_profile"  view="lobby_nav_view_profile" >PROFILE</div>
+        <div class="lobby_nav_tab" id="lobby_nav_tab_lobby"    view="lobby_nav_view_lobby"   >LOBBY</div>
+        <div class="lobby_nav_tab" id="lobby_nav_tab_room"     view="lobby_nav_view_room"    >ROOM</div>
+        <div class="lobby_nav_tab" id="lobby_nav_tab_dm"       view="lobby_nav_view_dm"      >DM</div>
+        <div class="lobby_nav_tab" id="lobby_nav_tab_settings" view="lobby_nav_view_settings">SETTINGS</div>
+        <div class="lobby_nav_tab" id="lobby_nav_tab_debug"    view="lobby_nav_view_debug"   >DEBUG</div>
+    </div>
+    <div class="lobby_views">
+        <!-- LOGIN VIEW -->
+        <div class="lobby_view" id="lobby_nav_view_login"   >
+            <div class="lobby_login">
+                <h1>Login</h1>
+                <form method="post" id="lobby_loginForm">
+                    <div class="" id="lobby_showLogin">
+                        <label for="username">
+                            <i class="mdi mdi-account"></i>
+                        </label>
+                        <input type="text" name="username" placeholder="Username" id="lobby_username" required="">
+                        
+                        <label for="password">
+                            <i class="mdi mdi-lock"></i>
+                        </label>
+                        <input type="password" name="password" placeholder="Password" id="lobby_password" required="">
+                        
+                        <input type="hidden" name="passwordHash" placeholder="" id="lobby_passwordHash" required="">
+                        <input id="lobby_login" value="Login">
+                    </div>
+                    <div class="hide" id="lobby_showLogout">
+                        <br>
+                        Already logged in.
+                        <br>
+                        <br>
+                        <input id="lobby_logout"    class="" value="Logout">
+                        <br>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div class="lobby_view" id="lobby_nav_view_profile" >
+            PROFILE<br><br>
+            <table class="lobby_table1">
+                <caption>Set your details</caption>
+                <tr>
+                    <td>Handle:</td>
+                    <td><input type="text" id="lobby_handle"></td>
+                </tr>
+                <tr>
+                    <td>Name:</td>
+                    <td><input type="text" id="lobby_name"></td>
+                </tr>
+                <tr class="lobby_spacer">
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>
+                    </td>
+                    <td>
+                        <button id="lobby_detailsUpdate">Update</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- LOBBY VIEW -->
+        <div class="lobby_view" id="lobby_nav_view_lobby"   >
+            <table class="lobby_table2">
+                <tr>
+                    <td>Lobby Chat</td>
+                </tr>
+                <tr>
+                    <td>
+                        <textarea readonly spellcheck="false" id="lobby_debugOutput2"></textarea>
+                        <textarea id="lobby_chat_send"></textarea>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- ROOM VIEW -->
+        <div class="lobby_view" id="lobby_nav_view_room"    >
+            ROOM<br><br>
+        </div>
+
+        <!-- DM VIEW -->
+        <div class="lobby_view" id="lobby_nav_view_dm"      >
+            DM<br><br>
+        </div>
+
+        <!-- SETTINGS VIEW -->
+        <div class="lobby_view" id="lobby_nav_view_settings">
+            SETTINGS<br><br>
+        </div>
+
+        <!-- DEBUG VIEW -->
+        <div class="lobby_view" id="lobby_nav_view_debug"   >
+            DEBUG<br><br>
+        </div>
+
+    </div>

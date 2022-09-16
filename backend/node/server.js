@@ -12,11 +12,31 @@ for(let i=0; i<lines.length; i+=1){
 console.log("\n");
 
 // Express/server requires.
-const path = require('path'); 
-const server   = require('http').createServer();
-const express  = require('express');
-const app      = express();
-
+const path       = require('path'); 
+const server     = require('http').createServer();
+const express    = require('express');
+const session    = require('express-session');
+const MemoryStore= require('memorystore')(session);
+const app        = express();
+// const fs         = require('fs');
+const zlib       = require('zlib');
+const compression = require('compression');
+const shouldCompress = (req, res) => {
+	if (req.headers['x-no-compression']) {
+		return false
+	}
+	// return true;
+	return compression.filter(req, res);
+}
+const compressionObj = {
+    filter    : shouldCompress,
+    memLevel  : zlib.constants.Z_DEFAULT_MEMLEVEL,
+    level     : zlib.constants.Z_DEFAULT_COMPRESSION,
+    chunkSize : zlib.constants.Z_DEFAULT_CHUNK,
+    strategy  : zlib.constants.Z_DEFAULT_STRATEGY,
+    threshold : 0,
+    windowBits: zlib.constants.Z_DEFAULT_WINDOWBITS,
+};
 // Modules (routes are added per module via their module_init method.)
 let _APP;
 
@@ -194,7 +214,23 @@ let setErrorHandlers = function(){
     };
 
     // Add compression.
-    // app.use( compression(compressionObj) );
+    app.use( compression(compressionObj) );
+
+	_APP.memStore = new MemoryStore({checkPeriod: 86400000 }); // prune expired entries every 24h;
+	_APP.session = session({
+		// store: sessionStore,
+		store: _APP.memStore,
+		name: "JSGAMEv2",
+		secret: _APP.uuidv4(),// .toUpperCase(), 
+		resave: false,
+		saveUninitialized: false,
+		unset: "destroy",
+		// cookie: { secure: true },
+		// cookie: { secure: false },
+	});
+    app.use( _APP.session );
+    app.use( _APP.m_sessions.eachConnection );
+    // app.use( _APP.loginCheck );
 
     // Default routes:
     app.use('/'    , express.static(path.join(process.cwd(), './public')));

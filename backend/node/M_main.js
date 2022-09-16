@@ -6,6 +6,7 @@ const path = require('path');
 // Modules saved within THIS module.
 const m_modules = [
     './m_config.js', // Must be first!
+    './m_sessions.js',
     './m_websocket_node.js',
 ];
 const rpbp = require( './removeprocess.js' ).run;
@@ -375,7 +376,14 @@ let _APP = {
             })(), 
         };
     },
-    
+    // Generate and return a uuid v4.
+    uuidv4: function() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    },
+
 };
 
 // Save app and express to _APP and then return _APP.
@@ -384,6 +392,8 @@ module.exports = async function(app, express, server){
     _APP.app     = app;
     _APP.express = express;
     _APP.server  = server;
+
+    _APP['m_sessions'] = require( './m_sessions.js' );
 
     // Return a reference to _APP.
     return _APP;

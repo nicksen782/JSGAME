@@ -14,7 +14,7 @@ let _MOD = {
     ],
 
      // Init this module.
-     module_init: async function(parent){
+    module_init: async function(parent){
         return new Promise(async function(resolve,reject){
             if(!_MOD.moduleLoaded){
                 // Save reference to the parent module.
@@ -87,7 +87,29 @@ let _MOD = {
 
     // **********
     createWebSocketsServer: function(){
-        _MOD.ws = new WSServer({ server: _APP.server }); 
+        // _MOD.ws = new WSServer({ server: _APP.server }); 
+        // _MOD.ws = new WSServer({ clientTracking: false, noServer: true }); 
+        _MOD.ws = new WSServer({ clientTracking: true, noServer: true }); 
+        
+        _APP.server.on('upgrade', function (request, socket, head) {
+            // Parse request.session into a js object. 
+            _APP.session(request, {}, () => {
+                // Is this user logged in? 
+                if (!request.session.loggedIn) {
+                    // No. Only a logged-in user should be able to start a new WebSockets connection. 
+                    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+                    // socket.destroy();
+                    console.log("NOT LOGGED IN.");
+                    return;
+                }
+
+                // Upgrade the connection from http to WebSockets.
+                _MOD.ws.handleUpgrade(request, socket, head, function (ws) {
+                    // Start the new WebSockets connection. 
+                    _MOD.ws.emit('connection', ws, request);
+                });
+            });
+        });
     },
 
     ws_readyStates:{
@@ -102,13 +124,6 @@ let _MOD = {
     },
 
     ws_utilities: {
-        // Generate and return a uuid v4.
-        uuidv4: function() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        },
     },
 
     // Populated during init via data from ws_event_handlers.
@@ -123,18 +138,13 @@ let _MOD = {
     },
     ws_event_handlers:{
         JSON:{
-            JSGAME_:{
-            },
-            tests:{
-                ECHO:  async function(ws, data){ 
-                    ws.send( JSON.stringify({mode:"ECHO", data:data.data}) );
-                },
+            JSGAME_chat:{
                 CHAT_MSG_TO_ALL:  async function(ws, data){ 
                     let prefix;
                     if     (ws.CONFIG.name)  { prefix = ws.CONFIG.name; }
                     else if(ws.CONFIG.handle){ prefix = ws.CONFIG.handle; }
                     else                     { prefix = `USER_${ws.CONFIG.num.toString().padStart(3, "0")}`; }
-
+    
                     _MOD.funcs.sendToAll( JSON.stringify( {mode:"CHAT_MSG_TO_ALL", data:prefix + ": " + data.data} ) );
                 },
                 UPDATE_MY_DETAILS: async function(ws, data){ 
@@ -146,17 +156,21 @@ let _MOD = {
                             clients.push(ws.CONFIG);
                         }
                     });
-
+    
                     _MOD.funcs.sendToAll( JSON.stringify( {mode:"GET_ALL_CLIENTS", data:clients} ) );
                 },
             },
-            connectivity: {
+            tests:{
+                ECHO:  async function(ws, data){ 
+                    ws.send( JSON.stringify({mode:"ECHO", data:data.data}) );
+                },
             },
         },
         TEXT:{
-            JSGAME_:{
-            },
-            tests:{
+            JSGAME_connections:{
+                GET_UUID: async function(ws){ 
+                    ws.send( JSON.stringify( {mode:"GET_UUID", data:ws.CONFIG.uuid} ) );
+                },
                 GET_ALL_CLIENTS:async function(ws, data){ 
                     let clients = [];
                     _MOD.ws.clients.forEach(function each(ws) { 
@@ -166,8 +180,6 @@ let _MOD = {
                     });
                     ws.send( JSON.stringify( {mode:"GET_ALL_CLIENTS", data:clients} ) );
                 },
-            },
-            connectivity: {
                 PING: async function(ws){ 
                     console.log("PING");
                     ws.send("PONG");
@@ -263,7 +275,6 @@ let _MOD = {
 
     initWss: function(){
         // Websockets config:
-
         // let keys = ["JSON","TEXT"];
         let keys = Object.keys(this.ws_event_handlers);
         for(let key0 of keys){
@@ -280,13 +291,10 @@ let _MOD = {
 
         // Run this for each new websocket connection. 
         let userCount = 0;
-        _MOD.ws.on("connection", function connection(ws, res){
-            // What type of connection is this? 
-            
+        _MOD.ws.on("connection", function connection(ws, request, client){
             // LOBBY
-            if( res.url == "/LOBBY"){
-                // GENERATE A UNIQUE ID FOR THIS CONNECTION. 
-                ws.id = _MOD.ws_utilities.uuidv4().toUpperCase();
+            if( request.url == "/LOBBY"){
+                console.log("request.session.uuid:", request.session.uuid);
 
                 // Add the config object to this ws object. 
                 ws.CONFIG = {};
@@ -299,9 +307,23 @@ let _MOD = {
                 // _MOD.ws_utilities.addSubscription(ws, "STATS2");
 
                 // Save this data to the ws for future use.
-                ws.CONFIG.uuid = ws.id; 
-                ws.CONFIG.type = "LOBBY"; 
-                ws.CONFIG.num = userCount ++; 
+                ws.CONFIG.uuid         = request.session.uuid; 
+                ws.CONFIG.num          = userCount ++; 
+                ws.CONFIG.type         = "LOBBY"; 
+                ws.CONFIG.clientType   = "UNATTACHED"; 
+                ws.CONFIG.hostingData  = {
+                    hosting       : false,
+                    appKey        : "",
+                    title         : "",
+                    numConnected  : 0,
+                    maxConnections: 0,
+                }; 
+                // ws.CONFIG.admin        = false; 
+                // ws.CONFIG.clientType   = "GAME_HOST"; 
+                // ws.CONFIG.clientType   = "GAME_CLIENT"; 
+                // ws.CONFIG.isHost       = ""; 
+                ws.CONFIG.host_uuid    = ""; // UUID of the host that this client has connected to. (If the client is the host then this will match their own UUID.)
+                ws.CONFIG.client_uuids = []; // UUIDs of clients connected to this host.
 
                 console.log("WebSockets Server: CONNECT:", ws.CONFIG.type.padEnd(7, " "), ws.CONFIG.uuid);
 
@@ -317,8 +339,27 @@ let _MOD = {
                 ws.addEventListener('error'  , (event)=>_MOD.ws_events.el_error  (ws, event) );
             }
         });
-    },
+        return; 
 
+         _MOD.ws.on('connection', function (ws, request) {
+            console.log("request.session:", request.session);
+            const userId = request.session.userId;
+            
+            // map.set(userId, ws);
+            
+            ws.on('message', function (message) {
+                //
+                // Here we can now use session parameters.
+                //
+            console.log("request.session:", request.session);
+              console.log(`Received message ${message} from user ${userId}`);
+            });
+          
+            ws.on('close', function () {
+            //   map.delete(userId);
+            });
+         });
+    },
 };
 
 module.exports = _MOD;

@@ -155,6 +155,15 @@ _APP.net = {
 
                             // Display the UUID as a hover title on net_ws_status.
                             _APP.net.status.coloredElems.main.title = `UUID:  ${data.data}`;
+
+                            // If the onReadyFunction is populated then run it. (set by the loaded app.)
+                            if(_APP.net.ws.onReadyFunction ? true : false){
+                                // console.log("onReadyFunction IS defined.");
+                                _APP.net.ws.onReadyFunction();
+                            }
+                            // else{
+                                // console.log("onReadyFunction is NOT defined.");
+                            // }
                         },
                         WELCOMEMESSAGE: async function(data) { 
                             console.log("MODE:", data.mode, ", DATA:", data.data); 
@@ -173,22 +182,28 @@ _APP.net = {
                 },
             },
             
-            init: function(){
-                // Websockets config:
+            onReadyFunction: null,
 
-                // let keys = ["JSON","TEXT"];
-                let keys = Object.keys(this.handlers);
-                for(let key0 of keys){
-                    for(let key1 in this.handlers[key0]){
-                        for(let key2 in this.handlers[key0][key1]){
-                            // Create the entries in allowedMessageTypes.
-                            if(!_APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1]){ _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1] = []; }
-                            
-                            // Add to allowedMessageTypes.
-                            _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1].push(key2);
+            init: function(){
+                return new Promise(async (resolve,reject)=>{
+                    // Websockets config:
+                    
+                    // let keys = ["JSON","TEXT"];
+                    let keys = Object.keys(this.handlers);
+                    for(let key0 of keys){
+                        for(let key1 in this.handlers[key0]){
+                            for(let key2 in this.handlers[key0][key1]){
+                                // Create the entries in allowedMessageTypes.
+                                if(!_APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1]){ _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1] = []; }
+                                
+                                // Add to allowedMessageTypes.
+                                _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1].push(key2);
+                            }
                         }
                     }
-                }
+
+                    resolve();
+                });
             }
         },
 
@@ -416,6 +431,7 @@ _APP.net = {
         inited: false,
         coloredElems: {}, // Populated via configObj.
         elems: {},        // Populated via configObj.
+        connectButtons:{}, // Populated via configObj.
         previousClass: "disconnected",
         classes: [
             "pinging",
@@ -472,6 +488,20 @@ _APP.net = {
 
             // Set the status text.
             this.elems.statusText.innerText = this.classes_text[this.classes.indexOf(newClass)];
+
+            // Show the correct connect button.
+            if(newClass=="connected"){
+                this.connectButtons.connect   .classList.add("hide");
+                this.connectButtons.disconnect.classList.remove("hide");
+            }
+            else if(newClass=="disconnected"){
+                this.connectButtons.connect   .classList.remove("hide");
+                this.connectButtons.disconnect.classList.add("hide");
+            }
+            else{
+                this.connectButtons.connect   .classList.add("hide");
+                this.connectButtons.disconnect.classList.add("hide");
+            }
         },
         restorePrevStatusColor:function(){
             // Record the current class.
@@ -489,11 +519,21 @@ _APP.net = {
                 if(this.inited){ console.log("status object has already been inited."); return; }
                 
                 // Generate the DOM cache for each element.
-                this.coloredElems = configObj.DOM.coloredElems;
-                this.elems        = configObj.DOM.elems;
+                this.coloredElems   = configObj.DOM.coloredElems;
+                this.elems          = configObj.DOM.elems;
+                this.connectButtons = configObj.DOM.connectButtons;
+                
                 _APP.shared.parseObjectStringDOM(this.coloredElems, false);
                 _APP.shared.parseObjectStringDOM(this.elems, false);
+                _APP.shared.parseObjectStringDOM(this.connectButtons, false);
 
+                // Event listeners.
+                this.connectButtons.connect.addEventListener("click", ()=>{
+                    _APP.net.ws.ws_utilities.initWss();
+                }, false);
+                this.connectButtons.disconnect.addEventListener("click", ()=>{
+                    _APP.net.ws.ws_utilities.wsCloseAll();
+                }, false);
                 this.inited = true; 
 
                 resolve();
@@ -513,7 +553,7 @@ _APP.net = {
 
             // Init status.
             await this.ws.ws_event_handler.init();
-            await this.status.init(configObj);
+            await this.status.init(configObj.ws);
             
             resolve();
         });

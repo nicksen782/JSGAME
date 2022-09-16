@@ -1,4 +1,6 @@
+/* SHARED */
 *{ box-sizing: border-box; }
+.inlineBlock{ display:inline-block; vertical-align:top; }
 
 html {
     /* background-color: #051c27; */
@@ -44,6 +46,37 @@ footer {
     display:inline-block;
     vertical-align: top;
 }
+div#gameDiv {
+    /* border: 1px solid black; */
+    padding-right: 5px;
+    padding: 5px;
+    border-right: 1px dotted darkgray;
+    display: inline-block;
+    vertical-align: top;
+    min-width: 275px;
+    min-height: 350px;
+}
+div#gameDiv.hide {
+    display:none;
+}
+div#lobbyDiv {
+    border: 1px solid darkgray;
+    display: inline-block;
+    vertical-align: top;
+    min-width: 600px;
+    min-height: 350px;
+}
+div#debugDiv {
+    border: 1px solid darkgray;
+    /* display: inline-block; */
+    vertical-align: top;
+    min-width: 600px;
+    min-height: 350px;
+    margin-top: 10px;
+}
+div#debugDiv.hide {
+    display:none;
+}
 #authorDiv1,
 #authorDiv2{
     font-size: 12px;
@@ -62,17 +95,22 @@ footer {
 span#author_title,
 span#author2_title {font-weight: bold;font-family: monospace;}
 
+/* WEBSOCKETS CONNECTION STATUS */
 #net_ws_status{
     background-color: rgb(47 43 214 / 12%);
     background-color: rgb(0 92 128 / 75%);
     position: absolute;
-    top: -4px;
+    /* position: relative; */
+    top: -5px;
     right: 0px;
-    width: 180px;
+    width: 211px;
     height: 26px;
     color: white;
     font-size: 14px;
     border-radius: 5px;
+    /* float: right; */
+    padding-left:5px;
+    padding-right:5px;
 }
 #net_ws_status_square{
     border: 1px solid black;
@@ -81,9 +119,30 @@ span#author2_title {font-weight: bold;font-family: monospace;}
     display: inline-block;
     vertical-align: top;
 }
+#net_ws_status_square.pinging       { background-color: #2662f7; }
+#net_ws_status_square.connecting    { background-color: #eab700; }
+#net_ws_status_square.connected     { background-color: #16c60c; }
+#net_ws_status_square.disconnecting { background-color: #ff2100; }
+#net_ws_status_square.disconnected  { background-color: #cb513f; }
 #net_ws_status_text{}
-.pinging       { background-color: #2662f7; }
-.connecting    { background-color: #eab700; }
-.connected     { background-color: #16c60c; }
-.disconnecting { background-color: #ff2100; }
-.disconnected  { background-color: #cb513f; }
+
+#net_ws_status table {
+    width:100%;
+}
+#net_ws_status table td{
+    height: 1.5em;
+    padding: 0px;
+    margin: 0px;
+    text-align:left;
+}
+#net_ws_status table td:nth-child(2){
+    text-align:right;
+}
+#net_ws_status table td:nth-child(2) button{
+    width:85px;
+}
+
+#net_ws_status_connect{}
+#net_ws_status_connect.hide{ display:none; }
+#net_ws_status_disconnect{}
+#net_ws_status_disconnect.hide{ display:none; }

@@ -7,8 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>snake game</title>
     <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/lobby.css">
+    <script defer src="libs/js-sha256/src/sha256.js"></script>
     <script defer src="js/index.js"></script>
     <script defer src="js/net.js"></script>
+    <script defer src="js/lobby.js"></script>
 </head>
 
 <body>
@@ -16,25 +19,34 @@
     <header>
         <!-- GAME SELECT -->
         Choose Application: <div id="gameSelectDiv"></div>
+
+        <!-- WEBSOCKETS STATUS -->
         <div id="net_ws_status">
             <table>
                 <tr>
                     <td>
-                        <div id="net_ws_status_square" class="disconnected"></div>
+                        <div id="net_ws_status_square" class="disconnected inlineBlock"></div>
+                        <div id="net_ws_status_text" class="inlineBlock">Disconnected</div>
                     </td>
                     <td>
-                        <div id="net_ws_status_text">Disconnected</div>
+                        <button class=""     id="net_ws_status_connect">Connect</button>
+                        <button class="hide" id="net_ws_status_disconnect">Disconnect</button>
                     </td>
                 </tr>
-                <tr><td></td><td></td></tr>
             </table>
         </div>
     </header>
 
     <!-- GAME DISPLAY -->
     <main>
-        <!-- CONTENTS OF GAMEDIV ARE REPLACED BY THE GAME. -->
-        <div id="gameDiv"></div>
+        <!-- CONTENTS OF GAMEDIV ARE POPULATED BY THE GAME. -->
+        <div id="gameDiv" class="hide"></div>
+        
+        <!-- CONTENTS OF LOBBYDIV ARE POPULATED BY JSGAME. -->
+        <div id="lobbyDiv"></div>
+
+        <!-- CONTENTS OF DEBUGDIV ARE POPULATED BY JSGAME. -->
+        <div id="debugDiv" class="hide"><br></div>
     </main>
 
     <footer>

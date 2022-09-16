@@ -3,7 +3,7 @@ _APP = {
 
     // Contains config settings for "modules".
     configObjs : {
-        net: {
+        ws: {
             DOM: {
                 coloredElems: {
                     main         : "net_ws_status" ,
@@ -12,8 +12,58 @@ _APP = {
                 elems: {
                     statusText   : "net_ws_status_text", 
                 },
+                connectButtons:{
+                    "connect"    : "net_ws_status_connect",
+                    "disconnect" : "net_ws_status_disconnect",
+                },
             }
-        }
+        },
+        lobby:{
+            nav: {
+                defaultTabKey: "login",
+                tabs: {
+                    login    : "lobby_nav_tab_login",
+                    profile  : "lobby_nav_tab_profile",
+                    lobby    : "lobby_nav_tab_lobby",
+                    room     : "lobby_nav_tab_room",
+                    dm       : "lobby_nav_tab_dm",
+                    settings : "lobby_nav_tab_settings",
+                    debug    : "lobby_nav_tab_debug",
+                },
+                views: {
+                    login    : "lobby_nav_view_login",
+                    profile  : "lobby_nav_view_profile",
+                    lobby    : "lobby_nav_view_lobby",
+                    room     : "lobby_nav_view_room",
+                    dm       : "lobby_nav_view_dm",
+                    settings : "lobby_nav_view_settings",
+                    debug    : "lobby_nav_view_debug",
+                },
+            },
+            login: {
+                DOM: {
+                    "username"  : "lobby_username",
+                    "password"  : "lobby_password",
+                    "login"     : "lobby_login",
+                    "logout"    : "lobby_logout",
+                    "showLogin" : "lobby_showLogin",
+                    "showLogout": "lobby_showLogout",
+                }
+            },
+            profile:{
+                DOM: {
+                    "lobby_handle"       : "lobby_handle",
+                    "lobby_name"         : "lobby_name",
+                    "lobby_detailsUpdate": "lobby_detailsUpdate",
+                }
+            },
+            lobby:{
+                DOM: {
+                    "lobby_chat_messages": "lobby_debugOutput2",
+                    "lobby_chat_send"    : "lobby_chat_send",
+                }
+            },
+        },
     },
 
     // Stores apps.json.
@@ -176,12 +226,30 @@ _APP = {
     
     // Loads the selected app.
     loadApp: async function(rec){
+        // Display the selected app in the select menu.
         let select = document.querySelector("#gameSelectDiv select");
         select.value = rec.appKey;
 
+        // Load the app's files. 
         await _APP.loadFiles(rec); 
+
+        // Display the author data for the app.
         _APP.updateAuthorData(rec);
-        if(_APP[rec.appKey].init){ _APP[rec.appKey].init(); }
+
+        // Hide the debug div if the screen is too small.
+        // NOTE: If debug was true and not disabled here then the app should take care of displaying the debugDiv.
+        if(document.documentElement.clientWidth < 768){
+            // console.log("**************", "width: " + document.documentElement.clientWidth + ", height: " + document.documentElement.clientHeight);
+            if(_APP.loadedConfig.meta && _APP.loadedConfig.meta.debug == true){
+                console.log("Screen is too narrow. Hiding the debugDiv and disabling in the app.");
+                document.getElementById("debugDiv").classList.add("hide");
+                _APP.loadedConfig.meta.debug = false;
+            }
+        }
+
+        if(_APP[rec.appKey].init){ 
+            await _APP[rec.appKey].init(); 
+        }
         else{
             console.log("ERROR: Missing init function in:", rec.appKey, _APP[rec.appKey]);
         }
@@ -285,7 +353,7 @@ _APP = {
                         if(elem != null){ DOM[key] = elem; }
                         else{
                             if(showWarnings){
-                                console.log(`parseObjectStringDOM: ${key} not found in the DOM.`); 
+                                console.log(`parseObjectStringDOM: ${key} (${DOM[key]}) not found in the DOM.`); 
                             }
                         }
                     }
@@ -307,21 +375,23 @@ _APP = {
         this.parent = parent;
         this.shared.parent = this;
 
-        // Init net.
-        _APP.net.init(_APP, _APP.configObjs.net);
-
         // Get the apps.json.
         _APP.apps = await _APP.net.http.send("shared/apps.json", { type:"json", method:"GET" }, 5000);
 
         // Display the game menus with the apps.json data.
         await _APP.loadAppMenus();
-        
+
+        // Inits.
+        await _APP.net  .init(_APP, _APP.configObjs);
+        await _APP.lobby.init(_APP, _APP.configObjs);
+
         // Auto-load app?
         let params = _APP.getUrlParams();
         if(Object.keys(params).length){
             if(params.appKey){
                 if(_APP.apps[params.appKey]){ 
                     let rec = _APP.apps[params.appKey];
+                    document.getElementById("gameDiv").classList.remove("hide");
                     if(rec){ _APP.loadApp(rec); }
                 }
                 else { console.log("Game not found in apps.json:", params.appKey); }
