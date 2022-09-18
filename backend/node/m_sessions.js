@@ -58,7 +58,6 @@ let _MOD = {
     // Handles the login process.
     login: async function(username, passwordHash, req){
         return new Promise(async function(resolve,reject){
-            console.log(passwordHash);
             // Make sure that a username and a passwordHash were sent.
             if ( !(username && passwordHash) ) {
                 let obj = {
@@ -130,22 +129,21 @@ let _MOD = {
                 // Add some of the retrieved data to the user's session.
                 req.session['started']    = true; 
                 req.session['loggedIn']   = true; 
-                req.session['uuid']       = _APP.uuidv4().toUpperCase();
-                req.session['userId']     = results['userId'];
-                req.session['name']       = results['name'];
-                req.session['username']   = results['username'];
                 req.session['_sessionID'] = req.sessionID;
+                
+                req.session['data']       = {
+                    "uuid"    : _APP.uuidv4().toUpperCase(),
+                    "userId"  : results['userId'],
+                    "username": results['username'],
+                    "name"    : results['name'],
+                }; 
 
                 let obj = {
                     "success"   : true,
                     "resultType": "SUCCESSFUL_LOGIN",
-                    "data"      : {
-                        "userId"  : req.session['userId'],
-                        "name"    : req.session['name'],
-                        "username": req.session['username'],
-                    }
+                    "data"      : req.session.data,
                 };
-                console.log(obj);
+                // console.log(obj);
                 resolve(obj);
                 return;
             }
@@ -251,13 +249,14 @@ let _MOD = {
     // Checks if you are logged in and returns some session data if you are logged in.
     loginCheck: async function(req){
         return new Promise(async function(resolve,reject){
+            // console.log(req.body);
             if(!req.session){
                 let obj = {
                     "success"   : false,
                     "resultType": "ERROR_NO_SESSION",
                     "data"      : "No session.",
                 };
-                console.log(obj);
+                // console.log(obj);
                 resolve(obj);
                 return; 
             }
@@ -268,7 +267,7 @@ let _MOD = {
                     "resultType": "ERROR_NOT_LOGGED_IN",
                     "data"      : "Not logged in",
                 };
-                console.log(obj);
+                // console.log(obj);
                 resolve(obj);
                 return; 
             }
@@ -276,13 +275,9 @@ let _MOD = {
             let obj = {
                 "success"   : true,
                 "resultType": "LOGGED_IN",
-                "data"      : {
-                    "userId"  : req.session['userId'],
-                    "name"    : req.session['name'],
-                    "username": req.session['username'],
-                }
+                "data"      : req.session.data,
             };
-            console.log(obj);
+            // console.log(obj);
             resolve(obj);
             return; 
         });
@@ -326,6 +321,10 @@ let _MOD = {
                 return; 
             }
 
+            // Clear this UUID from userTrack.
+            _APP.m_websocket_node.userTrack.removeData(req.session.data.username, req.session.data.uuid);
+
+            // Remove the server's session.
             req.session.destroy(err => {
                 if (err) {
                     let obj = {
@@ -343,18 +342,23 @@ let _MOD = {
                         "resultType": "SUCCESS_LOGOUT",
                         "data"      : "Successful logout.",
                     };
-                    console.log(obj);
+                    // console.log(obj);
                     resolve(obj);
                     return; 
                 }
             });
         });
     },
+
+    // MIDDLEWARE
     eachConnection: function(req, res, next){
-        // console.log("eachConnection");
+        // A session automatically starts on webpage connect.
+        // This will run on every web server request.
+        // Set these values only once (check "started".)
         if(!req.session.started){ 
             req.session.started  = true; 
             req.session.loggedIn = false; 
+            req.session.data = {}; 
         }
         next();
     }
