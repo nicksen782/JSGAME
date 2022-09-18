@@ -1,70 +1,6 @@
 _APP = {
-    parent: null,
-
-    // Contains config settings for "modules".
-    configObjs : {
-        ws: {
-            DOM: {
-                coloredElems: {
-                    main         : "net_ws_status" ,
-                    statusSquare : "net_ws_status_square",
-                },
-                elems: {
-                    statusText   : "net_ws_status_text", 
-                },
-                connectButtons:{
-                    "connect"    : "net_ws_status_connect",
-                    "disconnect" : "net_ws_status_disconnect",
-                },
-            }
-        },
-        lobby:{
-            nav: {
-                defaultTabKey: "login",
-                tabs: {
-                    login    : "lobby_nav_tab_login",
-                    profile  : "lobby_nav_tab_profile",
-                    lobby    : "lobby_nav_tab_lobby",
-                    room     : "lobby_nav_tab_room",
-                    dm       : "lobby_nav_tab_dm",
-                    settings : "lobby_nav_tab_settings",
-                    debug    : "lobby_nav_tab_debug",
-                },
-                views: {
-                    login    : "lobby_nav_view_login",
-                    profile  : "lobby_nav_view_profile",
-                    lobby    : "lobby_nav_view_lobby",
-                    room     : "lobby_nav_view_room",
-                    dm       : "lobby_nav_view_dm",
-                    settings : "lobby_nav_view_settings",
-                    debug    : "lobby_nav_view_debug",
-                },
-            },
-            login: {
-                DOM: {
-                    "username"  : "lobby_username",
-                    "password"  : "lobby_password",
-                    "login"     : "lobby_login",
-                    "logout"    : "lobby_logout",
-                    "showLogin" : "lobby_showLogin",
-                    "showLogout": "lobby_showLogout",
-                }
-            },
-            profile:{
-                DOM: {
-                    "lobby_handle"       : "lobby_handle",
-                    "lobby_name"         : "lobby_name",
-                    "lobby_detailsUpdate": "lobby_detailsUpdate",
-                }
-            },
-            lobby:{
-                DOM: {
-                    "lobby_chat_messages": "lobby_debugOutput2",
-                    "lobby_chat_send"    : "lobby_chat_send",
-                }
-            },
-        },
-    },
+    // Contains config settings for "modules". (POPULATED DURING INIT.)
+    configObjs : {},
 
     // Stores apps.json.
     apps: {},
@@ -370,9 +306,8 @@ _APP = {
     },
 
     // 
-    init: async function(parent){
+    init: async function(){
         // Set parents. 
-        this.parent = parent;
         this.shared.parent = this;
 
         // Get the apps.json.
@@ -389,12 +324,18 @@ _APP = {
         let params = _APP.getUrlParams();
         if(Object.keys(params).length){
             if(params.appKey){
-                if(_APP.apps[params.appKey]){ 
-                    let rec = _APP.apps[params.appKey];
+                // Get the app record.
+                let rec = _APP.apps[params.appKey];
+
+                // Does the supplied key match a real key? 
+                if(rec){ 
+                    console.log("LOADING:", rec.appKey);
                     document.getElementById("gameDiv").classList.remove("hide");
-                    if(rec){ _APP.loadApp(rec); }
+                    _APP.loadApp(rec); 
                 }
-                else { console.log("Game not found in apps.json:", params.appKey); }
+                else { 
+                    console.log("Game not found in apps.json:", params.appKey); 
+                }
             }
         }
     },
@@ -402,5 +343,5 @@ _APP = {
 
 window.onload = async function(){
     window.onload = null;
-    await _APP.init(_APP);
+    await _APP.init();
 };

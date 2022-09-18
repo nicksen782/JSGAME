@@ -15,28 +15,37 @@
             <div class="lobby_login">
                 <h1>Login</h1>
                 <form method="post" id="lobby_loginForm">
+
                     <div class="" id="lobby_showLogin">
                         <label for="username">
                             <i class="mdi mdi-account"></i>
                         </label>
-                        <input type="text" name="username" placeholder="Username" id="lobby_username" required="">
+                        <input type="text" name="username" placeholder="Username" id="lobby_username" value="nicksen782" required="">
                         
                         <label for="password">
                             <i class="mdi mdi-lock"></i>
                         </label>
                         <input type="password" name="password" placeholder="Password" id="lobby_password" required="">
                         
-                        <input type="hidden" name="passwordHash" placeholder="" id="lobby_passwordHash" required="">
                         <input id="lobby_login" value="Login">
                     </div>
+
                     <div class="hide" id="lobby_showLogout">
-                        <br>
-                        Already logged in.
-                        <br>
-                        <br>
-                        <input id="lobby_logout"    class="" value="Logout">
-                        <br>
+                        <div>
+                            Hello, 
+                            <span id="lobby_showLogout_username"></span>
+                            (<span id="lobby_showLogout_handle"></span>)
+                        </div>
+                        
+                        <div>
+                            You are already logged in.
+                        </div>
+                        
+                        <div>
+                            <input id="lobby_logout"    class="" value="Logout">
+                        </div>
                     </div>
+
                 </form>
             </div>
 
@@ -102,6 +111,23 @@
         <!-- DEBUG VIEW -->
         <div class="lobby_view" id="lobby_nav_view_debug"   >
             DEBUG<br><br>
+
+            <table id="lobby_debugTable_connections">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>UUID</th>
+                        <th>Application</th>
+                        <th>HostingData</th>
+                        <th>type</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <!-- Logged in users --> 
+            <!-- and their loaded game. -->
+            <!-- Logged in users. -->
         </div>
 
     </div>

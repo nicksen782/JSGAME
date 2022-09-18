@@ -148,41 +148,51 @@ _APP.net = {
                 JSON:{
                     JSGAME_init: {
                         NEWCONNECTION : async function(data) { 
-                            console.log("MODE:", data.mode, ", DATA:", data.data); 
+                            // console.log("jsgame: .ws: .ws:", "MODE:", data.mode, ", DATA:", data.data); 
 
                             // Save the UUID.
                             _APP.net.ws.uuid = data.data;
 
                             // Display the UUID as a hover title on net_ws_status.
-                            _APP.net.status.coloredElems.main.title = `UUID:  ${data.data}`;
+                            _APP.net.status.DOM.main.title = `UUID:  ${data.data}`;
 
-                            // If the onReadyFunction is populated then run it. (set by the loaded app.)
-                            if(_APP.net.ws.onReadyFunction ? true : false){
-                                // console.log("onReadyFunction IS defined.");
-                                _APP.net.ws.onReadyFunction();
+                            // If the onReadyFunction_lobby is populated then run it. (set by the loaded app.)
+                            if(_APP.net.ws.onReadyFunction_lobby ? true : false){
+                                // console.log("onReadyFunction_lobby IS defined.");
+                                _APP.net.ws.onReadyFunction_lobby();
                             }
+                            else{
+                                // console.log("onReadyFunction_lobby is NOT defined.");
+                            }
+
+                            // // If the onReadyFunction_game is populated then run it. (set by the loaded app.)
+                            // if(_APP.net.ws.onReadyFunction_game ? true : false){
+                            //     // console.log("onReadyFunction_game IS defined.");
+                            //     _APP.net.ws.onReadyFunction_game();
+                            // }
                             // else{
-                                // console.log("onReadyFunction is NOT defined.");
+                            //     // console.log("onReadyFunction_game is NOT defined.");
                             // }
                         },
                         WELCOMEMESSAGE: async function(data) { 
-                            console.log("MODE:", data.mode, ", DATA:", data.data); 
+                            // console.log("jsgame: .ws: .ws:", "MODE:", data.mode, ", DATA:", data.data); 
                         },
                     },
                 },
                 TEXT:{
                     JSGAME_connectivity:{
                         PING: async function(data) { 
-                            console.log("MODE:", data); 
+                            // console.log("jsgame: .ws: .ws:", "MODE:", data.mode); 
                         },
                         PONG: async function(data) { 
-                            console.log("MODE:", data); 
+                            // console.log("jsgame: .ws: .ws:", "MODE:", data.mode); 
                         },
                     },
                 },
             },
             
-            onReadyFunction: null,
+            onReadyFunction_lobby: null,
+            onReadyFunction_game: null,
 
             init: function(){
                 return new Promise(async (resolve,reject)=>{
@@ -429,9 +439,7 @@ _APP.net = {
     status:{
         parent: null,
         inited: false,
-        coloredElems: {}, // Populated via configObj.
-        elems: {},        // Populated via configObj.
-        connectButtons:{}, // Populated via configObj.
+        DOM: {},        // Populated via configObj.
         previousClass: "disconnected",
         classes: [
             "pinging",
@@ -449,20 +457,16 @@ _APP.net = {
         ],
         removeStatus: function(){
             // Remove the classes.
-            let keys = Object.keys(this.coloredElems);
             for(let i=0; i<this.classes.length; i+=1){
-                for(let j=0; j<keys.length; j+=1){
-                    this.coloredElems[keys[j]].classList.remove( this.classes[i] );
-                }
+                this.DOM.statusSquare.classList.remove( this.classes[i] )
             }
 
             // Remove the text.
-            this.elems.statusText.innerText = "";
+            this.DOM.statusText.innerText = "";
         },
         getStatusColor: function(){
             // Get the active classes that are within the classes list.
-            // NOTE: only check "statusSquare" because the other colored elems should have the same class anyway.
-            let classes =  Array.from(this.coloredElems.statusSquare.classList).sort().filter(c => this.classes.indexOf(c) != -1 );
+            let classes =  Array.from(this.DOM.statusSquare.classList).sort().filter(c => this.classes.indexOf(c) != -1 );
             
             // Return the classes. (there should only be one.)
             return classes[0];
@@ -481,26 +485,23 @@ _APP.net = {
             this.removeStatus();
 
             // Set the new status.
-            let keys = Object.keys(this.coloredElems);
-            for(let j=0; j<keys.length; j+=1){
-                this.coloredElems[keys[j]].classList.add( newClass );
-            }
+            this.DOM.statusSquare.classList.add( newClass );
 
             // Set the status text.
-            this.elems.statusText.innerText = this.classes_text[this.classes.indexOf(newClass)];
+            this.DOM.statusText.innerText = this.classes_text[this.classes.indexOf(newClass)];
 
             // Show the correct connect button.
             if(newClass=="connected"){
-                this.connectButtons.connect   .classList.add("hide");
-                this.connectButtons.disconnect.classList.remove("hide");
+                this.DOM.connect   .classList.add("hide");
+                this.DOM.disconnect.classList.remove("hide");
             }
             else if(newClass=="disconnected"){
-                this.connectButtons.connect   .classList.remove("hide");
-                this.connectButtons.disconnect.classList.add("hide");
+                this.DOM.connect   .classList.remove("hide");
+                this.DOM.disconnect.classList.add("hide");
             }
             else{
-                this.connectButtons.connect   .classList.add("hide");
-                this.connectButtons.disconnect.classList.add("hide");
+                this.DOM.connect   .classList.add("hide");
+                this.DOM.disconnect.classList.add("hide");
             }
         },
         restorePrevStatusColor:function(){
@@ -519,19 +520,15 @@ _APP.net = {
                 if(this.inited){ console.log("status object has already been inited."); return; }
                 
                 // Generate the DOM cache for each element.
-                this.coloredElems   = configObj.DOM.coloredElems;
-                this.elems          = configObj.DOM.elems;
-                this.connectButtons = configObj.DOM.connectButtons;
+                this.DOM          = configObj.DOM;
                 
-                _APP.shared.parseObjectStringDOM(this.coloredElems, false);
-                _APP.shared.parseObjectStringDOM(this.elems, false);
-                _APP.shared.parseObjectStringDOM(this.connectButtons, false);
+                _APP.shared.parseObjectStringDOM(this.DOM, false);
 
                 // Event listeners.
-                this.connectButtons.connect.addEventListener("click", ()=>{
+                this.DOM.connect.addEventListener("click", ()=>{
                     _APP.net.ws.ws_utilities.initWss();
                 }, false);
-                this.connectButtons.disconnect.addEventListener("click", ()=>{
+                this.DOM.disconnect.addEventListener("click", ()=>{
                     _APP.net.ws.ws_utilities.wsCloseAll();
                 }, false);
                 this.inited = true; 
