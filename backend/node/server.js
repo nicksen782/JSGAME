@@ -71,26 +71,53 @@ let funcs_useOnce = {
                 if(rec.method == "ws"){ manualWsRoutes.push(rec.path); }
             }
         }
-
         // Get a list of the WS routes from ws_event_handlers.
         let expectedWsRoutes = [];
         
         try{
-            let types = ["JSON", "TEXT"];
-            for(let i=0; i<types.length; i+=1){
-                for(let key in _APP.m_websocket_node.handlers[types[i]]){
-                    expectedWsRoutes.push( ..._APP.m_websocket_node.handlers[types[i]][key] );
+            let keys = Object.keys(_APP.m_websocket_node.ws_event_handlers);
+            // For each key ("JSON", "TEXT") within ws_event_handlers...
+            for(let key0 of keys){
+                // For each key within ("JSON", "TEXT")...
+                for(let key1 in _APP.m_websocket_node.ws_event_handlers[key0]){
+                    // For each entry within the subkey...
+                    for(let key2 in _APP.m_websocket_node.ws_event_handlers[key0][key1]){
+                        // expectedWsRoutes.push(`type: ${key0}: key: ${key1}: func: ${key2}`);
+                        expectedWsRoutes.push({ 
+                            key0:key0, 
+                            key1:key1, 
+                            key2:key2 
+                        });
+
+                    }
                 }
             }
 
+            // Determine the paddings for the strings.
+            let paddings = { key0:0, key1:0, key2:0 };
+            for(let i=0; i<expectedWsRoutes.length; i+=1){
+                if(expectedWsRoutes[i].key0.length > paddings.key0){ paddings.key0 = expectedWsRoutes[i].key0.length; }
+                if(expectedWsRoutes[i].key1.length > paddings.key1){ paddings.key1 = expectedWsRoutes[i].key1.length; }
+                if(expectedWsRoutes[i].key2.length > paddings.key2){ paddings.key2 = expectedWsRoutes[i].key2.length; }
+            }
+
             // If any routes are in expected routes but not the manual routes then add them to the warn list. 
-            for(let key of expectedWsRoutes){
-                if(manualWsRoutes.indexOf(key) == -1){
-                    _APP.startupWarnings.push(`WARN: Manual Websockets route NOT defined for: ${key}`);
+            for(let i=0; i<expectedWsRoutes.length; i+=1){
+                let rec = expectedWsRoutes[i];
+                if(manualWsRoutes.indexOf(rec.key2) == -1){
+                    _APP.startupWarnings.push(
+                        `WARN: Manual Websockets route missing for: ` +
+                        `(type) ${rec.key0.padEnd(paddings.key0, " ")}, `+
+                        `(key) ${rec.key1.padEnd(paddings.key1, " ")}, `+
+                        `(func) ${rec.key2.padEnd(paddings.key2, " ")}`+
+                        ``
+                    );
                 }
             }
         }
-        catch(e){}
+        catch(e){
+            console.log("missingWsRoutes_check:", e);
+        }
     },
 
     getConfig : async function(){
@@ -293,7 +320,9 @@ const compressionObj = {
             _APP.consolelog("");
             
             // Display system data (and time it.)
-            _APP.displaySysData_init();
+            if(_APP.m_config.config.toggles.show_sysDataAtStartup){
+                _APP.displaySysData_init();
+            }
 
             let appTitle = "JSGAMEv2";
             process.title = appTitle;

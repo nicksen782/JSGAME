@@ -1,6 +1,7 @@
 {
     "toggles": {
         "show_APP_consolelog": true,
+        "show_sysDataAtStartup": true,
         "isActive_nodeWsServer": true
     },
     "node": {
