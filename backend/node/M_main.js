@@ -96,7 +96,7 @@ let _APP = {
         return new Promise(async function(resolve,reject){
             let key = path.basename(__filename, '.js');
             _APP.consolelog(".".repeat(54), 0);
-            _APP.consolelog(`START: module_init: ${key} :`, 0);
+            _APP.consolelog(`START: module_init:    ${key}`, 0);
             _APP.timeIt(`${key}`, "s", __filename); 
             
             // Add each module (does not run module_init yet.)
@@ -267,30 +267,15 @@ let _APP = {
     },
 
     consolelog: function(str, indent=2){
-        // m_config isn't loaded yet. Print the message anyway.
-        let prefix = "[LOG]  :";
-
-        if(!_APP.m_config ){ 
-            console.log(`${prefix}${" ".repeat(indent)}`, str);
-            return; 
-        }
-        // m_config is loaded but not inited yet. Print the message anyway.
-        else if(_APP.m_config.config && !_APP.m_config.config.toggles){ 
-            console.log(`${prefix}${" ".repeat(indent)}`, str);
-            return; 
-        }
-        // Do the normal checks. 
-        else{
-            try{
-                if(_APP.m_config.config.toggles.show_APP_consolelog){
-                    prefix = "[LOG] ::";
-                    console.log(`${prefix}${" ".repeat(indent)}`, str);
-                }
+        let prefix = "[DEBUG]";
+        try{
+            if(_APP.m_config.config.toggles.show_APP_consolelog){
+                console.log(`${prefix}${" ".repeat(indent)}`, str);
             }
-            catch(e){
-                console.log(e);
-                // console.log(`${prefix}${" ".repeat(indent)}`, str);
-            }
+        }
+        catch(e){
+            console.log(e);
+            console.log(`${prefix}${" ".repeat(indent)}`, str);
         }
     },
     
@@ -316,13 +301,13 @@ let _APP = {
                 line1 = `${key.toUpperCase()}`.padEnd(12, " ") +": "+ `${cpusLines}`;
             }
             else if(key=="network"){
-                let networkLines = "";
-                let tabSpacer = "\t\t\t\t";
+                let tabSpacer = "\t\t\t";
+                let networkLines = "\n" + tabSpacer;
                 for(let netLine_i=0; netLine_i<sysData[key].length; netLine_i+=1){
                     networkLines += ``+
-                        `${netLine_i!=0?tabSpacer:""}`+
-                        `${sysData[key][netLine_i].cidr.toString().padEnd(16, " ")}, `+
-                        `( ${sysData[key][netLine_i].iface} )`+
+                        `${netLine_i !=0 ? tabSpacer : ""}`+
+                        `${sysData[key][netLine_i].cidr.toString().padEnd(18, " ")} , `+
+                        `(${sysData[key][netLine_i].iface})`+
                         `\n`;
                 }
                 line1 = `${key.toUpperCase()}`.padEnd(12, " ") +": "+ `${networkLines}`;
@@ -387,12 +372,19 @@ let _APP = {
 };
 
 // Save app and express to _APP and then return _APP.
-module.exports = async function(app, express, server){
+module.exports = async function(app, express, server, config){
     // Set these into _APP.
     _APP.app     = app;
     _APP.express = express;
     _APP.server  = server;
 
+    // Require m_config (a second require would be skipped.)
+    _APP['m_config'] = require( './m_config.js' );
+
+    // Save the config to m_config.config
+    _APP['m_config'].config = config;
+
+    // Make sure m_sessions is loaded before _APP.module_init.
     _APP['m_sessions'] = require( './m_sessions.js' );
 
     // Return a reference to _APP.

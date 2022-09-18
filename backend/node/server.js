@@ -1,130 +1,10 @@
-// LOADING MESSAGE.
-let lines = [
-    "-".repeat(27)  ,
-    " . . . L O A D I N G . . . " ,
-    " . . S N A K E G A M E . . " ,
-    "-".repeat(27)  ,
-];
-// console.log("\n");
-for(let i=0; i<lines.length; i+=1){
-    console.log("\x1b[40m" + "\x1b[1;31m" + lines[i].padEnd(27, " ") + "\x1b[0m");
-}
-console.log("\n");
 
-// Express/server requires.
-const path       = require('path'); 
-const server     = require('http').createServer();
-const express    = require('express');
-const session    = require('express-session');
-const MemoryStore= require('memorystore')(session);
-const app        = express();
-// const fs         = require('fs');
-const zlib       = require('zlib');
-const compression = require('compression');
-const shouldCompress = (req, res) => {
-	if (req.headers['x-no-compression']) {
-		return false
-	}
-	// return true;
-	return compression.filter(req, res);
-}
-const compressionObj = {
-    filter    : shouldCompress,
-    memLevel  : zlib.constants.Z_DEFAULT_MEMLEVEL,
-    level     : zlib.constants.Z_DEFAULT_COMPRESSION,
-    chunkSize : zlib.constants.Z_DEFAULT_CHUNK,
-    strategy  : zlib.constants.Z_DEFAULT_STRATEGY,
-    threshold : 0,
-    windowBits: zlib.constants.Z_DEFAULT_WINDOWBITS,
-};
-// Modules (routes are added per module via their module_init method.)
-let _APP;
-
-// Set the error handlers.
-let setErrorHandlers = function(){
-    // Created after reading this: https://blog.heroku.com/best-practices-nodejs-errors
-    let cleanUpHasRan = false;
-
-    let cleanUp = function(byWhat){
-        // Only run once. 
-        if(cleanUpHasRan){ return; }
-
-        let funcs = [
-        ];
-        
-        for(let i=0; i<funcs.length; i+=1){ funcs[i](); }
-
-        // Set the cleanUpHasRan flag.
-        cleanUpHasRan = true;
-    };
-
-    process.on('beforeExit', code => {
-        // Can make asynchronous calls
-        console.log("\n");
-        console.log("\nHANDLER: beforeExit");
-        cleanUp("beforeExit");
-        // setTimeout(() => {
-            console.log(`  Process will exit with code: ${code}`);
-            process.exit(code)
-        // }, 100)
-    })
-
-    process.on('exit', code => {
-        // Only synchronous calls
-        console.log("\n");
-        console.log("\nHANDLER: exit");
-        cleanUp("exit");
-        console.log(`  Process exited with code: ${code}`);
-    })
-
-    process.on('SIGTERM', signal => {
-        console.log("\n");
-        console.log("\nHANDLER: SIGTERM");
-        cleanUp("SIGTERM");
-        console.log(`  Process ${process.pid} received a SIGTERM signal`);
-        process.exit(0)
-    })
-
-    process.on('SIGINT', signal => {
-        console.log("\n");
-        console.log("\nHANDLER: SIGINT");
-        cleanUp("SIGINT");
-        console.log(`  Process ${process.pid} has been interrupted`)
-        process.exit(0)
-    })
-
-    process.on('uncaughtException', err => {
-        console.log("\n");
-        console.log("\nHANDLER: uncaughtException");
-        cleanUp("uncaughtException");
-        console.log(`  Uncaught Exception:`, err);
-        process.exit(1)
-    })
-    
-    process.on('unhandledRejection', (reason, promise) => {
-        console.log("\n");
-        console.log("\nHANDLER: unhandledRejection");
-        cleanUp("unhandledRejection");
-        console.log('  Unhandled rejection at ', promise, `reason: `, reason);
-        process.exit(1)
-    })	
-};
-
-(async function APP_LOAD(){
-    // Set the error handlers.
-    setErrorHandlers();
-
-    // Create _APP.
-    _APP = await require(path.join(process.cwd(), './backend/node/M_main.js'))(app, express, server);
-    
-    //
-    _APP.timeIt("FULL_STARTUP", "s", __filename);
-
-    let printRoutes = function(){
+let funcs_useOnce = {
+    printRoutes : function(_APP){
         let routes = _APP.getRoutePaths("manual", app).manual;
         
         // REST routes.
-        console.log(`ROUTES: (REST)`);
+        _APP.consolelog(`ROUTES: (REST)`, 0);
         let maxes = { "filename" : 0, "method" : 0, "path" : 0 };
         for(filename in routes){ { if(maxes.filename < filename.length){ maxes.filename = filename.length; } } }
         for(filename in routes){ 
@@ -138,20 +18,20 @@ let setErrorHandlers = function(){
         for(filename in routes){
             for(rec of routes[filename]){
                 if(rec.method != "ws"){
-                    console.log(
+                    _APP.consolelog(
                         `  ` +
                         `FILE: ${  (filename  ).padEnd(maxes.filename, " ")}` + " || " + 
                         `METHOD: ${(rec.method).padEnd(maxes.method  , " ")}` + " || " + 
                         `PATH: ${  (rec.path  ).padEnd(maxes.path    , " ")}` + " || " + 
                         `DESC: ${  (rec.desc  )}`+
-                        ``);
+                        ``, 0);
                 }
             }	
         };
 
         // WS routes.
-        console.log("\n");
-        console.log(`ROUTES: (WEBSOCKET)`);
+        _APP.consolelog("\n", 0);
+        _APP.consolelog(`ROUTES: (WEBSOCKET)`, 0);
         maxes = { "filename" : 0, "method" : 0, "path" : 0, "args": 0 };
         for(filename in routes){ { if(maxes.filename < filename.length){ maxes.filename = filename.length; } } }
         for(filename in routes){ 
@@ -170,20 +50,20 @@ let setErrorHandlers = function(){
         for(filename in routes){
             for(rec of routes[filename]){
                 if(rec.method == "ws"){
-                    console.log(
+                    _APP.consolelog(
                         `  ` +
                         `FILE: ${  ( filename           ).padEnd(maxes.filename, " ")}` + " || " + 
                         `METHOD: ${( rec.method         ).padEnd(maxes.method  , " ")}` + " || " + 
                         `PATH: ${  ( rec.path           ).padEnd(maxes.path    , " ")}` + " || " + 
                         `ARGS: ${  ( rec.args.join(",") ).padEnd(maxes.args    , " ")}` + " || " + 
                         `DESC: ${  ( rec.desc  )}`+
-                        ``);
+                        ``, 0);
                 }
             }	
         };
-    };
+    },
 
-    let missingWsRoutes_check = function(){
+    missingWsRoutes_check : function(_APP){
         // Get a list of the manual routes for "ws".
         let manualWsRoutes = [];
         for(let file in _APP.routeList){
@@ -211,7 +91,152 @@ let setErrorHandlers = function(){
             }
         }
         catch(e){}
+    },
+
+    getConfig : async function(){
+        let config_filename        = "public/shared/config.json";
+        let configExample_filename = "public/shared/config.json.example";
+
+        // If the config.json file does not exist then make a copy from the example file. 
+        if(!fs.existsSync(config_filename)){
+            console.log(`${config_filename} is missing. Recreating from ${configExample_filename}.`);
+            fs.copyFileSync(configExample_filename, config_filename);
+        }
+        // Read/Store the JSON. 
+        let config = JSON.parse( fs.readFileSync(config_filename, 'utf8') );
+        return config;
+    },
+
+    startMessage: function(){
+        // DEBUG - Not needed for production.
+        let waitTill = new Date(new Date().getTime() + 1 * 1000);
+        while(waitTill > new Date()){}
+        
+        // LOADING MESSAGE.
+        let lines = [
+            "-".repeat(42)  ,
+            " . . . L O A D I N G :  J S G A M E . . . " ,
+            "-".repeat(42)  ,
+        ];
+        // console.log("\n");
+        for(let i=0; i<lines.length; i+=1){
+            console.log("\x1b[40m" + "\x1b[1;31m" + lines[i].padEnd(42, " ") + "\x1b[0m");
+        }
+        console.log("");
+    },
+};
+funcs_useOnce.startMessage();
+
+// Express/server requires.
+const path       = require('path'); 
+const server     = require('http').createServer();
+const express    = require('express');
+const session    = require('express-session');
+const MemoryStore= require('memorystore')(session);
+const app        = express();
+const fs         = require('fs');
+const zlib       = require('zlib');
+const compression = require('compression');
+const shouldCompress = (req, res) => {
+	if (req.headers['x-no-compression']) { return false }
+	return compression.filter(req, res);
+}
+const compressionObj = {
+    filter    : shouldCompress,
+    memLevel  : zlib.constants.Z_DEFAULT_MEMLEVEL,
+    level     : zlib.constants.Z_DEFAULT_COMPRESSION,
+    chunkSize : zlib.constants.Z_DEFAULT_CHUNK,
+    strategy  : zlib.constants.Z_DEFAULT_STRATEGY,
+    threshold : 0,
+    windowBits: zlib.constants.Z_DEFAULT_WINDOWBITS,
+};
+
+// Modules (routes are added per module via their module_init method.)
+
+(async function APP_LOAD(){
+    let _APP;
+
+    // Set the error handlers.
+    let setErrorHandlers = function(){
+        // Created after reading this: https://blog.heroku.com/best-practices-nodejs-errors
+        let cleanUpHasRan = false;
+    
+        let cleanUp = function(byWhat){
+            // Only run once. 
+            if(cleanUpHasRan){ return; }
+    
+            let funcs = [
+            ];
+            
+            for(let i=0; i<funcs.length; i+=1){ funcs[i](); }
+    
+            // Set the cleanUpHasRan flag.
+            cleanUpHasRan = true;
+        };
+    
+        process.on('beforeExit', code => {
+            // Can make asynchronous calls
+            console.log("\n");
+            console.log("\nHANDLER: beforeExit");
+            cleanUp("beforeExit");
+            // setTimeout(() => {
+                console.log(`  Process will exit with code: ${code}`);
+                process.exit(code)
+            // }, 100)
+        })
+    
+        process.on('exit', code => {
+            // Only synchronous calls
+            console.log("\n");
+            console.log("\nHANDLER: exit");
+            cleanUp("exit");
+            console.log(`  Process exited with code: ${code}`);
+        })
+    
+        process.on('SIGTERM', signal => {
+            console.log("\n");
+            console.log("\nHANDLER: SIGTERM");
+            cleanUp("SIGTERM");
+            console.log(`  Process ${process.pid} received a SIGTERM signal`);
+            process.exit(0)
+        })
+    
+        process.on('SIGINT', signal => {
+            console.log("\n");
+            console.log("\nHANDLER: SIGINT");
+            cleanUp("SIGINT");
+            console.log(`  Process ${process.pid} has been interrupted`)
+            process.exit(0)
+        })
+    
+        process.on('uncaughtException', err => {
+            console.log("\n");
+            console.log("\nHANDLER: uncaughtException");
+            cleanUp("uncaughtException");
+            console.log(`  Uncaught Exception:`, err);
+            process.exit(1)
+        })
+        
+        process.on('unhandledRejection', (reason, promise) => {
+            console.log("\n");
+            console.log("\nHANDLER: unhandledRejection");
+            cleanUp("unhandledRejection");
+            console.log('  Unhandled rejection at ', promise, `reason: `, reason);
+            process.exit(1)
+        })	
     };
+
+    // Set the error handlers.
+    setErrorHandlers();
+
+    // Get the config.json file. 
+    let config = await funcs_useOnce.getConfig();
+
+    // Create _APP.
+    _APP = await require(path.join(process.cwd(), './backend/node/M_main.js'))(app, express, server, config);
+    
+    //
+    _APP.timeIt("FULL_STARTUP", "s", __filename);
 
     // Add compression.
     app.use( compression(compressionObj) );
@@ -270,34 +295,35 @@ let setErrorHandlers = function(){
             // Display system data (and time it.)
             _APP.displaySysData_init();
 
-            let appTitle = "SnakeGame";
+            let appTitle = "JSGAMEv2";
             process.title = appTitle;
             
+            let repeatLen = ` STARTDIR: ${process.cwd()} `.length;
             let lines = [
-                "-".repeat(52)                                                                              ,
-                ` NAME    : ${appTitle} `                                                                   ,
+                "-".repeat(repeatLen)                                                                              ,
+                // ` NAME    : ${appTitle} `                                                                   ,
                 ` STARTDIR: ${process.cwd()} `                                                              ,
                 ` SERVER  : ${_APP.m_config.config.node.http.host}:${_APP.m_config.config.node.http.port} ` ,
-                "-".repeat(52)                                                                              ,
+                "-".repeat(repeatLen)                                                                              ,
             ];
             // https://gist.github.com/JBlond/2fea43a3049b38287e5e9cefc87b2124
             console.log("\n");
             for(let i=0; i<lines.length; i+=1){
-                console.log("\x1b[40m" + "\x1b[1;93m" + lines[i].padEnd(27, " ") + "\x1b[0m");
+                console.log("\x1b[40m" + "\x1b[1;93m" + lines[i].padEnd(repeatLen, " ") + "\x1b[0m");
             }
             console.log("\n");
 
             // ROUTES
-            printRoutes(); 
+            funcs_useOnce.printRoutes(_APP); 
             
             _APP.timeIt("FULL_STARTUP", "e", __filename);
             
             // Display missing routes and/or other startup warnings. 
-            missingWsRoutes_check();
+            funcs_useOnce.missingWsRoutes_check(_APP);
             if(_APP.startupWarnings.length){
-                console.log("\n");
-                console.log("STARTUPWARNINGS:");
-                console.log(_APP.startupWarnings);
+                _APP.consolelog("\n", 0);
+                _APP.consolelog("STARTUPWARNINGS:", 0);
+                _APP.consolelog(_APP.startupWarnings, 0);
             }
 
             lines = [
@@ -312,6 +338,7 @@ let setErrorHandlers = function(){
             console.log("\n");
 
             // READY
+            funcs_useOnce=null;
         });
     })();
 })();
