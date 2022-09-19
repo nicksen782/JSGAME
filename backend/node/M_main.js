@@ -8,6 +8,7 @@ const m_modules = [
     './m_config.js', // Must be first!
     './m_sessions.js',
     './m_websocket_node.js',
+    './m_lobby.js',
 ];
 const rpbp = require( './removeprocess.js' ).run;
 
@@ -282,6 +283,13 @@ let _APP = {
     // Displays system data (using during application init.)
     displaySysData_init: function(){
         // Display system data.
+        // let logger = console.log;
+        // let logger = _APP.consolelog;
+
+        // Temporarily set the show_APP_consolelog setting. 
+        let flagSetting = _APP.m_config.config.toggles.show_APP_consolelog;
+        if(flagSetting == false){ _APP.m_config.config.toggles.show_APP_consolelog = true; }
+        
         _APP.consolelog(".".repeat(54), 0);
         _APP.consolelog(`START: sysData :`, 0);
         _APP.timeIt(`sysData`, "s", __filename); 
@@ -321,6 +329,9 @@ let _APP = {
         _APP.consolelog(`END  : TIME: ${_APP.timeIt(`sysData`, "t", __filename).toFixed(3).padStart(9, " ")} ms`, 0);
         _APP.consolelog(".".repeat(54), 0);
         _APP.consolelog("");
+
+        // Restore the show_APP_consolelog setting. 
+        _APP.m_config.config.toggles.show_APP_consolelog =  flagSetting;
     },
 
     // Returns system data.

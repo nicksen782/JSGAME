@@ -34,9 +34,10 @@ let _MOD = {
         app.post('/login', express.json(), async (req, res) => {
             // console.log("/login");
             // Capture input fields.
-            let username     = req.body.username;
-            let passwordHash = req.body.passwordHash;
-            let resp = await _MOD.login(username, passwordHash, req);
+            // let username     = req.body.username;
+            // let passwordHash = req.body.passwordHash;
+            // let loadedAppKey = req.body.loadedAppKey;
+            let resp = await _MOD.login(req);
 
             res.json(resp);
         });
@@ -56,8 +57,12 @@ let _MOD = {
     },
 
     // Handles the login process.
-    login: async function(username, passwordHash, req){
+    login: async function(req){
         return new Promise(async function(resolve,reject){
+            let username     = req.body.username;
+            let passwordHash = req.body.passwordHash;
+            let loadedAppKey = req.body.loadedAppKey;
+
             // Make sure that a username and a passwordHash were sent.
             if ( !(username && passwordHash) ) {
                 let obj = {
@@ -72,7 +77,10 @@ let _MOD = {
             
             // TODO: Temporary! For testing.
             let dumbDatabase = [
-                { "username":"nicksen782", "salt":"", "dbPass":"", userId:"1", "name":"Nick Andersen" }
+                { "username":"nicksen782", "salt":"", "dbPass":"", userId:1, "name":"Nick Andersen" },
+                { "username":"nicksen782B", "salt":"", "dbPass":"", userId:2, "name":"Nick AndersenB" },
+                { "username":"nicksen782C", "salt":"", "dbPass":"", userId:3, "name":"Nick AndersenC" },
+                { "username":"nicksen782D", "salt":"", "dbPass":"", userId:4, "name":"Nick AndersenD" },
             ];
             
             // Get the requested username and data.
@@ -126,22 +134,26 @@ let _MOD = {
                     return; 
                 }
 
-                // Add some of the retrieved data to the user's session.
+                // This data is intended only for session management.
                 req.session['started']    = true; 
                 req.session['loggedIn']   = true; 
                 req.session['_sessionID'] = req.sessionID;
                 
+                // This data is expected for use throughout the program. 
                 req.session['data']       = {
-                    "uuid"    : _APP.uuidv4().toUpperCase(),
-                    "userId"  : results['userId'],
-                    "username": results['username'],
-                    "name"    : results['name'],
+                    "uuid"        : _APP.uuidv4().toUpperCase(),
+                    "userId"      : results['userId'],
+                    "username"    : results['username'],
+                    "name"        : results['name'],
+                    "loadedAppKey": loadedAppKey,
                 }; 
 
                 let obj = {
                     "success"   : true,
                     "resultType": "SUCCESSFUL_LOGIN",
-                    "data"      : req.session.data,
+                    "data"      : {
+                        session: req.session.data
+                    }
                 };
                 // console.log(obj);
                 resolve(obj);
@@ -272,10 +284,14 @@ let _MOD = {
                 return; 
             }
             
+            // Update the loadedAppKey in the session.
+            req.session.data.loadedAppKey = req.body.loadedAppKey;
             let obj = {
                 "success"   : true,
                 "resultType": "LOGGED_IN",
-                "data"      : req.session.data,
+                "data"      : {
+                    session: req.session.data
+                }
             };
             // console.log(obj);
             resolve(obj);

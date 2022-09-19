@@ -42,38 +42,51 @@ _APP.configObjs = {
         login: {
             // login DOM.
             DOM: {
-                "username"  : "lobby_username",
-                "password"  : "lobby_password",
-                "login"     : "lobby_login",
-                "logout"    : "lobby_logout",
-                "showLogin" : "lobby_showLogin",
-                "showLogout": "lobby_showLogout",
+                "username"     : "lobby_username",
+                "password"     : "lobby_password",
+                "login"        : "lobby_login",
+                "logout"       : "lobby_logout",
+                "showLogin"    : "lobby_showLogin",
+                "showChecking" : "lobby_showChecking",
+                "showLogout"   : "lobby_showLogout",
                 "showLogout_username": "lobby_showLogout_username",
-                "showLogout_handle"  : "lobby_showLogout_handle",
+                "showLogout_name"  : "lobby_showLogout_name",
             }
         },
         // Lobby profile config.
         profile:{
             // profile DOM.
             DOM: {
-                "lobby_handle"       : "lobby_handle",
-                "lobby_name"         : "lobby_name",
-                "lobby_detailsUpdate": "lobby_detailsUpdate",
+                // "lobby_handle"       : "lobby_handle",
+                // "lobby_name"         : "lobby_name",
+                // "lobby_detailsUpdate": "lobby_detailsUpdate",
             }
         },
         // Lobby lobby config.
         lobby:{
             // lobby DOM.
             DOM: {
-                "lobby_chat_messages": "lobby_debugOutput2",
-                "lobby_chat_send"    : "lobby_chat_send",
+                "lobby_globalTable"    : "lobby_globalTable",
+
+            }
+        },
+        // Lobby room config.
+        room:{
+            // room DOM.
+            DOM: {
+                "chat_title"   : "lobby_chat_title",
+                "messages"     : "lobby_chat_messages",
+                // "messages_table": "lobby_chat_messages_table",
+                // "members_table": "lobby_chat_members_table",
+                "members"      : "lobby_chat_members",
+                "send"         : "lobby_chat_send",
             }
         },
         // Lobby debug config.
         debug:{
             // Debug DOM.
             DOM: {
-                "table_connections": "lobby_debugTable_connections",
+                // "table_connections": "lobby_debugTable_connections",
             }
         },
     },

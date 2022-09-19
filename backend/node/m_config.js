@@ -13,6 +13,7 @@ let _MOD = {
     
     // Data"
     config            : {},
+    apps              : {},
 
     // Init this module.
     module_init: async function(parent){

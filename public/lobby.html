@@ -16,7 +16,7 @@
                 <h1>Login</h1>
                 <form method="post" id="lobby_loginForm">
 
-                    <div class="" id="lobby_showLogin">
+                    <div class="hide" id="lobby_showLogin">
                         <label for="username">
                             <i class="mdi mdi-account"></i>
                         </label>
@@ -34,7 +34,7 @@
                         <div>
                             Hello, 
                             <span id="lobby_showLogout_username"></span>
-                            (<span id="lobby_showLogout_handle"></span>)
+                            (<span id="lobby_showLogout_name"></span>)
                         </div>
                         
                         <div>
@@ -46,6 +46,10 @@
                         </div>
                     </div>
 
+                    <div class="" id="lobby_showChecking">
+                        Checking for login...
+                    </div>
+
                 </form>
             </div>
 
@@ -54,7 +58,7 @@
         <!-- PROFILE VIEW -->
         <div class="lobby_view" id="lobby_nav_view_profile" >
             PROFILE<br><br>
-            <table class="lobby_table1">
+            <!-- <table class="lobby_table1">
                 <caption>Set your details</caption>
                 <tr>
                     <td>Handle:</td>
@@ -75,27 +79,48 @@
                         <button id="lobby_detailsUpdate">Update</button>
                     </td>
                 </tr>
-            </table>
+            </table> -->
         </div>
 
         <!-- LOBBY VIEW -->
         <div class="lobby_view" id="lobby_nav_view_lobby"   >
-            <table class="lobby_table2">
-                <tr>
-                    <td>Lobby Chat</td>
-                </tr>
-                <tr>
-                    <td>
-                        <textarea readonly spellcheck="false" id="lobby_debugOutput2"></textarea>
-                        <textarea id="lobby_chat_send"></textarea>
-                    </td>
-                </tr>
+            <table id="lobby_globalTable">
+                <thead>
+                    <tr>
+                        <th>Room title</th>
+                        <th>Participants</th>
+                        <th>JOIN</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
             </table>
         </div>
 
         <!-- ROOM VIEW -->
         <div class="lobby_view" id="lobby_nav_view_room"    >
-            ROOM<br><br>
+            <table class="lobby_table2">
+                <tr>
+                    <td>Lobby Chat: <span id="lobby_chat_title"></span></td>
+                </tr>
+                <tr>
+                    <td>
+                        <textarea readonly spellcheck="false" id="lobby_chat_messages"></textarea>
+                        <div id="lobby_chat_members">
+                            <!-- <table id="lobby_chat_members_table">
+                                <thead>
+                                    <tr>
+                                        <th>Room title</th>
+                                        <th>Participants</th>
+                                        <th>JOIN</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table> -->
+                        </div>
+                        <textarea id="lobby_chat_send"></textarea>
+                    </td>
+                </tr>
+            </table>
         </div>
 
         <!-- DM VIEW -->
@@ -110,21 +135,21 @@
 
         <!-- DEBUG VIEW -->
         <div class="lobby_view" id="lobby_nav_view_debug"   >
-            DEBUG<br><br>
+            <!-- DEBUG<br><br> -->
 
-            <table id="lobby_debugTable_connections">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>UUID</th>
-                        <th>Application</th>
-                        <th>HostingData</th>
-                        <th>type</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <!-- <table id="lobby_debugTable_connections"> -->
+                <!-- <thead> -->
+                    <!-- <tr> -->
+                        <!-- <th>Name</th> -->
+                        <!-- <th>Username</th> -->
+                        <!-- <th>UUID</th> -->
+                        <!-- <th>Application</th> -->
+                        <!-- <th>HostingData</th> -->
+                        <!-- <th>type</th> -->
+                    <!-- </tr> -->
+                <!-- </thead> -->
+                <!-- <tbody></tbody> -->
+            <!-- </table> -->
             <!-- Logged in users --> 
             <!-- and their loaded game. -->
             <!-- Logged in users. -->

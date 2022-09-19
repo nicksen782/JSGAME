@@ -23,8 +23,9 @@ let _MOD = {
             if(!this.data[username]){
                 console.log("userTrack: Adding new user key:", username);
                 this.data[username] = {
-                    session:[], // Stays with the user even if the browser is refreshed.
-                    ws:     [], // Only stays with the user as long as the browser is not refreshed.
+                    uuids  : [], // Tracks the UUIDs used by the user.
+                    session: [], // Stays with the user even if the browser is refreshed.
+                    ws:      [], // Only stays with the user as long as the browser is not refreshed.
                 }
             }
             else{
@@ -34,8 +35,12 @@ let _MOD = {
         addToExistingUser: function(username, sessionObj, wsObj){
             // Add to sessions only if this is a new uuid.
             if(this.uuids.indexOf(sessionObj.data.uuid) == -1){
-                // Add the uuid to the list. 
+                // Add the uuid to the main list. 
                 this.uuids.push(sessionObj.data.uuid);
+                
+                // Add the uuid to the user's list. 
+                this.data[username].uuids.push(sessionObj.data.uuid);
+
                 // Add the session. 
                 this.data[username].session.push(sessionObj);
             }
@@ -45,48 +50,74 @@ let _MOD = {
 
         // Get a data object with data matching the provided uuid.
         getByUuid     : function(uuid){
-            // Each session and ws has the same uuid. 
+            // Each session and ws for each user's login has the same uuid. 
             // The uuid is what differentiates different login sessions. 
 
             let obj = {
-                uuid:uuid,
-                session:[],
-                ws:[],
+                username: "",
+                uuid    : uuid,
+                session : [], 
+                ws      : [],
             };
-            // console.log("getByUuid: Object.keys(this.data).length: ", Object.keys(this.data).length);
+
+            // Look through the data list until the user with the matching UUID is found. Return it.
             for(let userKey in this.data){
                 // Get the user data key.
                 let user = this.data[userKey];
 
-                // Get the sessions.
-                let user_sessions = user.session;
-                for(let i_session=0; i_session<user_sessions.length; i_session+=1){
-                    let session = user_sessions[i_session];
-                    if(session.data.uuid == uuid){ obj.session.push(session); }
-                    // if(session.data.uuid == uuid){ obj.session.push(session.data.uuid); }
-                }
-                
-                // Get the ws connections. 
-                let user_wss = user.ws;
-                for(let i_ws=0; i_ws<user_wss.length; i_ws+=1){
-                    let ws = user_wss[i_ws];
-                    if(ws.CONFIG.uuid == uuid){ obj.ws.push(ws); }
-                    // if(ws.CONFIG.uuid == uuid){ obj.ws.push(ws.CONFIG.uuid); }
+                // Find the first session for this user that has a matching UUID.
+                let data = user.session.find(u=>u.data.uuid == uuid);
+
+                // Record found? 
+                if(data){ 
+                    // Set the username.
+                    obj.username = data.data.username; 
+
+                    // Get the sessions that match the UUID. (There should be only one session per distinct login/uuid.)
+                    let user_sessions = user.session;
+                    for(let i_session=0; i_session<user_sessions.length; i_session+=1){
+                        let session = user_sessions[i_session];
+                        if(session.data.uuid == uuid){ obj.session.push(session); }
+                    }
+                    if(obj.session.length == 0){
+                        console.log("ERROR: There is no session for this user and uuid.");
+                        throw "ERROR: There is no session for this user and uuid.";
+                        return; 
+                    }
+                    else if(obj.session.length > 1){
+                        console.log("ERROR: There should only be one session per login/uuid.");
+                        throw "ERROR: There should only be one session per login/uuid.";
+                        return; 
+                    }
+                    else{
+                        obj.session = obj.session[0];
+                    }
+                    
+                    // Get the ws connections that match the UUID. 
+                    let user_wss = user.ws;
+                    for(let i_ws=0; i_ws<user_wss.length; i_ws+=1){
+                        let ws = user_wss[i_ws];
+                        if(ws.CONFIG.uuid == uuid){ obj.ws.push(ws); }
+                    }
+
+                    break;
                 }
             }
 
             return obj;
         },
 
-        // Get a data object with data matching the provided username.
+        // Get a data object with data matching the provided username. (All data/session/ws for the user.)
         getByUsername     : function(username){
+            // If not found then return false.
             if(!this.data[username]){ return false; }
+
+            // Return the whole userTrack userKey for the matching user. 
             return this.data[username];
         },
 
+        // Remove data from userTrack.
         removeData: function(username, uuid){
-            console.log("removeData:", username, uuid);
-
             // Get the user.
             let user = this.data[username];
 
@@ -99,9 +130,14 @@ let _MOD = {
                 return true;
             });
 
-            // console.log(`User: ${userKey} has ${user.session.length} sessions and ${user.ws.length} ws.`);
+            // Remove this uuid from this.uuids.
+            this.uuids = this.uuids.filter(u=>u != uuid);
+
+            // Remove this uuid from the user's uuids.
+            user.uuids = user.uuids.filter(u=>u != uuid);
 
             // If the user has no more sessions or ws then delete the userKey.
+            // console.log(`User: ${userKey} has ${user.session.length} sessions and ${user.ws.length} ws.`);
             if(user.session.length == 0 && user.ws.length == 0){ delete this.data[username]; }
         },
 
@@ -111,10 +147,8 @@ let _MOD = {
                 // Get the user data key.
                 let user = this.data[userKey];
 
-                // Remove closed WebSocket objects. 
-                // console.log("old ws count:", user.ws.length);
+                // Remove closed WebSocket objects for this user.
                 user.ws = user.ws.filter(ws=>{ return (ws.readyState == WebSocket.OPEN) });
-                // console.log("new ws count:", user.ws.length);
             }
         },
     },
@@ -202,7 +236,7 @@ let _MOD = {
                 if (!request.session.loggedIn) {
                     // No. Only a logged-in user should be able to start a new WebSockets connection. 
                     socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-                    // socket.destroy();
+                    socket.destroy();
                     console.log("NOT LOGGED IN.");
                     return;
                 }
@@ -214,9 +248,6 @@ let _MOD = {
                 });
             });
         });
-    },
-
-    ws_utilities: {
     },
 
     // Populated during init via data from ws_event_handlers.
@@ -231,83 +262,28 @@ let _MOD = {
     },
     ws_event_handlers:{
         JSON:{
-            JSGAME_lobby:{
-                UPDATE_USERDATA_KEY:  async function(ws, data){ 
-                    // Only allow updates to certain keys within the whitelist.
-                    let updates = [];
-                    let keys_whitelist = [
-                        "name", "handle"
-                    ];
-                    for(let i=0; i<data.data.length; i+=1){
-                        let key   = data.data[i].key;
-                        let value = data.data[i].value;
-                        // console.log(`DEBUG: key: ${key}, value: ${value}`);
-
-                        if(keys_whitelist.indexOf(key) != -1){
-                            console.log(`UPDATED: key: ${key}, value: ${value}`);
-                            
-                            // Add to the list of updates. 
-                            updates.push( { key  :key, value:value, uuid :ws.CONFIG.uuid } );
-
-                            // Update the user's key in the ws object.
-                            ws.CONFIG[key] = value;
-    
-                            // TODO
-                            // If this is a login-type key then update the user's data in the database as well.
-                            //
-                        }
-                        else{
-                            console.log(`NOT UPDATING. INVALID KEY: key: ${key}, value: ${value}`);
-                        }
-                    }
-
-                    if(updates.length){
-                        // Send this update to all clients so that they can also update their copy of the data.
-                        let obj = {
-                            mode: "UPDATE_USERDATA_KEY", 
-                            data: updates
-                        };
-                        _MOD.funcs.sendToAll( JSON.stringify( obj ) );
-                    }
-                },
-                CHAT_MSG_TO_ALL:  async function(ws, data){ 
-                    let prefix;
-                    if     (ws.CONFIG.name)  { prefix = ws.CONFIG.name; }
-                    else if(ws.CONFIG.handle){ prefix = ws.CONFIG.handle; }
-                    else                     { prefix = `USER_${ws.CONFIG.num.toString().padStart(3, "0")}`; }
-                    _MOD.funcs.sendToAll( JSON.stringify( {mode:"CHAT_MSG_TO_ALL", data:prefix + ": " + data.data} ) );
-                },
-                UPDATE_MY_DETAILS: async function(ws, data){ 
-                    ws.CONFIG.name   = data.data.name;
-                    ws.CONFIG.handle = data.data.handle;
-                    _MOD.funcs.sendToAll( JSON.stringify( {mode:"GET_ALL_CLIENTS", data:_MOD.funcs.getAllClients()} ) );
-                },
-            },
-            tests:{
-                // ECHO:  async function(ws, data){ 
-                //     ws.send( JSON.stringify({mode:"ECHO", data:data.data}) );
-                // },
-            },
         },
         TEXT:{
             JSGAME_connections:{
-                GET_UUID: async function(ws){ 
-                    ws.send( JSON.stringify( {mode:"GET_UUID", data:ws.CONFIG.uuid} ) );
-                },
                 GET_ALL_CLIENTS:async function(ws, data){ 
-                    ws.send( JSON.stringify( {mode:"GET_ALL_CLIENTS", data:_MOD.funcs.getAllClients()} ) );
-                },
-                PING: async function(ws){ 
-                    console.log("PING");
-                    ws.send("PONG");
-                },
-                PONG: async function(ws){ 
-                    console.log("PONG");
+                    ws.send( JSON.stringify( {mode:"GET_ALL_CLIENTS", data:_MOD.ws_funcs.getAllClients()} ) );
                 },
             },
         },
     },
-    funcs:{
+    ws_funcs:{
+        // Provide uuids and the websockets associated to them will be sent the specified message.
+        sendToList: function(uuids, data){
+            let ws_objs = [];
+            for(let uuid of uuids){
+                let user = _MOD.userTrack.getByUuid(uuid);
+                ws_objs.push(...user.ws);
+            }
+            console.log("sendToList:", ws_objs.length);
+            for(let i=0; i<ws_objs.length; i+=1){
+                ws_objs[i].send(data);
+            }
+       },
        sendToAll: function(data){
             _MOD.ws.clients.forEach(function each(ws) { 
                 if (ws.readyState === WebSocket.OPEN) {
@@ -375,34 +351,20 @@ let _MOD = {
             console.log("WebSockets Server: CLOSE  :", ws.CONFIG.uuid);
             ws.close(); 
 
-            // TODO: Remove all terminal ws connections that have the matching UUID.
-            // 
-
-            // Make sure this ws connection is removed after a short delay. 
-            setTimeout(function(){
-                ws.terminate(); 
-                setTimeout(function(){
-                    ws=null; 
-                }, 1000);
-            }, 1000);
+            // Remove any old data from userTrack.
+            _MOD.userTrack.cleanOld();
         },
         el_error  : function(ws, event){ 
             console.log("WebSockets Server: ERROR  :", ws.CONFIG.uuid, event);
             ws.close(); 
 
-            // Make sure this ws connection is removed after a short delay. 
-            // setTimeout(function(){
-            //     ws.terminate(); 
-            //     setTimeout(function(){
-            //         ws=null; 
-            //     }, 1000);
-            // }, 1000);
+            // Remove any old data from userTrack.
+            _MOD.userTrack.cleanOld();
         },
     },
 
     initWss: function(){
         // Websockets config:
-        // let keys = ["JSON","TEXT"];
         let keys = Object.keys(this.ws_event_handlers);
         for(let key0 of keys){
             for(let key1 in this.ws_event_handlers[key0]){
@@ -417,57 +379,37 @@ let _MOD = {
         }
 
         // Run this for each new websocket connection. 
-        let userCount = 0;
         _MOD.ws.on("connection", function connection(ws, request, client){
             // LOBBY
             if( request.url == "/LOBBY"){
-                // Add the config object to this ws object. 
-                ws.CONFIG = {};
-                
-                // ADD THE SUBSCRIPTIONS ARRAY TO THIS CONNECTION. 
-                ws.subscriptions = [];
-
-                // AUTO-ADD SOME SUBSCRIPTIONS. 
-                // _MOD.ws_utilities.addSubscription(ws, "STATS1");
-                // _MOD.ws_utilities.addSubscription(ws, "STATS2");
-
-                // Save this data to the ws for future use.
-                
                 // Create the userTrack object if it does not exist.
                 if(!_MOD.userTrack.getByUsername(request.session.data.username)){
                     _MOD.userTrack.addNewUser(request.session.data.username);
                 }
-                
+
                 // Add this data to userTrack.
                 _MOD.userTrack.addToExistingUser(request.session.data.username, request.session, ws);
-
-                // Save the UUID to the ws.CONFIG. (Redundant due to userTrack?)
-                ws.CONFIG.uuid            = request.session.data.uuid; 
-                
-                // Save the session to the ws.CONFIG. (Redundant due to userTrack?)
-                ws.CONFIG.session = request.session.data;
 
                 // Remove any old data from userTrack.
                 _MOD.userTrack.cleanOld();
 
-                // ws.CONFIG.uuid         = _APP.uuidv4().toUpperCase(); 
-                // ws.CONFIG.num          = userCount ++; 
-                // ws.CONFIG.type         = "LOBBY"; 
-                // ws.CONFIG.clientType   = "UNATTACHED"; 
-                // ws.CONFIG.hostingData  = {
-                    // hosting       : false,
-                    // appKey        : "",
-                    // title         : "",
-                    // numConnected  : 0,
-                    // maxConnections: 0,
-                // }; 
-                // ws.CONFIG.admin        = false; 
-                // ws.CONFIG.clientType   = "GAME_HOST"; 
-                // ws.CONFIG.clientType   = "GAME_CLIENT"; 
-                // ws.CONFIG.isHost       = ""; 
-                // ws.CONFIG.host_uuid    = ""; // UUID of the host that this client has connected to. (If the client is the host then this will match their own UUID.)
-                // ws.CONFIG.client_uuids = []; // UUIDs of clients connected to this host.
+                // Add the CONFIG object to this ws object. 
+                ws.CONFIG = {
+                    uuid: request.session.data.uuid,
+                    session: request.session.data,
+                    subscriptions : [],
+                    multiplayerData: {
+                        host_uuid    : [], // Host within shared app.
+                        client_uuids : [], // Peers of host within shared app.
+                        isHost       : false, // Used only by host.
+                        isInSharedApp: false, // Used by host/client.
+                        allowAudio   : false, // Allows the reception of audio from other clients. 
+                        allowVideo   : false, // Allows the reception of video from other clients. 
+                        loadedAppKey : request.session.data.loadedAppKey,
+                    },
+                };
 
+                // CONNECT MESSAGE.
                 console.log("WebSockets Server: CONNECT:", ws.CONFIG.type, request.session.data.uuid);
 
                 // Indicate that the connection is open and ready.
@@ -476,16 +418,10 @@ let _MOD = {
                 // SEND THE NEW CONNECTION MESSAGE.
                 ws.send(JSON.stringify( {"mode":"WELCOMEMESSAGE", data:`WELCOME TO JSGAME (LOBBY).`} ));
 
-                // SEND THE NEW CONNECTION DATA TO ALL CONNECTED CLIENTS.
-                _MOD.funcs.sendToAll( JSON.stringify( {mode:"NEW_LOBBY_CLIENT", data:[ws.CONFIG]} ) );
+                // Announce the new connection.
+                _MOD.ws_funcs.sendToAll( JSON.stringify( {mode:"LOBBY_CLIENT_NEW", data:[ws.CONFIG.session.username]} ) );
 
-                // _MOD.funcs.sendToAll( JSON.stringify( {mode:"GET_ALL_CLIENTS", data:_MOD.funcs.getAllClients()} ) );
-
-                // ws.send(JSON.stringify( {"mode":"NEW_LOBBY_CLIENT", data:`WELCOME TO JSGAME (LOBBY).`} ));
-
-                // console.log("request.session:", request.session);
-                // console.log("request.session.uuid:", request.session.uuid);
-                // console.log("ws.CONFIG.uuid      :", ws.CONFIG.uuid);
+                // console.log(_MOD.userTrack.getByUuid(request.session.data.uuid));
 
                 // ADD EVENT LISTENERS.
                 ws.addEventListener('message', (event)=>_MOD.ws_events.el_message(ws, event) );

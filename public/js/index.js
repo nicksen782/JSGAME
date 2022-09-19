@@ -184,7 +184,14 @@ _APP = {
         }
 
         if(_APP[rec.appKey].init){ 
+            // Run the app's init.
+            console.log("LOADING:", rec.appKey);
             await _APP[rec.appKey].init(); 
+            console.log("LOADED :", rec.appKey);
+            
+            // Do the login check. 
+            // console.log("running loginCheck after loading:", rec.appKey);
+            await _APP.lobby.login.loginCheck();
         }
         else{
             console.log("ERROR: Missing init function in:", rec.appKey, _APP[rec.appKey]);
@@ -323,20 +330,25 @@ _APP = {
         // Auto-load app?
         let params = _APP.getUrlParams();
         if(Object.keys(params).length){
-            if(params.appKey){
-                // Get the app record.
-                let rec = _APP.apps[params.appKey];
-
-                // Does the supplied key match a real key? 
-                if(rec){ 
-                    console.log("LOADING:", rec.appKey);
-                    document.getElementById("gameDiv").classList.remove("hide");
-                    _APP.loadApp(rec); 
-                }
-                else { 
-                    console.log("Game not found in apps.json:", params.appKey); 
-                }
+            // Check for and get the app record.
+            let rec;
+            // Does the supplied key match a real key? 
+            if(params.appKey && (rec = _APP.apps[params.appKey]) ){
+                document.getElementById("gameDiv").classList.remove("hide");
+                _APP.loadApp(rec); 
             }
+            else{
+                // Do the login check. 
+                console.log("appKey not found in apps.json:", params.appKey); 
+                // console.log("running loginCheck (appKey not found.)");
+                await _APP.lobby.login.loginCheck();
+            }
+        }
+        else{
+            // Do the login check. 
+            // console.log("appKey not specified."); 
+            // console.log("running loginCheck (No appKey.)");
+            await _APP.lobby.login.loginCheck();
         }
     },
 };
@@ -345,3 +357,7 @@ window.onload = async function(){
     window.onload = null;
     await _APP.init();
 };
+
+// Do the login check. 
+// console.log("running loginCheck after loading:", rec.appKey);
+// await _APP.lobby.login.loginCheck();
