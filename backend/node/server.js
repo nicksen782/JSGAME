@@ -306,7 +306,7 @@ const compressionObj = {
     
     // Remove the process if it already exists.
     let responses = await _APP.removeProcessByPort( [ _APP.m_config.config.node.http.port ], true );
-    for(let i=0; i<responses.length; i+=1){ _APP.consolelog(responses[i], 4); }
+    for(let i=0; i<responses.length; i+=1){ _APP.consolelog(responses[i], 2); }
     
     // Server start
     server.on('request', app);

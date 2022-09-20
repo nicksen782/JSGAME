@@ -95,9 +95,9 @@ let _MOD = {
             roomTitle: "General chat1",
             hoverTitle: "General chat1",
             chatHistory: [
-                "GC1: first line  - Test chat history",
-                "GC1: second line - Test chat history",
-                "GC1: third line  - Test chat history",
+                {u:"SYSTEM", d:(new Date().getTime()), m:"GC1: first line  - Test chat history"},
+                {u:"SYSTEM", d:(new Date().getTime()), m:"GC1: second line - Test chat history. This will be a much larger line that should wrap. What will happen when it wraps? Take a look!"},
+                {u:"SYSTEM", d:(new Date().getTime()), m:"GC1: third line  - Test chat history\nnext line\nline after that."},
             ],
             },
             {
@@ -105,9 +105,9 @@ let _MOD = {
                 roomTitle: "General chat2",
                 hoverTitle: "General chat2",
                 chatHistory: [
-                    "GC2: first line  - Test chat history",
-                    "GC2: second line - Test chat history",
-                    "GC2: third line  - Test chat history. This line is much longer than the others. I expect it to wrap.",
+                    {u:"SYSTEM", d:(new Date().getTime()), m:"GC2: first line  - Test chat history"},
+                    {u:"SYSTEM", d:(new Date().getTime()), m:"GC2: second line - Test chat history"},
+                    {u:"SYSTEM", d:(new Date().getTime()), m:"GC2: third line  - Test chat history"},
                 ],
             }
         ];
@@ -120,7 +120,7 @@ let _MOD = {
                 roomTitle  : `(APP): ${app.displayName}`,
                 hoverTitle : `${app.desc}`,
                 chatHistory: [
-                    `SYSTEM: Welcome to "${app.displayName}" chat.`,
+                    {u:"SYSTEM", d:(new Date().getTime()), m:`Welcome to "${app.displayName}" chat.`},
                 ],
             });
         }
@@ -176,7 +176,7 @@ let _MOD = {
                     let room = _MOD.lobby_rooms.find(r=>r.roomId==roomId);
                     if(room){
                         // Get the username for this user.
-                        let username = _MOD.userTrack.getByUuid(ws.CONFIG.uuid).session.data.username;
+                        let username = ws.CONFIG.session.username;
                         
                         // Set this client's roomId.
                         ws.CONFIG.currentRoomId = room.roomId;
@@ -204,11 +204,51 @@ let _MOD = {
                         };
                         // Don't include this client in the list or else it will end up being added twice.
                         let uuids = clients.map(u=>u.uuid).filter(u=>u != ws.CONFIG.uuid);
-                        _MOD.ws_funcs.sendToList(uuids, JSON.stringify(obj2));
+                        _MOD.userTrack.sendToList(uuids, JSON.stringify(obj2));
                     }
                     else{
                         console.log(`ERROR: roomId: ${data.data.roomId} not found.`);
                     }
+                },
+                CHAT_ROOM_MESSAGE:  async function(ws, data){ 
+                    console.log("mode:", data.mode, ", data:", data.data);
+
+                    // Break out the roomId and message. 
+                    let roomId = data.data.roomId;
+                    let message = data.data.message;
+
+                    // Create the message object. 
+                    let msgObj = {
+                        r: roomId,
+                        u: ws.CONFIG.session.username, 
+                        d: (new Date().getTime()), 
+                        m: message
+                    };
+
+                    // Get the room object.
+                    let room = _MOD.lobby_rooms.find(r=>r.roomId==roomId);
+
+                    // Add the message to the chatHistory.
+                    room.chatHistory.push(msgObj);
+
+                    // Get the clients connected to this room (including this client). 
+                    let clients = _MOD.lobby_getRoomMembers(roomId);
+
+                    // Break out the uuids. Do not include this client in the list. 
+                    // let uuids = clients.map(u=>u.uuid).filter(u=>u != ws.CONFIG.uuid);
+
+                    // Break out the uuids. Include the client in the list. 
+                    let uuids = clients.map(u=>u.uuid);
+
+                    // Send the message to each client in the room.
+                    let obj = {
+                        mode:"CHAT_ROOM_MESSAGE", 
+                        data: { 
+                            roomId: roomId, 
+                            msgObj: [msgObj],
+                        }
+                    };
+                    _MOD.userTrack.sendToList(uuids, JSON.stringify(obj));
                 },
             },
             JSGAME_lobby:{

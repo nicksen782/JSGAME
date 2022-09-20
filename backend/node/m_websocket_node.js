@@ -151,6 +151,23 @@ let _MOD = {
                 user.ws = user.ws.filter(ws=>{ return (ws.readyState == WebSocket.OPEN) });
             }
         },
+
+        // Provide uuids and the websockets associated to them will be sent the specified message.
+        sendToList: function(uuids, msg){
+            // Get all WebSockets for each specific user.
+            let ws_objs = [];
+            for(let uuid of uuids){
+                let user = _MOD.userTrack.getByUuid(uuid);
+                ws_objs.push(...user.ws);
+            }
+            // console.log("sendToList:", ws_objs.length);
+
+            // Send the message to each found WebSockets connection. 
+            for(let i=0; i<ws_objs.length; i+=1){
+                // Make sure to only send to open WebSockets.
+                if (ws_objs[i].readyState === WebSocket.OPEN){ ws_objs[i].send(msg); }
+            }
+        },
     },
 
      // Init this module.
@@ -261,42 +278,21 @@ let _MOD = {
         return false;
     },
     ws_event_handlers:{
-        JSON:{
-        },
-        TEXT:{
-            JSGAME_connections:{
-                GET_ALL_CLIENTS:async function(ws, data){ 
-                    ws.send( JSON.stringify( {mode:"GET_ALL_CLIENTS", data:_MOD.ws_funcs.getAllClients()} ) );
-                },
-            },
-        },
+        JSON:{},
+        TEXT:{},
     },
     ws_funcs:{
-        // Provide uuids and the websockets associated to them will be sent the specified message.
-        sendToList: function(uuids, data){
-            let ws_objs = [];
-            for(let uuid of uuids){
-                let user = _MOD.userTrack.getByUuid(uuid);
-                ws_objs.push(...user.ws);
-            }
-            console.log("sendToList:", ws_objs.length);
-            for(let i=0; i<ws_objs.length; i+=1){
-                ws_objs[i].send(data);
-            }
-       },
-       sendToAll: function(data){
+       // Send message to all open WebSockets clients. 
+       sendToAll: function(msg){
             _MOD.ws.clients.forEach(function each(ws) { 
-                if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(data); 
-                }
+                if (ws.readyState === WebSocket.OPEN) { ws.send(msg);  }
             });
         },
+        // Get complete list of open WebSockets clients CONFIG data..
         getAllClients: function(){
             let clients = [];
             _MOD.ws.clients.forEach(function each(ws) { 
-                if (ws.readyState === WebSocket.OPEN) {
-                    clients.push(ws.CONFIG);
-                }
+                if (ws.readyState === WebSocket.OPEN) { clients.push(ws.CONFIG); }
             });
             clients.sort(function(a,b){ return a.num - b.num; });
             return clients;
@@ -305,57 +301,73 @@ let _MOD = {
     ws_events:{
         el_message: function(ws, event){
             let data;
-            let tests = { isJson: false, isText: false };
+            let type;
 
             // First, assume the data is JSON (verify this.)
-            try{ data = JSON.parse(event.data); tests.isJson = true; }
+            try{ data = JSON.parse(event.data); type = "JSON"; }
             
-            // Isn't JSON. Assume that it is text. 
-            catch(e){ data = event.data; tests.isText = true; }
+            // Isn't JSON. 
+            catch(e){ 
+                // TODO: binary tests (for completeness.)
+                if(0){
+                }
+                
+                // Assume that it is text. 
+                else { data = event.data; type = "TEXT"; }
+            }
 
             // Handle JSON.
-            if(tests.isJson){
+            if(type == "JSON"){
                 // Find the event handler key.
                 let key = _MOD.handlerLookup(data.mode, "JSON");
-                console.log("JSON,", `key: ${key}, mode:`, data.mode);
-
+                
                 // Use the key if found.
-                if(key){ _MOD.ws_event_handlers.JSON[key][data.mode](ws, data); }
+                if(key){ 
+                    console.log(`WS_MSG: type: ${type}, mode: ${data.mode}, key: ${key}`);
+                    _MOD.ws_event_handlers.JSON[key][data.mode](ws, data); 
+                }
 
                 // Unhandled.
                 else{
-                    console.log("UNKNOWN MODE:", "MODE:", data.mode, "JSON");
+                    console.log(`WS_MSG: UNKNOWN MODE, type: ${type}, mode: ${data.mode}`);
                     ws.send(JSON.stringify({"mode":"ERROR", "data":"UNKNOWN MODE: " + data.mode}));
                     return; 
                 }
             }
 
             // Handle TEXT.
-            else if(tests.isText){
+            else if(type == "TEXT"){
                 // Find the event handler key.
                 let key = _MOD.handlerLookup(data, "TEXT");
-                console.log("TEXT,", `key: ${key}, mode: ${data}`);
-
+                
                 // Use the key if found.
-                if(key){ _MOD.ws_event_handlers.TEXT[key][data](ws); }
-
+                if(key){ 
+                    console.log(`WS_MSG: type: ${type}, mode: ${data}, key: ${key}`);
+                    _MOD.ws_event_handlers.TEXT[key][data](ws); 
+                }
+                
                 // Unhandled.
                 else{
-                    console.log("UNKNOWN MODE:", "data:", data, "TEXT");
+                    console.log(`WS_MSG: UNKNOWN MODE, type: ${type}, mode: ${data}`);
                     ws.send(JSON.stringify({"mode":"ERROR", "data":"UNKNOWN MODE: " + data}));
                     return;
                 }
             }
+
+            // Handle UNKNOWN TYPE
+            else{
+                console.log(`WS_MSG: UNKNOWN TYPE`);
+            }
         },
         el_close  : function(ws, event){ 
-            console.log("WebSockets Server: CLOSE  :", ws.CONFIG.uuid);
+            console.log(`WS_SRV: CLOSE  :, ${ws.CONFIG.uuid}`);
             ws.close(); 
 
             // Remove any old data from userTrack.
             _MOD.userTrack.cleanOld();
         },
         el_error  : function(ws, event){ 
-            console.log("WebSockets Server: ERROR  :", ws.CONFIG.uuid, event);
+            console.log(`WS_SRV: ERROR  :, ${ws.CONFIG.uuid}`, event);
             ws.close(); 
 
             // Remove any old data from userTrack.
@@ -410,7 +422,7 @@ let _MOD = {
                 };
 
                 // CONNECT MESSAGE.
-                console.log("WebSockets Server: CONNECT:", ws.CONFIG.type, request.session.data.uuid);
+                console.log(`WS_SRV: CONNECT: uuid: ${request.session.data.uuid}`);
 
                 // Indicate that the connection is open and ready.
                 ws.send(JSON.stringify( {"mode":"NEWCONNECTION", data:request.session.uuid } ));
@@ -420,8 +432,6 @@ let _MOD = {
 
                 // Announce the new connection.
                 _MOD.ws_funcs.sendToAll( JSON.stringify( {mode:"LOBBY_CLIENT_NEW", data:[ws.CONFIG.session.username]} ) );
-
-                // console.log(_MOD.userTrack.getByUuid(request.session.data.uuid));
 
                 // ADD EVENT LISTENERS.
                 ws.addEventListener('message', (event)=>_MOD.ws_events.el_message(ws, event) );

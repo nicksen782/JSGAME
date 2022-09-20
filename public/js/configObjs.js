@@ -74,9 +74,10 @@ _APP.configObjs = {
         room:{
             // room DOM.
             DOM: {
+                "chat_table"   : "lobby_chat_table",
                 "chat_title"   : "lobby_chat_title",
                 "messages"     : "lobby_chat_messages",
-                // "messages_table": "lobby_chat_messages_table",
+                "messages_table": "lobby_chat_messages_table",
                 // "members_table": "lobby_chat_members_table",
                 "members"      : "lobby_chat_members",
                 "send"         : "lobby_chat_send",

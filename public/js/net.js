@@ -179,16 +179,7 @@ _APP.net = {
                         },
                     },
                 },
-                TEXT:{
-                    JSGAME_connectivity:{
-                        PING: async function(data) { 
-                            // console.log("jsgame: .ws: .ws:", "MODE:", data.mode); 
-                        },
-                        PONG: async function(data) { 
-                            // console.log("jsgame: .ws: .ws:", "MODE:", data.mode); 
-                        },
-                    },
-                },
+                TEXT:{},
             },
             
             onReadyFunction_lobby: null,

@@ -98,25 +98,23 @@
 
         <!-- ROOM VIEW -->
         <div class="lobby_view" id="lobby_nav_view_room"    >
-            <table class="lobby_table2">
+            <table id="lobby_chat_table">
                 <tr>
                     <td>Lobby Chat: <span id="lobby_chat_title"></span></td>
                 </tr>
                 <tr>
                     <td>
-                        <textarea readonly spellcheck="false" id="lobby_chat_messages"></textarea>
-                        <div id="lobby_chat_members">
-                            <!-- <table id="lobby_chat_members_table">
-                                <thead>
-                                    <tr>
-                                        <th>Room title</th>
-                                        <th>Participants</th>
-                                        <th>JOIN</th>
-                                    </tr>
-                                </thead>
+                        <div id="lobby_chat_messages">
+                            <table id="lobby_chat_messages_table">
+                                <thead></thead>
                                 <tbody></tbody>
-                            </table> -->
+                            </table>
                         </div>
+                        <div id="lobby_chat_members"></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3">
                         <textarea id="lobby_chat_send"></textarea>
                     </td>
                 </tr>

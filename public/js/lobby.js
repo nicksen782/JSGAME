@@ -244,18 +244,6 @@ _APP.lobby = {
         // TODO
         startAsClient:function(){
         },
-        // TODO
-        sendChatMessage:function(){
-            if(!_APP.net.ws.activeWs){ alert("You are not connected."); return;  } 
-    
-            let elem = this.DOM["lobby_chat_send"];
-            let obj = {
-                mode:"CHAT_MSG_TO_ALL",
-                data: elem.value
-            };
-            _APP.net.ws.activeWs.send(JSON.stringify(obj));
-            elem.value = "";
-        },
 
         populateGlobalRooms: function(data){
             let table = this.DOM["lobby_globalTable"];
@@ -312,7 +300,9 @@ _APP.lobby = {
     room: {
         parent: null,
         DOM: {},
+        currentRoomId: "",
 
+        // RECV: Adds to the current room members display.
         newMembers:function(data){
             // console.log("newMembers:", data);
     
@@ -330,16 +320,75 @@ _APP.lobby = {
             this.DOM["members"].append(frag1);
             this.parent.nav.showOneView("room");
         },
-        joinRoom:function(data){
-            // console.log("joinRoom:", data);
+        addChatMessagesDom: function(messages){
+            let table = this.DOM["messages_table"];
+            let tbody = table.querySelector("tbody");
 
+            for(let i=0; i<messages.length; i+=1){
+                let tr = tbody.insertRow(-1);
+                let td;
+
+                // Name
+                td = tr.insertCell(-1);
+                td.classList.add("tdUsername");
+                td.innerText = messages[i].u;
+                td.title = new Date(messages[i].d);
+                if(messages[i].username == _APP.lobby.login.loginData.username){ tr.classList.add("thisUser"); }
+                
+                // Message
+                td = tr.insertCell(-1);
+                td.classList.add("tdMessage");
+                td.innerText = messages[i].m;
+            }
+        },
+        // RECV: Populates room data.
+        joinRoom:function(data){
+            console.log("joinRoom:", data);
+
+            // Update the room display data.
             this.DOM["chat_title"].innerText = data.room.roomTitle;
             this.DOM["chat_title"].title = `roomId: ${data.room.roomId}`;
-            this.DOM["messages"].value = data.room.chatHistory.join("\n");
+
+            // Clear any existing message rows. 
+            Array.from(this.DOM["messages_table"].querySelector("tbody").rows).forEach( tr => tr.remove() );
+
+            // this.DOM["messages"].innerHTML = "";
+            this.addChatMessagesDom(data.room.chatHistory);
+
+            // Clear the members list. 
             this.DOM["members"].innerHTML = "";
+
+            // Populate the members list. 
             this.newMembers(data.clients);
 
+            // Save the currentRoomId.
+            this.currentRoomId = data.room.roomId;
+            // Show the room tab.
             this.parent.nav.showOneView("room");
+        },
+        // RECV: Receive chat message to room and display it.
+        recv_CHAT_ROOM_MESSAGE: function(roomId, msgObj){
+            console.log("recv_CHAT_ROOM_MESSAGE:", roomId, msgObj, this.DOM.messages);
+
+            if(this.currentRoomId != roomId){
+                console.log("recv_CHAT_ROOM_MESSAGE:", `Received message but not for the current chat room.`, data);
+                return; 
+            }
+
+            // Update the messages display within the room.
+            console.log("add to div!");
+            this.addChatMessagesDom(msgObj);
+        },
+        // SEND: Send chat message to the room.
+        send_CHAT_ROOM_MESSAGE: function(ev){
+            // Get the message value.
+            let message = ev.target.value;
+
+            // Clear the message input.
+            ev.target.value = "";
+
+            // Send the roomId and message to the server. 
+            _APP.net.ws.activeWs.send(JSON.stringify({ mode:'CHAT_ROOM_MESSAGE', data:{roomId:this.currentRoomId, message:message }}));
         },
 
         init: function(configObj){
@@ -351,7 +400,7 @@ _APP.lobby = {
                 this.parent.parent.shared.parseObjectStringDOM(this.DOM, true);
 
                 // Event listeners.
-                this.DOM["send"].addEventListener("keyup", (ev)=>{ if(ev.key=='Enter'){ this.sendChatMessage(); } }, false);
+                this.DOM["send"].addEventListener("keyup", (ev)=>{ if(ev.key=='Enter'){ this.send_CHAT_ROOM_MESSAGE(ev); } }, false);
 
                 resolve();
             });
@@ -560,30 +609,20 @@ _APP.lobby = {
                     LOBBY_CLIENT_NEW: async function(data) { 
                         console.log("lobby: .ws:", "MODE:", data.mode, ", DATA:", data.data); 
                         // this.debug.updateClientsList(data.data, false);
+                        
+                        // Update friend list. (DM)
+                        //
                     },
-                },
-                lobby_tests:{
-                    UPDATE_USERDATA_KEY: async function(data) { 
-                        console.log("*lobby: .ws:", "MODE:", data.mode, ", DATA:", data.data); 
-                        // this.profile.GET_updateDetails(data.data);
-                    },
-                    ECHO: async function(data) { 
+                    CHAT_ROOM_MESSAGE: async function(data){
                         console.log("lobby: .ws:", "MODE:", data.mode, ", DATA:", data.data); 
+                        this.room.recv_CHAT_ROOM_MESSAGE(data.data.roomId, data.data.msgObj);
                     },
-                    CHAT_MSG_TO_ALL: async function(data) { 
-                        console.log("lobby: .ws:", "MODE:", data.mode, ", DATA:", data.data); 
-                        document.getElementById("lobby_debugOutput2").innerHTML += data.data + "\n";
-                    },
-                },
-                lobby_debug:{
-                    
                 },
             },
             TEXT:{},
         },
 
         onReadyFunction_lobby: async function(){
-            // _APP.net.ws.activeWs.send('GET_ALL_CLIENTS');
             _APP.net.ws.activeWs.send('GET_GLOBAL_ROOMS');
 
             // Populate debug.
