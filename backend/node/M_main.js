@@ -5,10 +5,12 @@ const path = require('path');
 
 // Modules saved within THIS module.
 const m_modules = [
-    './m_config.js', // Must be first!
-    './m_sessions.js',
-    './m_websocket_node.js',
-    './m_lobby.js',
+    './m_config.js',         // Config
+    './m_dbInit.js',         // Database init.
+    './m_db.js',             // Database methods
+    './m_sessions.js',       // Session manager.
+    './m_websocket_node.js', // WebSockets manager.
+    './m_lobby.js',          // Lobby manager.
 ];
 const rpbp = require( './removeprocess.js' ).run;
 

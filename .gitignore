@@ -1,7 +1,14 @@
+# IGNORE THESE.
 _IGNORE/*
 node_modules/*
 
+# IGNORE GAMES. THEY ARE SEPARATE.
 !public/games/.gitkeep
 
+# CONFIGS.
 public/shared/config.json
 public/shared/apps.json
+
+# DATABASE.
+backend/db/db_init_importFile.js
+backend/db/JSGAME.db

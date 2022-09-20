@@ -91,12 +91,28 @@ _APP.lobby = {
                     resolve();
                 }
                 else{
-                    // console.log("FALSE", loginObj.resultType, loginObj.data);
+                    console.log("FALSE", loginObj.resultType, loginObj.data);
+                    this.loginData = {};
 
                     // Show the correct part of the login form.
                     this.DOM.showLogin   .classList.remove("hide");
                     this.DOM.showLogout  .classList.add("hide");
                     this.DOM.showChecking.classList.add("hide");
+
+                    // Show an error?
+                    let errors = [
+                        "ERROR_UNKNOWN_USER",
+                        "ERROR_LOGIN_MISSING_VALUES",
+                        "ERROR_SESSION_GENERATION",
+                        "ERROR_LOGIN_NO_MATCH",
+                        "ERROR_ACCOUNT_DISABLED",
+                    ];
+                    if(errors.indexOf(loginObj.resultType) != -1){
+                        alert(
+                            `LOGIN ERROR: ${loginObj.data}\n\n` +
+                            `(${loginObj.resultType})`
+                        );
+                    }
 
                     resolve();
                 }
@@ -296,29 +312,79 @@ _APP.lobby = {
         }
     },
 
+    // WIP
+    room2: {
+    },
+
     // TODO
     room: {
         parent: null,
         DOM: {},
         currentRoomId: "",
+        roomData: {
+            room:{},
+            clients:[],
+        },
 
         // RECV: Adds to the current room members display.
-        newMembers:function(data){
-            // console.log("newMembers:", data);
+        newMembers:function(data=false){
+            console.log("newMembers:", data);
     
-            let frag1 = document.createDocumentFragment();
+            // Loop through the new members data.
             for(let i=0; i<data.length; i+=1){
+                // Determine if the new member is already in the client list. 
+                let existingClient = this.roomData.clients.find(d => d.username == data[i].username && d.uuid == data[i].uuid);
+
+                // If the new client is NOT in the roomData.clients list then add it.
+                if(!existingClient){
+                    console.log("New member is NOT on the client's list. Adding.");
+                    this.roomData.clients.push({
+                        username: data[i].username,
+                        uuid    : data[i].uuid
+                    });
+                }
+            }
+
+            // Redraw the members div with data from roomData.clients.
+            let frag1 = document.createDocumentFragment();
+            for(let i=0; i<this.roomData.clients.length; i+=1){
                 let div = document.createElement("div");
                 let span1 = document.createElement("span");
                 span1.classList.add("lobby_members_item");
-                span1.innerText = data[i].username;
-                span1.setAttribute("uuid", data[i].uuid);
-                span1.title = `${data[i].username} : ${data[i].uuid}`;
+                span1.innerText = this.roomData.clients[i].username;
+                span1.setAttribute("uuid", this.roomData.clients[i].uuid);
+                span1.title = `${this.roomData.clients[i].username} : ${this.roomData.clients[i].uuid}`;
                 div.append(span1);
                 frag1.append(div);
             }
+            
+            // Clear the members div and update the contents with the fragment.
+            this.DOM["members"].innerHTML = "";
             this.DOM["members"].append(frag1);
-            this.parent.nav.showOneView("room");
+            // this.parent.nav.showOneView("room");
+
+
+            // let frag1 = document.createDocumentFragment();
+            // let room_client_uuids     = this.roomData.clients.map(u=>u.uuid);
+            // let room_client_usernames = this.roomData.clients.map(u=>u.username);
+            // for(let i=0; i<data.length; i+=1){
+            //     // Don't add the user if it already exists. 
+            //     if(!updateOnDupe && room_client_uuids.indexOf(data[i].uuid) != -1){
+            //         console.log("dupe user!", data[i].username, data[i].uuid, room_client_uuids, room_client_usernames);
+            //         continue;
+            //     }
+
+            //     let div = document.createElement("div");
+            //     let span1 = document.createElement("span");
+            //     span1.classList.add("lobby_members_item");
+            //     span1.innerText = data[i].username;
+            //     span1.setAttribute("uuid", data[i].uuid);
+            //     span1.title = `${data[i].username} : ${data[i].uuid}`;
+            //     div.append(span1);
+            //     frag1.append(div);
+            // }
+            // this.DOM["members"].append(frag1);
+            // this.parent.nav.showOneView("room");
         },
         addChatMessagesDom: function(messages){
             let table = this.DOM["messages_table"];
@@ -342,27 +408,27 @@ _APP.lobby = {
             }
         },
         // RECV: Populates room data.
-        joinRoom:function(data){
-            console.log("joinRoom:", data);
+        joinRoom:function(roomData){
+            console.log("joinRoom:", roomData);
+
+            // Save the roomData.
+            this.roomData = roomData;
 
             // Update the room display data.
-            this.DOM["chat_title"].innerText = data.room.roomTitle;
-            this.DOM["chat_title"].title = `roomId: ${data.room.roomId}`;
+            this.DOM["chat_title"].innerText = this.roomData.room.roomTitle;
+            this.DOM["chat_title"].title     = `roomId: ${this.roomData.room.roomId}`;
 
             // Clear any existing message rows. 
             Array.from(this.DOM["messages_table"].querySelector("tbody").rows).forEach( tr => tr.remove() );
 
-            // this.DOM["messages"].innerHTML = "";
-            this.addChatMessagesDom(data.room.chatHistory);
+            this.addChatMessagesDom(this.roomData.room.chatHistory);
 
             // Clear the members list. 
             this.DOM["members"].innerHTML = "";
 
             // Populate the members list. 
-            this.newMembers(data.clients);
+            this.newMembers(this.roomData.clients);
 
-            // Save the currentRoomId.
-            this.currentRoomId = data.room.roomId;
             // Show the room tab.
             this.parent.nav.showOneView("room");
         },
@@ -370,7 +436,7 @@ _APP.lobby = {
         recv_CHAT_ROOM_MESSAGE: function(roomId, msgObj){
             console.log("recv_CHAT_ROOM_MESSAGE:", roomId, msgObj, this.DOM.messages);
 
-            if(this.currentRoomId != roomId){
+            if(this.roomData.room.roomId != roomId){
                 console.log("recv_CHAT_ROOM_MESSAGE:", `Received message but not for the current chat room.`, data);
                 return; 
             }
@@ -388,7 +454,16 @@ _APP.lobby = {
             ev.target.value = "";
 
             // Send the roomId and message to the server. 
-            _APP.net.ws.activeWs.send(JSON.stringify({ mode:'CHAT_ROOM_MESSAGE', data:{roomId:this.currentRoomId, message:message }}));
+            _APP.net.ws.activeWs.send(JSON.stringify({ mode:'CHAT_ROOM_MESSAGE', data:{roomId:this.roomData.room.roomId, message:message }}));
+
+            // Add the message to the messages display. (Server doesn't send the new message to the client that send it.)
+            let msgObj = {
+                r: this.roomData.room.roomId,
+                u: _APP.lobby.login.loginData.username, 
+                d: (new Date().getTime()), 
+                m: message
+            };
+            this.addChatMessagesDom([msgObj]);
         },
 
         init: function(configObj){

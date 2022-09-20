@@ -21,7 +21,7 @@ let _MOD = {
         // Add a new object (once per login.)
         addNewUser     : function(username){
             if(!this.data[username]){
-                console.log("userTrack: Adding new user key:", username);
+                // console.log("userTrack: Adding new user key:", username);
                 this.data[username] = {
                     uuids  : [], // Tracks the UUIDs used by the user.
                     session: [], // Stays with the user even if the browser is refreshed.
@@ -29,7 +29,7 @@ let _MOD = {
                 }
             }
             else{
-                console.log("userTrack: User key already exists.", username);
+                // console.log("userTrack: User key already exists.", username);
             }
         },
         addToExistingUser: function(username, sessionObj, wsObj){
@@ -323,13 +323,13 @@ let _MOD = {
                 
                 // Use the key if found.
                 if(key){ 
-                    console.log(`WS_MSG: type: ${type}, mode: ${data.mode}, key: ${key}`);
+                    console.log(`WS_MSG: type: ${type}, mode: ${data.mode}, key: ${key} (username: ${ws.CONFIG.session.username}, loadedAppKey: ${ws.CONFIG.session.loadedAppKey}, uuid: ${ws.CONFIG.session.uuid})`);
                     _MOD.ws_event_handlers.JSON[key][data.mode](ws, data); 
                 }
 
                 // Unhandled.
                 else{
-                    console.log(`WS_MSG: UNKNOWN MODE, type: ${type}, mode: ${data.mode}`);
+                    console.log(`WS_MSG: UNKNOWN MODE, type: ${type}, mode: ${data.mode} (username: ${ws.CONFIG.session.username}, loadedAppKey: ${ws.CONFIG.session.loadedAppKey}, uuid: ${ws.CONFIG.session.uuid})`);
                     ws.send(JSON.stringify({"mode":"ERROR", "data":"UNKNOWN MODE: " + data.mode}));
                     return; 
                 }
@@ -342,13 +342,13 @@ let _MOD = {
                 
                 // Use the key if found.
                 if(key){ 
-                    console.log(`WS_MSG: type: ${type}, mode: ${data}, key: ${key}`);
+                    console.log(`WS_MSG: type: ${type}, mode: ${data}, key: ${key} (username: ${ws.CONFIG.session.username}, loadedAppKey: ${ws.CONFIG.session.loadedAppKey}, uuid: ${ws.CONFIG.session.uuid})`);
                     _MOD.ws_event_handlers.TEXT[key][data](ws); 
                 }
                 
                 // Unhandled.
                 else{
-                    console.log(`WS_MSG: UNKNOWN MODE, type: ${type}, mode: ${data}`);
+                    console.log(`WS_MSG: UNKNOWN MODE, type: ${type}, mode: ${data} (username: ${ws.CONFIG.session.username}, loadedAppKey: ${ws.CONFIG.session.loadedAppKey}, uuid: ${ws.CONFIG.session.uuid})`);
                     ws.send(JSON.stringify({"mode":"ERROR", "data":"UNKNOWN MODE: " + data}));
                     return;
                 }
@@ -356,7 +356,7 @@ let _MOD = {
 
             // Handle UNKNOWN TYPE
             else{
-                console.log(`WS_MSG: UNKNOWN TYPE`);
+                console.log(`WS_MSG: UNKNOWN TYPE (username: ${ws.CONFIG.session.username}, loadedAppKey: ${ws.CONFIG.session.loadedAppKey}, uuid: ${ws.CONFIG.session.uuid})`);
             }
         },
         el_close  : function(ws, event){ 
@@ -396,7 +396,11 @@ let _MOD = {
             if( request.url == "/LOBBY"){
                 // Create the userTrack object if it does not exist.
                 if(!_MOD.userTrack.getByUsername(request.session.data.username)){
+                    console.log("WS_SRV: Adding new user to userTrack:", `username: ${request.session.data.username}, uuid: ${request.session.data.uuid}`);
                     _MOD.userTrack.addNewUser(request.session.data.username);
+                }
+                else{
+                    console.log("WS_SRV: User key already exists in userTrack.", `username: ${request.session.data.username}, uuid: ${request.session.data.uuid}`);
                 }
 
                 // Add this data to userTrack.
@@ -422,7 +426,7 @@ let _MOD = {
                 };
 
                 // CONNECT MESSAGE.
-                console.log(`WS_SRV: CONNECT: uuid: ${request.session.data.uuid}`);
+                console.log(`WS_SRV: CONNECT: (username: ${ws.CONFIG.session.username}, loadedAppKey: ${ws.CONFIG.session.loadedAppKey}, uuid: ${ws.CONFIG.session.uuid})`);
 
                 // Indicate that the connection is open and ready.
                 ws.send(JSON.stringify( {"mode":"NEWCONNECTION", data:request.session.uuid } ));

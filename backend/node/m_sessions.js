@@ -16,7 +16,11 @@ let _MOD = {
                 // Save reference to the parent module.
                 _APP = parent;
         
-                // Get and store the config file.
+                // Store reference to sha256.
+                _APP.consolelog("Store reference to sha256", 2);
+                _MOD.sha256 = require('js-sha256').sha256;
+
+                // Add routes.
                 _APP.consolelog("addRoutes", 2);
                 _MOD.addRoutes(_APP.app, _APP.express);
 
@@ -59,7 +63,7 @@ let _MOD = {
     // Handles the login process.
     login: async function(req){
         return new Promise(async function(resolve,reject){
-            let username     = req.body.username;
+            let username     = req.body.username.toLowerCase();
             let passwordHash = req.body.passwordHash;
             let loadedAppKey = req.body.loadedAppKey;
 
@@ -68,70 +72,78 @@ let _MOD = {
                 let obj = {
                     "success"   : false,
                     "resultType": "ERROR_LOGIN_MISSING_VALUES",
-                    "data"      : "Missing username or passwordhash.",
+                    "data"      : "Missing username or password.",
                 };
-                console.log(obj);
+                console.log("LOGIN :", obj);
                 resolve(obj);
                 return; 
             }
             
             // TODO: Temporary! For testing.
-            let dumbDatabase = [
-                { "username":"nicksen782", "salt":"", "dbPass":"", userId:1, "name":"Nick Andersen" },
-                { "username":"nicksen782B", "salt":"", "dbPass":"", userId:2, "name":"Nick AndersenB" },
-                { "username":"nicksen782C", "salt":"", "dbPass":"", userId:3, "name":"Nick AndersenC" },
-                { "username":"nicksen782D", "salt":"", "dbPass":"", userId:4, "name":"Nick AndersenD" },
-            ];
-            
-            // Get the requested username and data.
-            let results = dumbDatabase.filter(d=>d.username == username);
+            // let dumbDatabase = [
+            //     { "username":"nicksen782", "salt":"", "dbPass":"", userId:1, "name":"Nick Andersen" },
+            //     { "username":"nicksen782B", "salt":"", "dbPass":"", userId:2, "name":"Nick AndersenB" },
+            //     { "username":"nicksen782C", "salt":"", "dbPass":"", userId:3, "name":"Nick AndersenC" },
+            //     { "username":"nicksen782D", "salt":"", "dbPass":"", userId:4, "name":"Nick AndersenD" },
+            // ];
+            // let results = dumbDatabase.filter(d=>d.username == username);
+
+             // Get the data for the requested user.
+             let q = {
+                "sql" : `SELECT * FROM users WHERE username = :username;`
+                    .replace(/\t/g, " ").replace(/  +/g, "  "), 
+                "params" : { ":username"    : username },
+                "type": "SELECT",
+            };
+            let results = await _APP.m_db.query(q.sql, q.params, q.type);
+            if(results.err){ reject(results.err); return; }
+            results = results.rows;
             
             // Does the username exist? 
             if(results.length){
                 // There should only be one result. Take it.
                 results = results[0];
                 
+                // Disabled user check.
+                // if( _APP.checkRight("DISABLED", results['rights']) || results['rights'] == 0){
+                if(0){
+                    let obj = {
+                        "success"   : false,
+                        "resultType": "ERROR_ACCOUNT_DISABLED",
+                        "data"      : "Account is disabled.",
+                    };
+                    console.log("LOGIN :", obj);
+                    resolve(obj);
+                    return; 
+                }
+
+                // Now, hash the values and check for a match.
+                let dbPass       = _MOD.sha256(passwordHash + results.salt);
+                if(dbPass != results.dbPass){
+                    let obj = {
+                        "success"   : false,
+                        "resultType": "ERROR_LOGIN_NO_MATCH",
+                        "data"      : "Invalid credentials.",
+                    };
+                    console.log("LOGIN :", obj);
+                    resolve(obj);
+                    return; 
+                }
+
                 // Regenerate the existing session there is already an active login. 
                 if(req.session && req.session.loggedIn){
                     try{ await _MOD.regenerateSession(req); } catch(e){
                         let obj = {
                             "success"   : false,
-                            "resultType": "SESSION_GENERATION_ERROR",
+                            "resultType": "ERROR_SESSION_GENERATION",
                             "data"      : "Session generation error.",
                         };
-                        console.log(obj);
-                        console.log(e);
+                        console.log("LOGIN :", obj);
+                        console.log("LOGIN :", e);
                         resolve(obj);
                         return; 
 
                     }
-                }
-
-                // TODO: Temporary! For testing.
-                // Disabled user check.
-                if(0){
-                    let obj = {
-                        "success"   : false,
-                        "resultType": "ACCOUNT_DISABLED",
-                        "data"      : "Account is disabled.",
-                    };
-                    console.log(obj);
-                    resolve(obj);
-                    return; 
-                }
-
-                // TODO: Temporary! For testing.
-                // Password check.
-                let dbPass = "";
-                if(dbPass != results.dbPass){
-                    let obj = {
-                        "success"   : false,
-                        "resultType": "ERROR_LOGIN_NO_MATCH",
-                        "data"      : "Unmatched credentials.",
-                    };
-                    console.log(obj);
-                    resolve(obj);
-                    return; 
                 }
 
                 // This data is intended only for session management.
@@ -156,106 +168,32 @@ let _MOD = {
                     }
                 };
                 // console.log(obj);
+                console.log(`LOGIN : ${obj.resultType}: username: ${req.session.data.username}, uuid: ${req.session.data.uuid}, loadedAppKey: ${req.session.data.loadedAppKey || "<none>"}`);
                 resolve(obj);
                 return;
             }
             else{
-                let obj = {
+                let obj_debug = {
+                    // DEBUG. (NOTE: Sending this to the client can help the hackers determine valid usernames.)
                     "success"   : false,
                     "resultType": "ERROR_UNKNOWN_USER",
                     "data"      : "User not found.",
                 };
-                console.log(obj);
-                resolve(obj);
+                let obj_normal = {
+                    // Only reveal that the credentials are invalid. The client should not be informed of valid usernames.
+                    "success"   : false,
+                    "resultType": "ERROR_LOGIN_NO_MATCH",
+                    "data"      : "Invalid credentials.",
+                };
+
+                // Console gets the true error. 
+                console.log("LOGIN :", obj_debug);
+
+                // Client gets the generic error.
+                resolve(obj_normal);
                 return; 
             }
 
-        });
-        
-        return new Promise(async function(resolve,reject){
-            // Make sure that both the username and the passwordHash were specified. 
-            if (username && passwordHash) {
-                // Get the data for the requested user.
-                let q = {
-                    "sql" : `SELECT * FROM users WHERE username = :username;`
-                        .replace(/\t/g, " ").replace(/  +/g, "  "), 
-                    "params" : { ":username"    : username },
-                    "type": "SELECT",
-                };
-                let results = await _APP.db.query(q.sql, q.params, q.type);
-                if(results.err){ reject(results.err); return; }
-                results = results.rows;
-
-                // Match?
-                if(results.length){
-                    // Use only the first result (there should only be one result.)
-                    results = results[0];
-
-                    // Regenerate existing session if already logged in.
-                    if(req.session && req.session.loggedIn){
-                        await _APP.regenerateSession(req);
-                    }
-
-                    // Check if this is a disabled user or a user with no rights set.
-                    if( _APP.checkRight("DISABLED", results['rights']) || results['rights'] == 0){
-                        resolve({
-                            // "errorText" :"Incorrect Username and/or Password!",
-                            "resultType":"ACCOUNT_DISABLED",
-                            "redirect"  : "login.html?msg=ACCOUNT_DISABLED",
-                        });
-                        return;
-                    }
-                    
-                    // Now, hash the values and check for a match.
-                    let dbPass       = sha256(passwordHash + results.salt);
-                    if(dbPass != results.passwordHash){
-                        // User exists but the password was incorrect.
-                        resolve({
-                            // "errorText" :"Incorrect Username and/or Password!",
-                            "resultType":"ERROR_LOGIN_NO_MATCH",
-                            "redirect"  : "login.html?msg=ERROR_LOGIN_NO_MATCH",
-                        });
-                        return;
-                    }
-
-                    // Authenticate the user
-                    req.session.loggedIn = true;
-                    req.session['userId']      = results['userId'];
-                    req.session['name']        = results['name'];
-                    req.session['username']    = results['username'];
-                    req.session['rightsValue'] = results['rights'];
-                    req.session['rights']      = _APP.convertRightsToArray(results['rights']);
-                    req.session['_sessionID']  = req.sessionID;
-                    // req.session['_sessionID']  = req.session.id;
-
-                    resolve({
-                        // "errorText" :"Successful login",
-                        "resultType":"SUCCESS_LOGIN",
-                        "redirect"  : "index.html",
-                    });
-                    return;
-                }
-                
-                // No match?
-                else{
-                    // User doesn't exist but don't tell the client that.
-                    resolve({
-                        // "errorText" :"Incorrect Username and/or Password!",
-                        "resultType":"ERROR_LOGIN_NO_MATCH",
-                        "redirect"  : "login.html?msg=ERROR_LOGIN_NO_MATCH",
-                    });
-                    return;
-                }
-            }
-            // Missing username and/or passwordHash.
-            else{
-                resolve({
-                    // "errorText" :"Please enter Username and Password!",
-                    "resultType":"ERROR_LOGIN_MISSING_DATA",
-                    "redirect"  : "login.html?msg=ERROR_LOGIN_MISSING_DATA",
-                });
-                return;
-            }
         });
     },
     // Checks if you are logged in and returns some session data if you are logged in.
@@ -268,7 +206,7 @@ let _MOD = {
                     "resultType": "ERROR_NO_SESSION",
                     "data"      : "No session.",
                 };
-                // console.log(obj);
+                // console.log("LOGIN: ", obj);
                 resolve(obj);
                 return; 
             }
@@ -279,7 +217,7 @@ let _MOD = {
                     "resultType": "ERROR_NOT_LOGGED_IN",
                     "data"      : "Not logged in",
                 };
-                // console.log(obj);
+                // console.log("LOGIN: ", obj);
                 resolve(obj);
                 return; 
             }
@@ -293,7 +231,7 @@ let _MOD = {
                     session: req.session.data
                 }
             };
-            // console.log(obj);
+            // console.log("LOGIN: ", obj);
             resolve(obj);
             return; 
         });
@@ -322,7 +260,7 @@ let _MOD = {
                     "resultType": "ERROR_NO_SESSION",
                     "data"      : "No session.",
                 };
-                console.log(obj);
+                console.log("LOGIN: ", obj);
                 resolve(obj);
                 return; 
             }
@@ -332,7 +270,7 @@ let _MOD = {
                     "resultType": "ERROR_NOT_LOGGED_IN",
                     "data"      : "Not logged in",
                 };
-                console.log(obj);
+                console.log("LOGIN: ", obj);
                 resolve(obj);
                 return; 
             }
@@ -358,7 +296,7 @@ let _MOD = {
                         "resultType": "SUCCESS_LOGOUT",
                         "data"      : "Successful logout.",
                     };
-                    // console.log(obj);
+                    // console.log("LOGIN: ", obj);
                     resolve(obj);
                     return; 
                 }

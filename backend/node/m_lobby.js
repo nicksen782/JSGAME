@@ -170,7 +170,7 @@ let _MOD = {
         JSON:{
             JSGAME_lobby_rooms:{
                 JOIN_ROOM:  async function(ws, data){ 
-                    // console.log("mode:", data.mode, ", data:", data.data);
+                    // console.log("mode:", data.mode, ", data:", data.data, `by user: ${ws.CONFIG.session.username}`);
 
                     let roomId = data.data;
                     let room = _MOD.lobby_rooms.find(r=>r.roomId==roomId);
@@ -211,7 +211,7 @@ let _MOD = {
                     }
                 },
                 CHAT_ROOM_MESSAGE:  async function(ws, data){ 
-                    console.log("mode:", data.mode, ", data:", data.data);
+                    // console.log("mode:", data.mode, ", data:", data.data, `, by user: ${ws.CONFIG.session.username}`);
 
                     // Break out the roomId and message. 
                     let roomId = data.data.roomId;
@@ -235,10 +235,10 @@ let _MOD = {
                     let clients = _MOD.lobby_getRoomMembers(roomId);
 
                     // Break out the uuids. Do not include this client in the list. 
-                    // let uuids = clients.map(u=>u.uuid).filter(u=>u != ws.CONFIG.uuid);
+                    let uuids = clients.map(u=>u.uuid).filter(u=>u != ws.CONFIG.uuid);
 
                     // Break out the uuids. Include the client in the list. 
-                    let uuids = clients.map(u=>u.uuid);
+                    // let uuids = clients.map(u=>u.uuid);
 
                     // Send the message to each client in the room.
                     let obj = {
