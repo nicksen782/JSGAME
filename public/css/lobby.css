@@ -1,3 +1,13 @@
+@import "lobby/lobby_login.css";
+@import "lobby/lobby_room.css";
+/* @import "lobby/lobby_debug.css"; */
+/* @import "lobby/lobby_dm.css"; */
+/* @import "lobby/lobby_profile.css"; */
+
+/* LOBBY SHARED */
+/* LOBBY SHARED */
+/* LOBBY SHARED */
+
 #lobby_gameContainer {
     border: 1px solid black;
 }
@@ -61,264 +71,11 @@
     display: block;
 }
 
-/* LOGIN */
-.lobby_login {
-    width: 400px;
-    background-color: #ffffff;
-    box-shadow: 0 0 9px 0 rgba(0, 0, 0, 0.3);
-    margin: 20px auto;
-}
 
-.lobby_login h1 {
-    text-align: center;
-    color: #5b6574;
-    font-size: 24px;
-    padding: 20px 0 20px 0;
-    border-bottom: 1px solid #dee0e4;
-}
+/* LOBBY TAB */
+/* LOBBY TAB */
+/* LOBBY TAB */
 
-.lobby_login #lobby_loginForm {
-    /* display: flex; */
-    /* flex-wrap: wrap; */
-    /* justify-content: center; */
-    /* padding-top: 20px; */
-    /* align-items: baseline; */
-    /* flex-direction: row; */
-    height: 250px;
-}
-
-.lobby_login #lobby_loginForm label {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 50px;
-    height: 50px;
-    background-color: #3274d6;
-    color: #ffffff;
-}
-
-.lobby_login #lobby_loginForm input[type="password"], .lobby_login #lobby_loginForm input[type="text"] {
-    width: 310px;
-    height: 50px;
-    border: 1px solid #dee0e4;
-    margin-bottom: 20px;
-    padding: 0 15px;
-}
-
-.lobby_login #lobby_loginForm #lobby_login, .lobby_login #lobby_loginForm #lobby_logout {
-    width: 90%;
-    padding: 15px;
-    margin-top: 0px;
-    margin-bottom: 10px;
-    background-color: #3274d6;
-    border: 0;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 100%;
-    color: #ffffff;
-    transition: background-color 0.2s;
-    text-align: center;
-}
-
-.lobby_login #lobby_loginForm #lobby_logout {
-    margin-top: 10px;
-}
-
-.lobby_login #lobby_loginForm #lobby_login:hover, .lobby_login #lobby_loginForm #lobby_logout:hover {
-    background-color: #2868c7;
-    transition: background-color 0.2s;
-}
-
-.lobby_login .textCenter {
-    text-align: center;
-}
-
-#lobby_showLogin {
-    /* display: flex; */
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    height: 250px;
-    padding-top: 0px;
-}
-
-#lobby_showLogin.hide {
-    display: none;
-}
-
-#lobby_showLogout {
-    display: flex;
-    flex-wrap: nowrap;
-    height: 250px;
-    align-items: stretch;
-    text-align: center;
-    justify-content: space-evenly;
-    /* padding-top: 0px; */
-    align-content: stretch;
-    flex-direction: column;
-}
-
-#lobby_showLogout.hide {
-    display: none;
-}
-
-#lobby_showChecking {
-    display: flex;
-    flex-wrap: nowrap;
-    height: 250px;
-    align-items: stretch;
-    text-align: center;
-    justify-content: space-evenly;
-    /* padding-top: 0px; */
-    align-content: stretch;
-    flex-direction: column;
-}
-
-#lobby_showChecking.hide {
-    display: none;
-}
-
-/* DEBUG */
-.lobby_table1 {
-    border-collapse: collapse;
-    display: inline-block;
-    vertical-align: top;
-    min-width: 200px;
-}
-
-.lobby_table1 th {
-    background-color: dimgray;
-    text-decoration: underline;
-    border: 1px solid black;
-}
-
-.lobby_table1 td {
-    border: 1px solid black;
-}
-
-.lobby_table1 td:nth-child(1) {
-    min-width: 100px;
-    background-color: dimgray;
-    font-weight: bold;
-}
-
-.lobby_table1 td:nth-child(2) {
-    min-width: 100px;
-    background-color: darkgray;
-}
-
-.lobby_table1 .lobby_spacer td {
-    background-color: black;
-}
-
-.lobby_table1 input[type='text'] {
-    width: 100%;
-}
-
-.lobby_table1 button {
-    width: 100%;
-}
-
-#lobby_chat_table {
-    border-collapse: collapse;
-    /*     display: inline-block; */
-    vertical-align: top;
-    /*     min-width:200px; */
-    width: 100%;
-}
-
-#lobby_chat_table > table th {
-    background-color: dimgray;
-    text-decoration: underline;
-    border: 1px solid black;
-}
-
-#lobby_chat_table > table td {
-    border: 1px solid black;
-}
-
-#lobby_chat_table > table tr:nth-child(odd) {
-    background-color: dimgray;
-    font-weight: bold;
-}
-
-#lobby_chat_table > table tr:nth-child(odd) td {
-    text-align: center;
-    text-decoration: underline;
-}
-
-#lobby_chat_table > table tr:nth-child(even) {
-    background-color: darkgray;
-}
-
-#lobby_chat_table > table .lobby_spacer td {
-    background-color: black;
-}
-
-#lobby_chat_messages {
-    width: 500px;
-    height: 330px;
-    background-color: lightcyan;
-    vertical-align: top;
-    float: left;
-}
-
-#lobby_chat_messages_table tr.thisUser {
-    background-color: greenyellow;
-}
-
-#lobby_chat_messages_table .tdUsername {
-    vertical-align: top;
-    background-color: aquamarine;
-    width: 100px;
-}
-
-#lobby_chat_messages_table .tdMessage {
-    vertical-align: top;
-    background-color: antiquewhite;
-}
-
-#lobby_chat_table #lobby_chat_members {
-    /* width: 100%; */
-    width: 100px;
-    height: 330px;
-    /* border: none; */
-    /* background-color: transparent; */
-    background-color: cyan;
-    resize: none;
-    outline: none;
-    font-size: 12px;
-    /* display: block; */
-    /* display: inline-block; */
-    vertical-align: top;
-    float: right;
-}
-
-#lobby_chat_send {
-    width: 100%;
-    height: 6em;
-    background-color: mintcream;
-    clear: both;
-}
-
-.lobby_members_item {
-    font-weight: bold;
-    padding: 2px;
-    display: block;
-    cursor: alias;
-}
-
-.lobby_members_item:hover {
-    background-color: greenyellow;
-}
-
-table#lobby_debugTable_connections {
-    border-collapse: collapse;
-}
-
-table#lobby_debugTable_connections tr.thisUser {
-    background-color: greenyellow;
-}
 
 #lobby_globalTable {
     width: 100%;
@@ -329,7 +86,3 @@ table#lobby_debugTable_connections tr.thisUser {
     text-align: left;
 }
 
-table#lobby_chat_messages_table {
-    width: 100%;
-    border-collapse: collapse;
-}

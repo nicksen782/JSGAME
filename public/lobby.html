@@ -12,9 +12,9 @@
     <div class="lobby_views">
         <!-- LOGIN VIEW -->
         <div class="lobby_view" id="lobby_nav_view_login"   >
-            <div class="lobby_login">
-                <h1>Login</h1>
+            <div id="lobby_login_cont">
                 <form method="post" id="lobby_loginForm">
+                    <h1 id="lobby_loginForm_mode">Login</h1>
 
                     <div class="hide" id="lobby_showLogin">
                         <label for="username">
@@ -47,7 +47,11 @@
                     </div>
 
                     <div class="" id="lobby_showChecking">
-                        Checking for login...
+                        <div>
+                            <hr>
+                            Checking for login...
+                            <hr>
+                        </div>
                     </div>
 
                 </form>

@@ -12,6 +12,10 @@ _APP.configObjs = {
     },
     // Lobby object.
     lobby:{
+        _files: [
+            { "f":"js/lobby/lobby_login.js" , "t":"js"  , "n":"lobby_login"},
+            { "f":"js/lobby/lobby_rooms.js" , "t":"js"  , "n":"lobby_rooms"},
+        ],
         // Lobby navigation config.
         nav: {
             // Default deplayed tab/view.
@@ -42,15 +46,23 @@ _APP.configObjs = {
         login: {
             // login DOM.
             DOM: {
-                "username"     : "lobby_username",
-                "password"     : "lobby_password",
-                "login"        : "lobby_login",
-                "logout"       : "lobby_logout",
-                "showLogin"    : "lobby_showLogin",
-                "showChecking" : "lobby_showChecking",
-                "showLogout"   : "lobby_showLogout",
+                // TITLE
+                "mode"               : "lobby_loginForm_mode",
+
+                // LOGIN
+                "showLogin"          : "lobby_showLogin",
+                "username"           : "lobby_username",
+                "password"           : "lobby_password",
+                "login"              : "lobby_login",
+                "logout"             : "lobby_logout",
+                
+                // LOGOUT
+                "showLogout"         : "lobby_showLogout",
                 "showLogout_username": "lobby_showLogout_username",
-                "showLogout_name"  : "lobby_showLogout_name",
+                "showLogout_name"    : "lobby_showLogout_name",
+
+                // CHECKING
+                "showChecking"       : "lobby_showChecking",
             }
         },
         // Lobby profile config.
@@ -66,7 +78,7 @@ _APP.configObjs = {
         lobby:{
             // lobby DOM.
             DOM: {
-                "lobby_globalTable"    : "lobby_globalTable",
+                
 
             }
         },
@@ -74,13 +86,15 @@ _APP.configObjs = {
         room:{
             // room DOM.
             DOM: {
-                "chat_table"   : "lobby_chat_table",
-                "chat_title"   : "lobby_chat_title",
-                "messages"     : "lobby_chat_messages",
+                // Lobby: main
+                "lobby_globalTable": "lobby_globalTable",
+                // Lobby: room
+                "chat_table"    : "lobby_chat_table",
+                "chat_title"    : "lobby_chat_title",
+                "messages"      : "lobby_chat_messages",
                 "messages_table": "lobby_chat_messages_table",
-                // "members_table": "lobby_chat_members_table",
-                "members"      : "lobby_chat_members",
-                "send"         : "lobby_chat_send",
+                "members"       : "lobby_chat_members",
+                "send"          : "lobby_chat_send",
             }
         },
         // Lobby debug config.
