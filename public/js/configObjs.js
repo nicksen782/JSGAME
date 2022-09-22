@@ -1,4 +1,40 @@
 _APP.configObjs = {
+    base: {
+        // APP SELECT
+        "appSelectDiv"    : "jsgame_appSelectDiv" ,
+        "appSelectSelect" : "jsgame_appSelectSelect" ,
+        // "appSelectReload" : "jsgame_appSelectReload" ,
+
+        // SHADER
+        "js_game_header_menuBtn" : "js_game_header_menuBtn",
+        "js_game_header_menu"    : "js_game_header_menu",
+        "js_game_backgroundShade": "js_game_backgroundShade" ,
+
+        // MENU (JSGAME OPTIONS)
+        "jsgame_menu_toggleLoading"  : "jsgame_menu_toggleLoading" ,
+        "jsgame_menu_toggleApp"  : "jsgame_menu_toggleApp" ,
+        "jsgame_menu_toggleLobby": "jsgame_menu_toggleLobby" ,
+
+        // SECTIONS (containers)
+        "loadingDiv"  : "jsgame_loadingDiv" ,
+        "lobbyDivCont": "jsgame_lobbyDiv" ,
+        "gameDivCont" : "jsgame_appDiv" ,
+
+        // SECTIONS (contents)
+        "gameDiv" : "jsgame_app" ,
+        "lobbyDiv": "jsgame_lobby" ,
+
+        // AUTHOR DIV
+        "authorDiv2"      : "authorDiv2" ,
+        "author2_title"   : "author2_title" ,
+        "author2_C"       : "author2_C" ,
+        "author2_year"    : "author2_year" ,
+        "author2_name"    : "author2_name" ,
+        "author2_handle"  : "author2_handle" ,
+        "repo2Type"       : "repo2Type" ,
+        "repo2Link"       : "repo2Link" ,
+        "authorDiv2"      : "authorDiv2" ,
+    },
     // WebSockets object.
     ws: {
         // ws DOM.
@@ -6,8 +42,8 @@ _APP.configObjs = {
             "main"        : "net_ws_status" ,
             "statusSquare": "net_ws_status_square",
             "statusText"  : "net_ws_status_text", 
-            "connect"     : "net_ws_status_connect",
-            "disconnect"  : "net_ws_status_disconnect",
+            // "connect"     : "net_ws_status_connect",
+            // "disconnect"  : "net_ws_status_disconnect",
         }
     },
     // Lobby object.
@@ -39,7 +75,7 @@ _APP.configObjs = {
                 room     : "lobby_nav_view_room",
                 dm       : "lobby_nav_view_dm",
                 settings : "lobby_nav_view_settings",
-                debug    : "lobby_nav_view_debug",
+                debug    : "jsgame_lobby_nav_view_debug",
             },
         },
         // Lobby login config.
@@ -78,8 +114,6 @@ _APP.configObjs = {
         lobby:{
             // lobby DOM.
             DOM: {
-                
-
             }
         },
         // Lobby room config.

@@ -483,16 +483,16 @@ _APP.net = {
 
             // Show the correct connect button.
             if(newClass=="connected"){
-                this.DOM.connect   .classList.add("hide");
-                this.DOM.disconnect.classList.remove("hide");
+                // this.DOM.connect   .classList.add("hide");
+                // this.DOM.disconnect.classList.remove("hide");
             }
             else if(newClass=="disconnected"){
-                this.DOM.connect   .classList.remove("hide");
-                this.DOM.disconnect.classList.add("hide");
+                // this.DOM.connect   .classList.remove("hide");
+                // this.DOM.disconnect.classList.add("hide");
             }
             else{
-                this.DOM.connect   .classList.add("hide");
-                this.DOM.disconnect.classList.add("hide");
+                // this.DOM.connect   .classList.add("hide");
+                // this.DOM.disconnect.classList.add("hide");
             }
         },
         restorePrevStatusColor:function(){
@@ -516,12 +516,12 @@ _APP.net = {
                 _APP.shared.parseObjectStringDOM(this.DOM, false);
 
                 // Event listeners.
-                this.DOM.connect.addEventListener("click", ()=>{
-                    _APP.net.ws.ws_utilities.initWss();
-                }, false);
-                this.DOM.disconnect.addEventListener("click", ()=>{
-                    _APP.net.ws.ws_utilities.wsCloseAll();
-                }, false);
+                // this.DOM.connect.addEventListener("click", ()=>{
+                //     _APP.net.ws.ws_utilities.initWss();
+                // }, false);
+                // this.DOM.disconnect.addEventListener("click", ()=>{
+                //     _APP.net.ws.ws_utilities.wsCloseAll();
+                // }, false);
                 this.inited = true; 
 
                 resolve();

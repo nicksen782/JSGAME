@@ -25,6 +25,8 @@
     min-height: 0.5em;
     padding: 0.25em;
     border-bottom: 1px solid black;
+    width: 650px;
+    /* background-color: blue; */
 }
 
 .lobby_nav_tab {
@@ -64,7 +66,7 @@
     display: none;
     padding: 0.25em;
     background-color: #979da6;
-    min-height: 450px;
+    min-height: 400px;
 }
 
 .lobby_view.active {

@@ -6,14 +6,15 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSGAME v2</title>
-    
+
     <!-- CSS -->
     <link rel="stylesheet" href="css/index.css">
+    <!-- <link rel="stylesheet" href="css/layoutTest.css"> -->
     <link rel="stylesheet" href="css/lobby.css">
 
     <!-- JavaScript -->
     <script defer src="libs/js-sha256/src/sha256.js"></script>
-    
+
     <!-- JavaScript -->
     <script defer src="js/index.js"></script>
     <script defer src="js/configObjs.js"></script>
@@ -22,64 +23,151 @@
 </head>
 
 <body>
+    <div id="js_game_backgroundShade" class="hide"></div>
+    <!-- MAIN VIEW -->
+    <div id="flex_jsgame_cont">
+        <header>
+            <div id="flex_jsgame_header_cont">
+                <!-- LEFT SIDE -->
+                <div>
+                    <!-- TITLE / MENU BUTTON-->
+                    <div id="js_game_header_menuHeader" class="">
+                        <!-- CSS MENU BUTTON -->
+                        <div id="js_game_header_menuBtn" class="nav-icon"> <div></div> </div>
+                        <div id="js_game_header_title" title="App/Game Framework">JS GAME</div>
+                    </div>
+                    <div id="js_game_header_menu" class="">
+                        <table>
+                            <tr>
+                                <td>Toggle Views:</td>
+                                <td><button id="jsgame_menu_toggleLoading" class="jsgame_toggleButtons">Toggle loading</button></td>
+                                <td><button id="jsgame_menu_toggleApp"     class="jsgame_toggleButtons">Toggle app</button></td>
+                                <td><button id="jsgame_menu_toggleLobby"   class="jsgame_toggleButtons">Toggle lobby</button></td>
+                            </tr>
+                            <tr>
+                                <td>WebSockets Status:</td>
+                                <td colspan="3">
+                                    <div id="net_ws_status" style="display:noneXXX;">
+                                        <table>
+                                            <tr>
+                                                <td>
+                                                    <div id="net_ws_status_square" class="disconnected inlineBlock"></div>
+                                                    <div id="net_ws_status_text" class="">Disconnected</div>
+                                                </td>
+                                                <td>
+                                                    <button class="hide" id="net_ws_status_connect">Connect</button>
+                                                    <button class="hide" id="net_ws_status_disconnect">Disconnect</button>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
 
-    <header>
-        <!-- GAME SELECT -->
-        Choose Application: <div id="gameSelectDiv"></div>
+                <!-- RIGHT SIDE -->
+                <div>
+                    <table>
+                        <tr>
+                            <!-- USER -->
+                            <td>USER:</td>
+                            <td>
+                                <div id="js_game_header_user">
+                                    <span>nicksen782</span>
+                                    <!-- <button id="jsgame_appSelectReload">Reload</button> -->
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <!-- APP SELECT -->
+                            <td>APP:</td>
+                            <td>
+                                <div id="jsgame_appSelectDiv">
+                                    <select id="jsgame_appSelectSelect">
+                                        <option value="">... Choose an application</option>
+                                    </select>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
 
-        <!-- WEBSOCKETS STATUS -->
-        <div id="net_ws_status">
-            <table>
-                <tr>
+                </div>
+
+            </div>
+        </header>
+
+        <main class="flex_jsgame_main_cont" id="">
+            <div class="" id="jsgame_loadingDiv">
+                <div id="jsgame_loadingDiv_text">
+                    -----------------------------
+                    . . . . L O A D I N G . . . .
+                    -----------------------------
+                </div>
+            </div>
+            <!-- GAME -->
+            <div class="hide" id="jsgame_appDiv">
+                <div class="" id="jsgame_app">
+
+                </div>
+            </div>
+            <!-- LOBBY -->
+            <div class="hide" id="jsgame_lobbyDiv">
+                <div class="" id="jsgame_lobby">jsgame_lobby</div>
+            </div>
+        </main>
+
+        <footer>
+            <table id="authorDiv_table">
+
+                <tr class="authorDiv" id="authorDiv1">
                     <td>
-                        <div id="net_ws_status_square" class="disconnected inlineBlock"></div>
-                        <div id="net_ws_status_text" class="inlineBlock">Disconnected</div>
+                        <span id="author_title">JSGAME: </span>
                     </td>
+                    
                     <td>
-                        <button class=""     id="net_ws_status_connect">Connect</button>
-                        <button class="hide" id="net_ws_status_disconnect">Disconnect</button>
+                        <span id="author_C">(C)</span>
+                        <span id="author_year">2022</span>
+                        <span id="author_name">Nickolas Andersen</span>
+                    </td>
+                    
+                    <td>
+                        <span id="author_handle">(nicksen782)</span>
+                    </td>
+                    
+                    <td>
+                        <span id="repoLink">
+                            || Repo: <a href="https://github.com/nicksen782/JSGAME/tree/v2" target="_blank">nicksen782/JSGAME
+                            (v2)</a> ||
+                        </span>
                     </td>
                 </tr>
+
+                <tr class="authorDiv" id="authorDiv2">
+                    <td>
+                        <span id="author2_title"></span>
+                    </td>
+
+                    <td>
+                        <span id="author2_C"></span>
+                        <span id="author2_year"></span>
+                        <span id="author2_name"></span>
+                    </td>
+
+                    <td>
+                        <span id="author2_handle"></span>
+                    </td>
+
+                    <td>
+                        <span id="repo2Link"></span>
+                    </td>
+                </tr>
+
             </table>
-        </div>
-    </header>
 
-    <!-- GAME DISPLAY -->
-    <main>
-        <!-- CONTENTS OF GAMEDIV ARE POPULATED BY THE GAME. -->
-        <div id="gameDiv" class="hide"></div>
-        
-        <!-- CONTENTS OF LOBBYDIV ARE POPULATED BY JSGAME. -->
-        <div id="lobbyDiv"></div>
-
-        <!-- CONTENTS OF DEBUGDIV ARE POPULATED BY JSGAME. -->
-        <div id="debugDiv" class="hide"><br></div>
-    </main>
-
-    <footer>
-        <div class="" id="authorDiv1">
-            <span id="author_title">JSGAME: </span>
-            <span id="author_C">(C)</span>
-            <span id="author_year">2022</span>
-            <span id="author_name">Nickolas Andersen</span>
-            <span id="author_handle">(nicksen782)</span>
-            <br>
-            <span id="repoType">Github repo: </span>
-            <!-- <span id="repoLink"><a href="https://github.com/nicksen782/JSGAME" target="_blank">nicksen782/JSGAME</a></span> -->
-            <span id="repoLink"><a href="https://github.com/nicksen782/JSGAME/tree/v2" target="_blank">nicksen782/JSGAME (v2)</a></span>
-        </div>
-
-        <div class="hide" id="authorDiv2">
-            <span id="author2_title"></span>
-            <span id="author2_C"></span>
-            <span id="author2_year"></span>
-            <span id="author2_name"></span>
-            <span id="author2_handle"></span>
-            <br>
-            <span id="repo2Type"></span>
-            <span id="repo2Link"></span>
-        </div>
-    </footer>
+        </footer>
+    </div>
 
 </body>
 

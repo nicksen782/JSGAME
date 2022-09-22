@@ -17,15 +17,19 @@
                     <h1 id="lobby_loginForm_mode">Login</h1>
 
                     <div class="hide" id="lobby_showLogin">
-                        <label for="username">
-                            <i class="mdi mdi-account"></i>
-                        </label>
-                        <input type="text" name="username" placeholder="Username" id="lobby_username" value="" required="">
+                        <div>
+                            <label>
+                                <i class="mdi mdi-account"></i>
+                                <input type="text" name="username" placeholder="Username" id="lobby_username" value="" required="">
+                            </label>
+                        </div>
                         
-                        <label for="password">
-                            <i class="mdi mdi-lock"></i>
-                        </label>
-                        <input type="password" name="password" placeholder="Password" id="lobby_password" required="">
+                        <div>
+                            <label>
+                                <i class="mdi mdi-lock"></i>
+                                <input type="password" name="password" placeholder="Password" id="lobby_password" required="">
+                            </label>
+                        </div>
                         
                         <input id="lobby_login" value="Login">
                     </div>
@@ -47,10 +51,8 @@
                     </div>
 
                     <div class="" id="lobby_showChecking">
-                        <div>
-                            <hr>
+                        <div id="lobby_showChecking_inner">
                             Checking for login...
-                            <hr>
                         </div>
                     </div>
 
@@ -136,7 +138,7 @@
         </div>
 
         <!-- DEBUG VIEW -->
-        <div class="lobby_view" id="lobby_nav_view_debug"   >
+        <div class="lobby_view" id="jsgame_lobby_nav_view_debug"   >
             <!-- DEBUG<br><br> -->
 
             <!-- <table id="lobby_debugTable_connections"> -->

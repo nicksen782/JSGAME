@@ -283,7 +283,7 @@ _APP.lobby = {
             this.login   .parent = this;
 
             // Populate the lobby html.
-            document.getElementById("lobbyDiv").innerHTML = await _APP.net.http.send(`lobby.html`, { type:"text", method:"GET" }, 5000); 
+            _APP.DOM["lobbyDiv"].innerHTML = await _APP.net.http.send(`lobby.html`, { type:"text", method:"GET" }, 5000); 
 
             // Inits.
             await this.nav     .init(configObj.lobby.nav);

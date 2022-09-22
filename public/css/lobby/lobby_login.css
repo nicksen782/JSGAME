@@ -4,6 +4,7 @@
 
 #lobby_login_cont {
     width: 400px;
+    height: 340px;
     background-color: #ffffff;
     box-shadow: 0 0 9px 0 rgba(0, 0, 0, 0.3);
     margin: 20px auto;
@@ -14,7 +15,7 @@
 #lobby_login_cont #lobby_loginForm h1 {
     text-align: center;
     color: #5b6574;
-    font-size: 24px;
+    font-size: 2.4rem;
     padding: 20px 0 20px 0;
     border-bottom: 1px solid #dee0e4;
 }
@@ -24,22 +25,27 @@
 /* LOGIN FORM VIEW: LOGIN */
 #lobby_login_cont #lobby_showLogin {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;
     height: 250px;
+    /* height: 100%; */
     padding-top: 0px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
 }
 #lobby_login_cont #lobby_showLogin.hide {
     display: none;
 }
-#lobby_login_cont #lobby_showLogin label {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+#lobby_login_cont #lobby_showLogin label i{
+    /* display: flex; */
+    /* justify-content: center; */
+    /* align-items: center; */
     width: 50px;
     height: 50px;
     background-color: #3274d6;
     color: #ffffff;
+    display: inline-block;
+    vertical-align: top;
 }
 #lobby_login_cont #lobby_showLogin input[type="password"] {
     width: 310px;
@@ -57,6 +63,7 @@
 }
 #lobby_login_cont #lobby_showLogin #lobby_login {
     width: 90%;
+    /* width: 310px; */
     padding: 15px;
     margin-top: 0px;
     margin-bottom: 10px;
@@ -64,7 +71,7 @@
     border: 0;
     cursor: pointer;
     font-weight: bold;
-    font-size: 100%;
+    font-size: 1.6rem;
     color: #ffffff;
     transition: background-color 0.2s;
     text-align: center;
@@ -86,6 +93,7 @@
     justify-content: space-evenly;
     align-content: stretch;
     flex-direction: column;
+    font-size: 2rem;
 }
 #lobby_login_cont #lobby_showLogout.hide {
     display: none;
@@ -100,7 +108,7 @@
     border: 0;
     cursor: pointer;
     font-weight: bold;
-    font-size: 100%;
+    font-size: 1.6rem;
     color: #ffffff;
     transition: background-color 0.2s;
     text-align: center;
@@ -116,13 +124,19 @@
 #lobby_login_cont #lobby_loginForm #lobby_showChecking {
     display: flex;
     flex-wrap: nowrap;
-    height: 250px;
-    align-items: stretch;
+    height: 230px;
+    /* height: 100%; */
     text-align: center;
-    justify-content: space-evenly;
-    align-content: stretch;
     flex-direction: column;
+    font-size: 3.6rem;
+    justify-content: center;
+    padding-bottom: 20px;
 }
 #lobby_login_cont #lobby_loginForm #lobby_showChecking.hide {
     display: none;
+}
+#lobby_login_cont #lobby_loginForm #lobby_showChecking #lobby_showChecking_inner {
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    padding: 5px;
 }
