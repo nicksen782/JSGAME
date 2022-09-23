@@ -47,6 +47,10 @@ _APP = {
 
                             // Onload.
                             script.onload = function () { res(); script.onload = null; };
+                            script.onerror = function (err) { 
+                                console.log("JS: FAILURE:", `${appRec.appPath}/${rec.f}`);
+                                res(); script.onload = null; 
+                            };
 
                             // Append the element. 
                             document.head.appendChild(script);
@@ -186,19 +190,34 @@ _APP = {
             //     }
             // }
 
+            console.log("LOADING:", rec.appKey);
             if(_APP[rec.appKey].init){ 
                 // Run the app's init.
-                console.log("LOADING:", rec.appKey);
                 await _APP[rec.appKey].init(); 
                 console.log("LOADED :", rec.appKey);
                 
+                // Set visabilities.
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
+
                 // Do the login check. 
                 // console.log("running loginCheck after loading:", rec.appKey);
                 await _APP.lobby.login.loginCheck();
                 resolve();
             }
             else{
-                console.log("ERROR: Missing init function in:", rec.appKey, _APP[rec.appKey]);
+                console.log(`ERROR: Cannot load: ${rec.appKey}. Missing init function.` );
+
+                // Set visabilities.
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], false, false);
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
+
+                // Do the login check. 
+                // console.log("running loginCheck after loading:", rec.appKey);
+                await _APP.lobby.login.loginCheck();
+
                 resolve();
             }
         });
@@ -255,7 +274,7 @@ _APP = {
         let author_year   = this.DOM["author2_year"];   author_year  .innerHTML = "";
         let author_name   = this.DOM["author2_name"];   author_name  .innerHTML = "";
         let author_handle = this.DOM["author2_handle"]; author_handle.innerHTML = "";
-        let repoType      = this.DOM["repo2Type"];      repoType     .innerHTML = "";
+        // let repoType      = this.DOM["repo2Type"];      repoType     .innerHTML = "";
         let repoLink      = this.DOM["repo2Link"];      repoLink     .innerHTML = "";
 
         if(!rec){ authorDiv2.classList.add("hide"); return;}
@@ -415,9 +434,9 @@ _APP = {
                 await _APP.loadApp(rec); 
                 
                 // Set visabilities.
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
+                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
+                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
+                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
             }
             else{
                 // Do the login check. 

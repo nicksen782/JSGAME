@@ -31,7 +31,7 @@ _APP.configObjs = {
         "author2_year"    : "author2_year" ,
         "author2_name"    : "author2_name" ,
         "author2_handle"  : "author2_handle" ,
-        "repo2Type"       : "repo2Type" ,
+        // "repo2Type"       : "repo2Type" ,
         "repo2Link"       : "repo2Link" ,
         "authorDiv2"      : "authorDiv2" ,
     },
