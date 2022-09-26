@@ -207,8 +207,8 @@ div#jsgame_appSelectDiv {
 }
 
 #jsgame_app {
-    min-width: 400px;
-    min-height: 400px;
+    /* min-width: 400px; */
+    /* min-height: 400px; */
     height: 100%;
     /* width: 100%; */
 }

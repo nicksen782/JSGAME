@@ -1,4 +1,4 @@
-_APP.net = {
+_JSG.net = {
     parent: null,
 
     http:{
@@ -56,22 +56,48 @@ _APP.net = {
                 try{
                     resp = await fetch(url, options )
                     .catch(e=>{ 
+                        // Clear the abort timeout. 
                         clearTimeout(id);
-                        if(e.type=="aborted"){ aborted = true; resolve(e.type); return; }
+
+                        // We had a problem. Was it due to the abort signal?
+                        if(e.type=="aborted"){ 
+                            aborted = true; 
+                            // resolve(e.type); 
+                            resolve(false); 
+                            return; 
+                        }
+
+                        // Throw the error.
                         throw e; 
                     });
     
+                    // Are we done and the aborted flag hasn't been set?
                     if(!aborted){
+                        // Clear the abort timeout. 
                         clearTimeout(id);
-                        if     (userOptions.type=="json"){ resp = await resp.json(); }
-                        else if(userOptions.type=="text"){ resp = await resp.text(); }
-                        resolve(resp); return;
+
+                        // Was the response good? 
+                        if(resp.statusText == "OK"){
+                            if     (userOptions.type=="json"){ resp = await resp.json(); }
+                            else if(userOptions.type=="text"){ resp = await resp.text(); }
+                            else{}
+                            resolve(resp); return;
+                        }
+                        // Bad response.
+                        else{
+                            // console.log(resp.statusText, resp);
+                            resolve(false); return;
+                        }
                     }
+
+                    // It was aborted. This request has failed.
                     else{
                         resolve(false); return;
                     }
                     
                 }
+
+                // Something went wrong in the try.
                 catch(e){
                     resolve(false); return;
                 }
@@ -151,24 +177,24 @@ _APP.net = {
                             // console.log("jsgame: .ws: .ws:", "MODE:", data.mode, ", DATA:", data.data); 
 
                             // Save the UUID.
-                            _APP.net.ws.uuid = data.data;
+                            _JSG.net.ws.uuid = data.data;
 
                             // Display the UUID as a hover title on net_ws_status.
-                            _APP.net.status.DOM.main.title = `UUID:  ${data.data}`;
+                            _JSG.net.status.DOM.main.title = `UUID:  ${data.data}`;
 
                             // If the onReadyFunction_lobby is populated then run it. (set by the loaded app.)
-                            if(_APP.net.ws.onReadyFunction_lobby ? true : false){
+                            if(_JSG.net.ws.onReadyFunction_lobby ? true : false){
                                 // console.log("onReadyFunction_lobby IS defined.");
-                                _APP.net.ws.onReadyFunction_lobby();
+                                _JSG.net.ws.onReadyFunction_lobby();
                             }
                             else{
                                 // console.log("onReadyFunction_lobby is NOT defined.");
                             }
 
                             // // If the onReadyFunction_game is populated then run it. (set by the loaded app.)
-                            // if(_APP.net.ws.onReadyFunction_game ? true : false){
+                            // if(_JSG.net.ws.onReadyFunction_game ? true : false){
                             //     // console.log("onReadyFunction_game IS defined.");
-                            //     _APP.net.ws.onReadyFunction_game();
+                            //     _JSG.net.ws.onReadyFunction_game();
                             // }
                             // else{
                             //     // console.log("onReadyFunction_game is NOT defined.");
@@ -195,10 +221,10 @@ _APP.net = {
                         for(let key1 in this.handlers[key0]){
                             for(let key2 in this.handlers[key0][key1]){
                                 // Create the entries in allowedMessageTypes.
-                                if(!_APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1]){ _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1] = []; }
+                                if(!_JSG.net.ws.ws_event_handler.allowedMessageTypes[key0][key1]){ _JSG.net.ws.ws_event_handler.allowedMessageTypes[key0][key1] = []; }
                                 
                                 // Add to allowedMessageTypes.
-                                _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1].push(key2);
+                                _JSG.net.ws.ws_event_handler.allowedMessageTypes[key0][key1].push(key2);
                             }
                         }
                     }
@@ -513,14 +539,14 @@ _APP.net = {
                 // Generate the DOM cache for each element.
                 this.DOM          = configObj.DOM;
                 
-                _APP.shared.parseObjectStringDOM(this.DOM, false);
+                _JSG.shared.parseObjectStringDOM(this.DOM, false);
 
                 // Event listeners.
                 // this.DOM.connect.addEventListener("click", ()=>{
-                //     _APP.net.ws.ws_utilities.initWss();
+                //     _JSG.net.ws.ws_utilities.initWss();
                 // }, false);
                 // this.DOM.disconnect.addEventListener("click", ()=>{
-                //     _APP.net.ws.ws_utilities.wsCloseAll();
+                //     _JSG.net.ws.ws_utilities.wsCloseAll();
                 // }, false);
                 this.inited = true; 
 

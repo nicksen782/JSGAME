@@ -1,4 +1,4 @@
-_APP.lobby = {
+_JSG.lobby = {
     parent: null,
 
     nav:{
@@ -39,6 +39,7 @@ _APP.lobby = {
             
                 // Add event listeners to the tabs.
                 for(let key in this.tabs){
+                    // console.log(key);
                     this.tabs[key].addEventListener("click", () => this.showOneView(key), false); 
                 }
         
@@ -72,7 +73,7 @@ _APP.lobby = {
         //         let uuid  = data[i].uuid;
                 
         //         // Updating self.
-        //         if(uuid == _APP.net.ws.uuid){
+        //         if(uuid == _JSG.net.ws.uuid){
         //             console.log(key, value, uuid);
         //             if(key == "handle"){ 
         //                 this.DOM["lobby_handle"].value = value; 
@@ -87,7 +88,7 @@ _APP.lobby = {
 
         // },
         // SEND_updateDetails: function(){
-        //     if(!_APP.net.ws.activeWs){ alert("You are not connected."); return;  } 
+        //     if(!_JSG.net.ws.activeWs){ alert("You are not connected."); return;  } 
             
         //     let handle = this.DOM["lobby_handle"];
         //     let name   = this.DOM["lobby_name"];
@@ -99,7 +100,7 @@ _APP.lobby = {
         //             {key:"name"  , value:name.value   },
         //         ]
         //     };
-        //     _APP.net.ws.activeWs.send(JSON.stringify(obj));
+        //     _JSG.net.ws.activeWs.send(JSON.stringify(obj));
         // },
 
         init: function(configObj){
@@ -178,7 +179,7 @@ _APP.lobby = {
         },
 
         onReadyFunction_lobby: async function(){
-            _APP.net.ws.activeWs.send('GET_GLOBAL_ROOMS');
+            _JSG.net.ws.activeWs.send('GET_GLOBAL_ROOMS');
         },
 
         addWsModes: async function(parent){
@@ -191,16 +192,16 @@ _APP.lobby = {
                     for(let key1 in parent.handlers[key0]){
                         for(let key2 in parent.handlers[key0][key1]){
                             // Create the entries in allowedMessageTypes.
-                            if(!_APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1]){ _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1] = []; }
+                            if(!_JSG.net.ws.ws_event_handler.allowedMessageTypes[key0][key1]){ _JSG.net.ws.ws_event_handler.allowedMessageTypes[key0][key1] = []; }
                             
                             // Create the entries in handlers.
-                            if(!_APP.net.ws.ws_event_handler.handlers[key0][key1]){ _APP.net.ws.ws_event_handler.handlers[key0][key1] = {}; }
+                            if(!_JSG.net.ws.ws_event_handler.handlers[key0][key1]){ _JSG.net.ws.ws_event_handler.handlers[key0][key1] = {}; }
                             
                             // Add to allowedMessageTypes.
-                            _APP.net.ws.ws_event_handler.allowedMessageTypes[key0][key1].push(key2);
+                            _JSG.net.ws.ws_event_handler.allowedMessageTypes[key0][key1].push(key2);
                             
                             // Add to handlers.
-                            _APP.net.ws.ws_event_handler.handlers[key0][key1][key2] = parent.handlers[key0][key1][key2].bind(parent.parent);
+                            _JSG.net.ws.ws_event_handler.handlers[key0][key1][key2] = parent.handlers[key0][key1][key2].bind(parent.parent);
                         }
                     }
                 }
@@ -212,54 +213,19 @@ _APP.lobby = {
             return new Promise(async (resolve,reject)=>{
                 // Websockets config:
                 await this.addWsModes(this);
-                _APP.net.ws.onReadyFunction_lobby = this.onReadyFunction_lobby.bind(this.parent);
+                _JSG.net.ws.onReadyFunction_lobby = this.onReadyFunction_lobby.bind(this.parent);
                 resolve();
             });
         }
     },
 
+    // Load files required for the lobby.
     _loadFiles: async function(_files){
         return new Promise(async function(resolve,reject){
-            // Adds file by type.
-            let addFile = function(rec){
-                return new Promise(async function(res,rej){
-                    switch(rec.t){
-                        case "js": { 
-                            // Create the script. 
-                            let script = document.createElement('script');
-
-                            // Set the name. 
-                            if(rec.n){ script.setAttribute("name", rec.n); }
-                            else{ script.setAttribute("name", rec.f); }
-
-                            // Set defer.
-                            script.defer=true;
-
-                            // Onload.
-                            script.onload = function () { res(); script.onload = null; };
-
-                            // Append the element. 
-                            document.head.appendChild(script);
-
-                            // Set source. 
-                            script.src = `${rec.f}`;
-                            
-                            break; 
-                        }
-
-                        default  : { 
-                            console.log(`Cannot load: ${rec.f}. Unknown file type: ${rec.t}`);
-                            rej();
-                            break; 
-                        }
-                    };
-                });
-            };
-
             // Add each file (synchronously)
             for(let i=0; i<_files.length; i+=1){
                 // Determine what type of file this is and load it.
-                await addFile(_files[i]);
+                await _JSG.addFile(_files[i], ".");
             }
 
             resolve();
@@ -283,7 +249,7 @@ _APP.lobby = {
             this.login   .parent = this;
 
             // Populate the lobby html.
-            _APP.DOM["lobbyDiv"].innerHTML = await _APP.net.http.send(`lobby.html`, { type:"text", method:"GET" }, 5000); 
+            _JSG.DOM["lobbyDiv"].innerHTML = await _JSG.net.http.send(`lobby.html`, { type:"text", method:"GET" }, 5000); 
 
             // Inits.
             await this.nav     .init(configObj.lobby.nav);

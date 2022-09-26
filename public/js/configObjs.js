@@ -1,4 +1,4 @@
-_APP.configObjs = {
+_JSG.configObjs = {
     base: {
         // APP SELECT
         "appSelectDiv"    : "jsgame_appSelectDiv" ,
@@ -23,6 +23,9 @@ _APP.configObjs = {
         // SECTIONS (contents)
         "gameDiv" : "jsgame_app" ,
         "lobbyDiv": "jsgame_lobby" ,
+
+        // LOGGED-IN USER
+        "header_user"      : "js_game_header_user" ,
 
         // AUTHOR DIV
         "authorDiv2"      : "authorDiv2" ,
@@ -49,8 +52,11 @@ _APP.configObjs = {
     // Lobby object.
     lobby:{
         _files: [
-            { "f":"js/lobby/lobby_login.js" , "t":"js"  , "n":"lobby_login"},
-            { "f":"js/lobby/lobby_rooms.js" , "t":"js"  , "n":"lobby_rooms"},
+            { "f":"css/lobby.css"             , "t":"css" , "n":"lobby.css"       },
+            { "f":"css/lobby/lobby_login.css" , "t":"css" , "n":"lobby_login.css" },
+            { "f":"css/lobby/lobby_room.css"  , "t":"css" , "n":"lobby_room.css"  },
+            { "f":"js/lobby/lobby_login.js"   , "t":"js"  , "n":"lobby_login"     },
+            { "f":"js/lobby/lobby_rooms.js"   , "t":"js"  , "n":"lobby_rooms"     },
         ],
         // Lobby navigation config.
         nav: {

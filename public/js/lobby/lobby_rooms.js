@@ -1,8 +1,8 @@
-_APP.lobby.lobby = {
+_JSG.lobby.lobby = {
     parent: null,
     DOM: {},
 };
-_APP.lobby.room = {
+_JSG.lobby.room = {
     parent: null,
     DOM: {},
     currentRoomId: "",
@@ -39,7 +39,7 @@ _APP.lobby.room = {
             let button = document.createElement("button"); td.append(button);
             button.innerText = "JOIN";
             button.onclick = ()=>{
-                _APP.net.ws.activeWs.send(JSON.stringify({ mode:'JOIN_ROOM', data:rec.roomId}));
+                _JSG.net.ws.activeWs.send(JSON.stringify({ mode:'JOIN_ROOM', data:rec.roomId}));
             };
         }
 
@@ -130,12 +130,12 @@ _APP.lobby.room = {
         ev.target.value = "";
 
         // Send the roomId and message to the server. 
-        _APP.net.ws.activeWs.send(JSON.stringify({ mode:'CHAT_ROOM_MESSAGE', data:{roomId:this.roomData.room.roomId, message:message }}));
+        _JSG.net.ws.activeWs.send(JSON.stringify({ mode:'CHAT_ROOM_MESSAGE', data:{roomId:this.roomData.room.roomId, message:message }}));
 
         // Add the message to the messages display. (Server doesn't send the new message to the client that send it.)
         let msgObj = {
             r: this.roomData.room.roomId,
-            u: _APP.lobby.login.loginData.username, 
+            u: _JSG.lobby.login.loginData.username, 
             d: (new Date().getTime()), 
             m: message
         };
@@ -156,7 +156,7 @@ _APP.lobby.room = {
             td.classList.add("tdUsername");
             td.innerText = messages[i].u;
             td.title = new Date(messages[i].d);
-            if(messages[i].username == _APP.lobby.login.loginData.username){ tr.classList.add("thisUser"); }
+            if(messages[i].username == _JSG.lobby.login.loginData.username){ tr.classList.add("thisUser"); }
             
             // Message
             td = tr.insertCell(-1);

@@ -1,4 +1,10 @@
-_APP = {
+// Holds the loaded app.
+let _APP = {};
+// Stores the loaded app config.
+// loadedConfig: {},
+
+// Holds JSGAME.
+let _JSG = {
     // Contains config settings for "modules". (POPULATED DURING INIT.)
     configObjs : {},
 
@@ -9,159 +15,185 @@ _APP = {
 
     // Stores the loaded appKey
     loadedAppKey: "",
-    
-    // Stores the loaded app config.
-    loadedConfig: {},
-    
+
+    // Adds the specified file.
+    addFile : function(rec, relativePath){
+        return new Promise(async (res,rej)=>{
+            switch(rec.t){
+                case "js": { 
+                    // Create the script. 
+                    let script = document.createElement('script');
+
+                    // Set the name. 
+                    if(rec.n){ script.setAttribute("name", rec.n); }
+                    else{ script.setAttribute("name", rec.f); }
+
+                    // Set defer.
+                    script.defer=true;
+
+                    // Onload.
+                    script.onload = function () { res(); script.onload = null; };
+                    script.onerror = function (err) { 
+                        console.log("js: FAILURE:", `${relativePath}/${rec.f}`);
+                        rej(err); script.onload = null; 
+                    };
+
+                    // Append the element. 
+                    document.head.appendChild(script);
+
+                    // Set source. 
+                    script.src = `${relativePath}/${rec.f}`;
+                    
+                    break; 
+                }
+
+                case "image": {
+                    // Get the data.
+                    let img = new Image();
+                    img.onload = function(){
+                        // Determine the data name. 
+                        let dataName;
+                        if(rec.n){ dataName = rec.n; }
+                        else{ dataName = rec.f }
+
+                        // Create the files key in the game if it doesn't exist. 
+                        if(!_APP.files){ _APP.files = {"_WARNING":"_WARNING"}};
+                        
+                        // Save the data to the files object. 
+                        _APP.files[dataName] = img;
+                        
+                        res();
+                        img.onload = null;
+                    };
+                    img.onerror = function (err) { 
+                        console.log("image: FAILURE:", `${relativePath}/${rec.f}`);
+                        rej(err); img.onload = null; 
+                    };
+                    img.src = `${relativePath}/${rec.f}`;
+
+                    break; 
+                }
+
+                case "json": { 
+                    // Get the data.
+                    let data = await _JSG.net.http.send(`${relativePath}/${rec.f}`, { type:"json", method:"GET" }, 5000);
+                    if(data === false){
+                        console.log("json: FAILURE:", `${relativePath}/${rec.f}`);
+                        rej(data); return;
+                    }
+
+                    // Determine the data name. 
+                    let dataName;
+                    if(rec.n){ dataName = rec.n; }
+                    else{ dataName = rec.f }
+
+                    // Create the files key in the game if it doesn't exist. 
+                    if(!_APP.files){ _APP.files = {"_WARNING":"_WARNING"}};
+
+                    // Save the data to the files object. 
+                    _APP.files[dataName] = data;
+
+                    res();
+                    break; 
+                }
+                
+                case "html": { 
+                    // Get the data.
+                    let data = await _JSG.net.http.send(`${relativePath}/${rec.f}`, { type:"text", method:"GET" }, 5000);
+                    if(data === false){
+                        console.log("html: FAILURE:", `${relativePath}/${rec.f}`);
+                        rej(data); return;
+                    }
+
+                    // Determine the data name. 
+                    let dataName;
+                    if(rec.n){ dataName = rec.n; }
+                    else{ dataName = rec.f }
+
+                    // Create the files key in the game if it doesn't exist. 
+                    if(!_APP.files){ _APP.files = {"_WARNING":"_WARNING"}};
+
+                    // Save the data to the files object. 
+                    _APP.files[dataName] = data;
+
+                    res();
+                    break; 
+                }
+
+                case "css": { 
+                    // Create CSS link.
+                    let link = document.createElement('link');
+
+                    // Set type and rel. 
+                    link.type   = 'text/css';
+                    link.rel    = 'stylesheet';
+
+                    // Set the name.
+                    if(rec.n){ link.setAttribute("name", rec.n); }
+                    else{ link.setAttribute("name", rec.f); }
+
+                    // Onload.
+                    link.onload = function() { res(); link.onload = null; };
+                    link.onerror = function (err) { 
+                        console.log("css: FAILURE:", `${relativePath}/${rec.f}`, err);
+                        rej(err); link.onload = null; 
+                    };
+                    // Append the element. 
+                    document.head.appendChild( link );
+
+                    // Set source.
+                    link.href   = `${relativePath}/${rec.f}`;
+
+                    break; 
+                }
+
+                default  : { 
+                    let msg = `Cannot load: ${rec.f}. Unknown file type: ${rec.t}`;
+                    console.log(msg);
+                    rej(msg);
+                    break; 
+                }
+            };
+        });
+    },
+
     // Loads the files specified by the appRec.
     loadFiles: async function(appRec){
-        return new Promise(async function(resolve,reject){
+        return new Promise(async (resolve,reject)=>{
             if(!appRec){ console.log("ERROR: loadFiles: Invalid appRec:", appRec); return; }
 
             // Get the app config.
-            _APP.loadedConfig = await _APP.net.http.send(`${appRec.configFile}`, { type:"json", method:"GET" }, 5000);
+            _JSG.loadedConfig = await _JSG.net.http.send(`${appRec.configFile}`, { type:"json", method:"GET" }, 5000);
 
             // Set and save the loadedAppKey.
-            _APP.loadedAppKey = appRec.appKey;
+            _JSG.loadedAppKey = appRec.appKey;
 
             // Create the app object if it doesn't exist. 
-            if(!_APP[_APP.loadedAppKey]){ _APP[_APP.loadedAppKey] = {}; }
+            if(!_APP){ _APP = {}; }
 
             // Stop here if the app is already loaded.
-            if(_APP[_APP.loadedAppKey].filesLoaded){ console.log("Already loaded!"); return; }
-
-            let addFile = function(rec){
-                return new Promise(async function(res,rej){
-                    switch(rec.t){
-
-                        case "js": { 
-                            // Create the script. 
-                            let script = document.createElement('script');
-
-                            // Set the name. 
-                            if(rec.n){ script.setAttribute("name", rec.n); }
-                            else{ script.setAttribute("name", rec.f); }
-
-                            // Set defer.
-                            script.defer=true;
-
-                            // Onload.
-                            script.onload = function () { res(); script.onload = null; };
-                            script.onerror = function (err) { 
-                                console.log("JS: FAILURE:", `${appRec.appPath}/${rec.f}`);
-                                res(); script.onload = null; 
-                            };
-
-                            // Append the element. 
-                            document.head.appendChild(script);
-
-                            // Set source. 
-                            script.src = `${appRec.appPath}/${rec.f}`;
-                            
-                            break; 
-                        }
-
-                        case "image": {
-                            // Get the data.
-                            let img = new Image();
-                            img.onload = function(){
-                                // Determine the data name. 
-                                let dataName;
-                                if(rec.n){ dataName = rec.n; }
-                                else{ dataName = rec.f }
-        
-                                // Create the files key in the game if it doesn't exist. 
-                                if(!_APP[_APP.loadedAppKey].files){ _APP[_APP.loadedAppKey].files = {"_WARNING":"_WARNING"}};
-                                
-                                // Save the data to the files object. 
-                                _APP[_APP.loadedAppKey].files[dataName] = img;
-                                
-                                res();
-                                img.onload = null;
-                            };
-                            img.src = `${appRec.appPath}/${rec.f}`;
-    
-                            break; 
-                        }
-
-                        case "json": { 
-                            // Get the data.
-                            let data = await _APP.net.http.send(`${appRec.appPath}/${rec.f}`, { type:"json", method:"GET" }, 5000);
-
-                            // Determine the data name. 
-                            let dataName;
-                            if(rec.n){ dataName = rec.n; }
-                            else{ dataName = rec.f }
-
-                            // Create the files key in the game if it doesn't exist. 
-                            if(!_APP[_APP.loadedAppKey].files){ _APP[_APP.loadedAppKey].files = {"_WARNING":"_WARNING"}};
-
-                            // Save the data to the files object. 
-                            _APP[_APP.loadedAppKey].files[dataName] = data;
-
-                            res();
-                            break; 
-                        }
-                        
-                        case "html": { 
-                            // Get the data.
-                            let data = await _APP.net.http.send(`${appRec.appPath}/${rec.f}`, { type:"text", method:"GET" }, 5000);
-
-                            // Determine the data name. 
-                            let dataName;
-                            if(rec.n){ dataName = rec.n; }
-                            else{ dataName = rec.f }
-
-                            // Create the files key in the game if it doesn't exist. 
-                            if(!_APP[_APP.loadedAppKey].files){ _APP[_APP.loadedAppKey].files = {"_WARNING":"_WARNING"}};
-
-                            // Save the data to the files object. 
-                            _APP[_APP.loadedAppKey].files[dataName] = data;
-
-                            res();
-                            break; 
-                        }
-
-                        case "css": { 
-                            // Create CSS link.
-                            let link = document.createElement('link');
-
-                            // Set type and rel. 
-                            link.type   = 'text/css';
-                            link.rel    = 'stylesheet';
-
-                            // Set the name.
-                            if(rec.n){ link.setAttribute("name", rec.n); }
-                            else{ link.setAttribute("name", rec.f); }
-
-                            // Onload.
-                            link.onload = function() { res(); link.onload = null; };
-                            
-                            // Append the element. 
-                            document.head.appendChild( link );
-
-                            // Set source.
-                            link.href   = `${appRec.appPath}/${rec.f}`;
-
-                            break; 
-                        }
-
-                        default  : { 
-                            console.log(`Cannot load: ${rec.f}. Unknown file type: ${rec.t}`);
-                            rej();
-                            break; 
-                        }
-                    };
-                });
-            };
+            if(_APP.filesLoaded){ console.log("Already loaded!"); return; }
 
             // Go through each file. 
-            for(let i=0; i<_APP.loadedConfig.files.length; i+=1){
+            for(let i=0; i<_JSG.loadedConfig.files.length; i+=1){
+                // Skip the file if it has it's load flag set to false.
+                if(_JSG.loadedConfig.files[i].l === false){ 
+                    // console.log("skip", _JSG.loadedConfig.files[i]); 
+                    continue;
+                }
+                
                 // Determine what type of file this is and load it.
-                await addFile(_APP.loadedConfig.files[i]);
+                try{
+                    await this.addFile(_JSG.loadedConfig.files[i], appRec.appPath);
+                }
+                catch(e){
+                    console.log(`ERROR: Loading file: ${_JSG.loadedConfig.files[i].f}`, e);
+                    console.log("ABORTING APP LOAD.");
+                    reject(e); return; 
+                }
             }
     
-            _APP[_APP.loadedAppKey].filesLoaded = true;
+            _APP.filesLoaded = true;
             resolve();
         });
     },
@@ -174,36 +206,52 @@ _APP = {
             select.value = rec.appKey;
 
             // Load the app's files. 
-            await _APP.loadFiles(rec); 
+            await _JSG.loadFiles(rec); 
 
             // Display the author data for the app.
-            _APP.updateAuthorData(rec);
+            _JSG.updateAuthorData(rec);
 
-            // Hide the debug div if the screen is too small.
-            // NOTE: If debug was true and not disabled here then the app should take care of displaying the debugDiv.
-            // if(document.documentElement.clientWidth < 768){
-            //     // console.log("**************", "width: " + document.documentElement.clientWidth + ", height: " + document.documentElement.clientHeight);
-            //     if(_APP.loadedConfig.meta && _APP.loadedConfig.meta.debug == true){
-            //         console.log("Screen is too narrow. Hiding the debugDiv and disabling in the app.");
-            //         document.getElementById("debugDiv").classList.add("hide");
-            //         _APP.loadedConfig.meta.debug = false;
-            //     }
-            // }
-
-            console.log("LOADING:", rec.appKey);
-            if(_APP[rec.appKey].init){ 
+            if(_APP.init){ 
+                // Pre-load any specified JSGAME shared plug-ins.
+                if(_JSG.loadedConfig.meta.jsgame_shared_plugins){
+                    let plugins = _JSG.loadedConfig.meta.jsgame_shared_plugins;
+                    for(let i=0; i<plugins.length; i+=1){
+                        try{
+                            // console.log("LOADING: JSGAME plugin:", plugins[i].n);
+                            await this.addFile(plugins[i], ".");
+                            console.log("LOADED: JSGAME plugin:", plugins[i].n);
+                        }
+                        catch(e){
+                            console.log(`ERROR: Loading JSGAME plugin: ${plugins[i].n}`, e);
+                            console.log("ABORTING APP LOAD.");
+                            reject(); return; 
+                        }
+                    }
+                }
+                
                 // Run the app's init.
-                await _APP[rec.appKey].init(); 
+                console.log("LOADING:", rec.appKey);
+                await _APP.init(); 
                 console.log("LOADED :", rec.appKey);
                 
                 // Set visabilities.
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
+
+                // Don't show the lobby if the appConfig says not to.
+                if(!_JSG.loadedConfig.meta.hideLobby){
+                    this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
+                }
 
                 // Do the login check. 
                 // console.log("running loginCheck after loading:", rec.appKey);
-                await _APP.lobby.login.loginCheck();
+                await _JSG.lobby.login.loginCheck();
+
+                // DEBUG:
+                try{ console.log("_JSG:", _APP); } catch(e){ console.log("_JSG:", "NOT LOADED"); }
+                try{ console.log("_APP:", _APP); } catch(e){ console.log("_APP:", "NOT LOADED"); }
+                try{ console.log("_GFX:", _GFX); } catch(e){ console.log("_GFX:", "NOT LOADED"); }
+
                 resolve();
             }
             else{
@@ -216,7 +264,7 @@ _APP = {
 
                 // Do the login check. 
                 // console.log("running loginCheck after loading:", rec.appKey);
-                await _APP.lobby.login.loginCheck();
+                await _JSG.lobby.login.loginCheck();
 
                 resolve();
             }
@@ -226,7 +274,7 @@ _APP = {
     // Generates the app select menu.
     loadAppMenus : function(){
         return new Promise((resolve,reject)=>{
-            if(!Object.keys(_APP.apps).length){ console.log("ERROR: loadAppMenus: Error in apps.json."); return; }
+            if(!Object.keys(_JSG.apps).length){ console.log("ERROR: loadAppMenus: Error in apps.json."); return; }
             
             // Setup the button.
             // let button = this.DOM["appSelectReload"];
@@ -240,8 +288,8 @@ _APP = {
             // option.innerText = "... Choose an application";
             // select.append(option);
             let frag1 = document.createDocumentFragment();
-            for(let key in _APP.apps){
-                let rec = _APP.apps[key];
+            for(let key in _JSG.apps){
+                let rec = _JSG.apps[key];
                 let option = document.createElement("option");
                 option.value = rec.appKey;
                 option.innerText = "APP: " + rec.displayName;
@@ -398,10 +446,10 @@ _APP = {
         this.shared.parent = this;
 
         // Get the apps.json.
-        _APP.apps = await _APP.net.http.send("shared/apps.json", { type:"json", method:"GET" }, 5000);
+        _JSG.apps = await _JSG.net.http.send("shared/apps.json", { type:"json", method:"GET" }, 5000);
 
         // JSGAME BASE DOM.
-        this.DOM = _APP.configObjs["base"];
+        this.DOM = _JSG.configObjs["base"];
         this.shared.parseObjectStringDOM(this.DOM, true);
 
         this.DOM["js_game_header_menuBtn"].addEventListener("click", (ev)=>{ 
@@ -415,23 +463,23 @@ _APP = {
         this.DOM.jsgame_menu_toggleLobby  .addEventListener("click", (ev)=>{ this.shared.setVisibility(ev.target, null, true); }, false);
 
         // Display the game menus with the apps.json data.
-        await _APP.loadAppMenus();
+        await _JSG.loadAppMenus();
 
         // Inits.
-        await _APP.net  .init(_APP, _APP.configObjs);
-        await _APP.lobby.init(_APP, _APP.configObjs);
+        await _JSG.net  .init(_JSG, _JSG.configObjs);
+        await _JSG.lobby.init(_JSG, _JSG.configObjs);
 
         // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
 
         // Auto-load app?
-        let params = _APP.getUrlParams();
+        let params = _JSG.getUrlParams();
         if(Object.keys(params).length){
             // Check for and get the app record.
             let rec;
             // Does the supplied key match a real key? 
-            if(params.appKey && (rec = _APP.apps[params.appKey]) ){
+            if(params.appKey && (rec = _JSG.apps[params.appKey]) ){
                 // Load the app and await for it to finish loading. 
-                await _APP.loadApp(rec); 
+                await _JSG.loadApp(rec); 
                 
                 // Set visabilities.
                 // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
@@ -447,7 +495,7 @@ _APP = {
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
             
                 // console.log("running loginCheck (appKey not found.)");
-                await _APP.lobby.login.loginCheck();
+                await _JSG.lobby.login.loginCheck();
             }
         }
         else{
@@ -459,7 +507,7 @@ _APP = {
             this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
             
             // console.log("running loginCheck (No appKey.)");
-            await _APP.lobby.login.loginCheck();
+            await _JSG.lobby.login.loginCheck();
         }
     },
 };
@@ -467,9 +515,5 @@ _APP = {
 window.onload = async function(){
     window.onload = null;
     await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
-    await _APP.init();
+    await _JSG.init();
 };
-
-// Do the login check. 
-// console.log("running loginCheck after loading:", rec.appKey);
-// await _APP.lobby.login.loginCheck();

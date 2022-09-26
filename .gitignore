@@ -3,6 +3,7 @@ _IGNORE/*
 node_modules/*
 
 # IGNORE GAMES. THEY ARE SEPARATE.
+public/games/*
 !public/games/.gitkeep
 
 # CONFIGS.

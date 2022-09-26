@@ -1,4 +1,4 @@
-_APP.lobby.login = {
+_JSG.lobby.login = {
     parent:null,
     DOM:{},
     loginData: {},
@@ -30,8 +30,8 @@ _APP.lobby.login = {
                 this.loginData = loginObj.data.session;
 
                 // DEBUG: This test is here while testing to see if it ever triggers.
-                if(this.loginData.loadedAppKey != _APP.loadedAppKey){
-                    alert("loadedAppKey mismatch:", `${this.loginData.loadedAppKey} VS ${_APP.loadedAppKey}`);
+                if(this.loginData.loadedAppKey != _JSG.loadedAppKey){
+                    alert("loadedAppKey mismatch:", `${this.loginData.loadedAppKey} VS ${_JSG.loadedAppKey}`);
                 }
 
                 // Show the correct part of the login form.
@@ -46,11 +46,12 @@ _APP.lobby.login = {
                 // this.parent.nav.showOneView("debug");
 
                 // Populate with some of the returned data.
+                _JSG.DOM["header_user"].innerText = this.loginData.username;
                 this.DOM.showLogout_username.innerText = this.loginData.username;
                 this.DOM.showLogout_name    .innerText = this.loginData.name;
 
                 // Start WebSockets.
-                _APP.net.ws.ws_utilities.initWss();
+                _JSG.net.ws.ws_utilities.initWss();
 
                 resolve();
             }
@@ -82,13 +83,13 @@ _APP.lobby.login = {
     },
     login     : async function(){
         return new Promise(async (resolve,reject)=>{
-            let loginResp = await _APP.net.http.send("login", { 
+            let loginResp = await _JSG.net.http.send("login", { 
                 type:"json", 
                 method:"POST", 
                 body:{
                     username    : this.DOM.username.value,
                     passwordHash: sha256(this.DOM.password.value),
-                    loadedAppKey: _APP.loadedAppKey,
+                    loadedAppKey: _JSG.loadedAppKey,
                 } 
             }, 5000);
 
@@ -103,7 +104,7 @@ _APP.lobby.login = {
             this.showFormView("checking");
 
             // Check for an active login.
-            let loginCheckResp = await _APP.net.http.send("loginCheck", { type:"json", method:"POST", body:{ loadedAppKey: _APP.loadedAppKey } }, 5000);
+            let loginCheckResp = await _JSG.net.http.send("loginCheck", { type:"json", method:"POST", body:{ loadedAppKey: _JSG.loadedAppKey } }, 5000);
             await this.afterLogin(loginCheckResp);
 
             resolve();
@@ -111,13 +112,18 @@ _APP.lobby.login = {
     },
     logout    : async function(){
         return new Promise(async (resolve,reject)=>{
-            let logoutResp = await _APP.net.http.send("logout", { type:"json", method:"POST" }, 5000);
+            let logoutResp = await _JSG.net.http.send("logout", { type:"json", method:"POST" }, 5000);
             if(logoutResp.success == true){
                 // Show the correct part of the login form.
                 this.showFormView("login");
 
+                // Reset displayed values.
+                _JSG.DOM["header_user"].innerText = "";
+                this.DOM.showLogout_username.innerText = "";
+                this.DOM.showLogout_name    .innerText = "";
+
                 // Close the ws connection.
-                _APP.net.ws.ws_utilities.wsCloseAll();
+                _JSG.net.ws.ws_utilities.wsCloseAll();
                 
                 resolve();
             }
@@ -126,7 +132,7 @@ _APP.lobby.login = {
                 this.showFormView("logout");
 
                 // Close the ws connection.
-                _APP.net.ws.ws_utilities.wsCloseAll();
+                _JSG.net.ws.ws_utilities.wsCloseAll();
 
                 resolve();
             }
