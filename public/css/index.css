@@ -8,7 +8,6 @@ html {
     height: 98vh;
     width: 98vw;
     font-size: 62.5%;
-    /*     background-color: black; */
     margin: 0 auto;
 }
 
@@ -19,11 +18,14 @@ body {
     font-size: 1.6rem;
 }
 
-#jsgame_appSelectDiv {}
+#jsgame_appSelectDiv {
+}
 
-#jsgame_appSelectDiv {}
+#jsgame_appSelectDiv {
+}
 
-#jsgame_appSelectReload {}
+#jsgame_appSelectReload {
+}
 
 /* OUTER FLEX */
 #flex_jsgame_cont {
@@ -60,7 +62,6 @@ body {
 #js_game_header_title {
     font-size: 3.5rem;
     text-decoration: underline;
-    /* display: inline-block; */
     display: inline-block;
     vertical-align: top;
     margin-left: 5px;
@@ -79,7 +80,6 @@ div#jsgame_appSelectDiv {
     background-color: rgb(64 64 64 / 75%);
     height: 100%;
     position: fixed;
-    /* z-index: 100; */
 }
 
 #js_game_backgroundShade.hide {
@@ -87,29 +87,16 @@ div#jsgame_appSelectDiv {
 }
 
 #js_game_header_menu {
-    /* color: #0a8ba7; */
-    /* color: #02a7ed; */
-    /* color: #565656; */
     color: black;
-    /* background-color: #0a8ba7; */
     background-color: #02a7ed;
-    /* background-color: #565656; */
-    /* background-color: black; */
-    /* display: block; */
-    /* display: none; */
     position: absolute;
     margin: 0;
-    /* background-color: #ECEFF1; */
     box-shadow: 2px 2px 6px rgba(0, 0, 0, .4);
     transition-duration: 0.25s;
     transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    /* z-index: -1; */
-    /* z-index: 10; */
     height: 0px;
     overflow: hidden;
     width: 700px;
-    /* color: black; */
-    /* padding: 1rem; */
 }
 
 #js_game_header_menu table {
@@ -118,7 +105,6 @@ div#jsgame_appSelectDiv {
 
 #js_game_header_menu.active {
     height: 300px;
-    /* z-index: 1000; */
     padding: 1rem;
 }
 
@@ -142,13 +128,11 @@ div#jsgame_appSelectDiv {
     justify-content: center;
     align-content: flex-start;
     flex: auto;
-    /* overflow: scroll; */
     align-items: flex-start;
 }
 
-#flex_jsgame_app_cont {}
-
-
+#flex_jsgame_app_cont {
+}
 
 #jsgame_loadingDiv {
     height: 99%;
@@ -158,8 +142,6 @@ div#jsgame_appSelectDiv {
     display: flex;
     justify-content: center;
     align-items: center;
-    /* font-family: Courier New, monospace; */
-    /* font-size: 5rem; */
     flex-direction: column;
     background-image: url("../imgs/jsgamelogo1.png");
 }
@@ -170,16 +152,16 @@ div#jsgame_appSelectDiv {
 
 #jsgame_loadingDiv_text {
     background-color: rgb(0 0 0 / 75%);
-    /* height: 24rem; */
     box-shadow: 0px 0px 10px 10px aliceblue;
     border-radius: 10px;
     padding: 10px;
-    width: 570px;
-    height: 120px;
-    white-space: pre-line;
+    width: 50%;
+    min-height: 120px;
+    max-height: 550px;
     font-family: Courier New, monospace;
-    font-size: 3rem;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
 }
 
 #jsgame_loadingDiv_text:first-line {
@@ -197,9 +179,6 @@ div#jsgame_appSelectDiv {
 
 #jsgame_lobbyDiv {
     background-color: #333333;
-    /* height: 99%; */
-    /* width: 100%; */
-    /* max-width: 600px; */
 }
 
 #jsgame_lobbyDiv.hide {
@@ -207,10 +186,7 @@ div#jsgame_appSelectDiv {
 }
 
 #jsgame_app {
-    /* min-width: 400px; */
-    /* min-height: 400px; */
     height: 100%;
-    /* width: 100%; */
 }
 
 #jsgame_lobby {
@@ -219,30 +195,21 @@ div#jsgame_appSelectDiv {
     background-color: goldenrod;
 }
 
-
 /* MENU ICON */
 .nav-icon:hover {
     background-color: darkblue;
-    /* background-color: blue; */
-    /* color: black; */
 }
 
 .nav-icon {
-    /* margin: 1em; */
-    /* width: 50px; */
     width: 40px;
-    /* height: 30px; */
     background-color: black;
     display: inline-block;
     cursor: pointer;
     border-radius: 10px;
     overflow: hidden;
-    /* padding: 5px; */
 }
 
-.nav-icon:after,
-.nav-icon:before,
-.nav-icon div {
+.nav-icon:after, .nav-icon:before, .nav-icon div {
     background-color: #fff;
     border-radius: 5px;
     content: '';
@@ -250,7 +217,6 @@ div#jsgame_appSelectDiv {
     height: 5px;
     margin: 7px 0;
     transition: all .2s ease-in-out;
-    /* width: 100%; */
     width: 40px;
 }
 
@@ -270,21 +236,10 @@ div#jsgame_appSelectDiv {
     transform: translateY(-12px) rotate(-135deg);
 }
 
-
 /* WEBSOCKETS CONNECTION STATUS */
 #net_ws_status {
-    /* background-color: rgb(47 43 214 / 12%); */
-    /* background-color: rgb(0 92 128 / 75%); */
-    /* position: absolute; */
-    /* position: relative; */
-    /* top: -5px; */
-    /* right: 0px; */
-    /* width: 220px; */
-    /* height: 26px; */
-    /* color: white; */
     font-size: 14px;
     border-radius: 5px;
-    /* float: right; */
     padding-left: 5px;
     padding-right: 5px;
 }
@@ -342,13 +297,15 @@ div#jsgame_appSelectDiv {
     width: 85px;
 }
 
-#net_ws_status_connect {}
+#net_ws_status_connect {
+}
 
 #net_ws_status_connect.hide {
     display: none;
 }
 
-#net_ws_status_disconnect {}
+#net_ws_status_disconnect {
+}
 
 #net_ws_status_disconnect.hide {
     display: none;
@@ -358,18 +315,18 @@ select#jsgame_appSelectSelect {
     width: 175px;
 }
 
-
-#authorDiv_table{
+#authorDiv_table {
 }
-.authorDiv{
+
+.authorDiv {
     background-color: #333333;
     color: white;
     font-size: 12px;
-    /* display: inline-block; */
     vertical-align: top;
     border-bottom: 1px solid black;
     height: 17px;
 }
+
 .authorDiv.hide {
     /* display: none; */
 }
@@ -385,14 +342,51 @@ select#jsgame_appSelectSelect {
 }
 
 .authorDiv #repoLink a, .authorDiv #repo2Link a {
-    /* color: white; */
-    /* font-weight: bold; */
-    /* font-family: monospace; */
-
-    /* background-color: white; */
     color: white;
 }
 
 footer {
     /* flex: auto; */
+}
+
+/* NEW */
+/* NEW */
+/* NEW */
+#jsgame_loadingDiv_status {
+    font-size: 3rem;
+    text-align: center;
+    white-space: pre-line;
+    flex: auto;
+    border-radius: 10px 10px 0px 0px;
+    width: 100%;
+    border: 5px solid black;
+    border-bottom: 0px;
+    font-family: Courier New, monospace;
+}
+
+#jsgame_loadingDiv_status.loading {
+    background-color: #a38027;
+}
+
+#jsgame_loadingDiv_status.loaded {
+    background-color: #27a32e;
+}
+
+#jsgame_loadingDiv_status.error {
+    background-color: #a32727;
+}
+
+#jsgame_loadingDiv_messages {
+    background-color: rgb(39 40 163 / 30%);
+    white-space: pre-line;
+    overflow-y: auto;
+    width: 100%;
+    border-radius: 0px 0px 10px 10px;
+    font-family: Courier New, monospace;
+}
+
+#jsgame_loadingDiv_messages.populated {
+    padding: 5px;
+    border: 5px solid black;
+    border-top: 0px;
 }

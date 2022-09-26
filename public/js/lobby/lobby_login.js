@@ -56,7 +56,7 @@ _JSG.lobby.login = {
                 resolve();
             }
             else{
-                console.log("FALSE", loginObj.resultType, loginObj.data);
+                // console.log("FALSE", loginObj.resultType, loginObj.data);
                 this.loginData = {};
 
                 // Show the correct part of the login form.

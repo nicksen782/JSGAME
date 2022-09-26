@@ -294,7 +294,13 @@ let _JSG = {
     // Generates the app select menu.
     loadAppMenus : function(){
         return new Promise((resolve,reject)=>{
-            if(!Object.keys(_JSG.apps).length){ console.log("ERROR: loadAppMenus: Error in apps.json."); return; }
+            if(!Object.keys(_JSG.apps).length){ 
+                let msg1 = "ERROR: loadAppMenus: No entries in apps.json.";
+                _JSG.loadingDiv.changeStatus("error");
+                _JSG.loadingDiv.addMessage(msg1);
+                console.log(msg1); 
+                return; 
+            }
             
             // Setup the button.
             // let button = this.DOM["appSelectReload"];
@@ -458,6 +464,13 @@ let _JSG = {
                 };
             }
         },
+        rebuildAppsJson_file: async function(){
+            // Request a rebuild of the apps.json file. 
+            let resp = await _JSG.net.http.send(`rebuildAppsJson_file`, { type:"json", method:"POST" }, 5000);
+            _JSG.apps = resp;
+            console.log("rebuildAppsJson_file", resp);
+            alert("rebuildAppsJson_file: DONE");
+        },
     },
 
     // Loading div.
@@ -537,15 +550,24 @@ let _JSG = {
         _JSG.loadingDiv.addMessage("Getting apps.json");
         _JSG.apps = await _JSG.net.http.send("shared/apps.json", { type:"json", method:"GET" }, 5000);
 
+        if(_JSG.apps === false){
+            let msg1 = "ERROR: init: Failure to retrieve apps.json.";
+            _JSG.loadingDiv.changeStatus("error");
+            _JSG.loadingDiv.addMessage(msg1);
+            console.log(msg1, _JSG.apps); 
+            return; 
+        }
+
         this.DOM["js_game_header_menuBtn"].addEventListener("click", (ev)=>{ 
             this.DOM["js_game_header_menu"].classList.toggle('active');
             this.DOM["js_game_backgroundShade"].classList.toggle('hide');
             this.DOM["js_game_header_menuBtn"].classList.toggle("menuOpen");
         }, false);
 
-        this.DOM.jsgame_menu_toggleLoading.addEventListener("click", (ev)=>{ this.shared.setVisibility(ev.target, null, true); }, false);
-        this.DOM.jsgame_menu_toggleApp    .addEventListener("click", (ev)=>{ this.shared.setVisibility(ev.target, null, true); }, false);
-        this.DOM.jsgame_menu_toggleLobby  .addEventListener("click", (ev)=>{ this.shared.setVisibility(ev.target, null, true); }, false);
+        this.DOM.jsgame_menu_toggleLoading    .addEventListener("click", (ev)=>{ this.shared.setVisibility(ev.target, null, true); }, false);
+        this.DOM.jsgame_menu_toggleApp        .addEventListener("click", (ev)=>{ this.shared.setVisibility(ev.target, null, true); }, false);
+        this.DOM.jsgame_menu_toggleLobby      .addEventListener("click", (ev)=>{ this.shared.setVisibility(ev.target, null, true); }, false);
+        this.DOM.jsgame_menu_rebuild_apps_file.addEventListener("click", (ev)=>{ this.shared.rebuildAppsJson_file(); }, false);
 
         // Display the game menus with the apps.json data.
         await _JSG.loadAppMenus();

@@ -11,9 +11,10 @@ _JSG.configObjs = {
         "js_game_backgroundShade": "js_game_backgroundShade" ,
 
         // MENU (JSGAME OPTIONS)
-        "jsgame_menu_toggleLoading"  : "jsgame_menu_toggleLoading" ,
-        "jsgame_menu_toggleApp"  : "jsgame_menu_toggleApp" ,
-        "jsgame_menu_toggleLobby": "jsgame_menu_toggleLobby" ,
+        "jsgame_menu_toggleLoading"    : "jsgame_menu_toggleLoading" ,
+        "jsgame_menu_toggleApp"        : "jsgame_menu_toggleApp" ,
+        "jsgame_menu_toggleLobby"      : "jsgame_menu_toggleLobby" ,
+        "jsgame_menu_rebuild_apps_file": "jsgame_menu_rebuild_apps_file" ,
 
         // SECTIONS (containers)
         "loadingDiv"  : "jsgame_loadingDiv" ,
