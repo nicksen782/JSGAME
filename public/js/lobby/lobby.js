@@ -55,9 +55,6 @@ _JSG.lobby = {
     login: {},
 
     // Loaded via _loadFiles.
-    lobby: {},
-
-    // Loaded via _loadFiles.
     room: {},
 
     profile: {
@@ -231,6 +228,7 @@ _JSG.lobby = {
             resolve();
         });
     },
+
     init: async function(parent, configObj){
         return new Promise(async (resolve,reject)=>{
             // Load the lobby JavaScript files. 
@@ -240,7 +238,6 @@ _JSG.lobby = {
             this.parent  = parent;
             this.nav     .parent = this;
             this.profile .parent = this;
-            // this.lobby   .parent = this;
             this.room    .parent = this;
             this.dm      .parent = this;
             this.settings.parent = this;
@@ -252,15 +249,14 @@ _JSG.lobby = {
             _JSG.DOM["lobbyDiv"].innerHTML = await _JSG.net.http.send(`lobby.html`, { type:"text", method:"GET" }, 5000); 
 
             // Inits.
-            await this.nav     .init(configObj.lobby.nav);
-            await this.login   .init(configObj.lobby.login);
-            await this.profile .init(configObj.lobby.profile);
-            // await this.lobby   .init(configObj.lobby.lobby);
-            await this.room    .init(configObj.lobby.room);
-            await this.dm      .init(configObj.lobby.dm);
-            await this.settings.init(configObj.lobby.settings);
-            await this.debug   .init(configObj.lobby.debug);
-            await this.ws      .init();
+            _JSG.loadingDiv.addMessage("Init: lobby nav");      await this.nav     .init(configObj.lobby.nav);
+            _JSG.loadingDiv.addMessage("Init: lobby login");    await this.login   .init(configObj.lobby.login);
+            _JSG.loadingDiv.addMessage("Init: lobby profile");  await this.profile .init(configObj.lobby.profile);
+            _JSG.loadingDiv.addMessage("Init: lobby room");     await this.room    .init(configObj.lobby.room);
+            _JSG.loadingDiv.addMessage("Init: lobby dm");       await this.dm      .init(configObj.lobby.dm);
+            _JSG.loadingDiv.addMessage("Init: lobby settings"); await this.settings.init(configObj.lobby.settings);
+            _JSG.loadingDiv.addMessage("Init: lobby debug");    await this.debug   .init(configObj.lobby.debug);
+            _JSG.loadingDiv.addMessage("Init: lobby ws");       await this.ws      .init();
 
             resolve();
         });

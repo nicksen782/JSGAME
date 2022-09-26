@@ -20,6 +20,11 @@ _JSG.configObjs = {
         "lobbyDivCont": "jsgame_lobbyDiv" ,
         "gameDivCont" : "jsgame_appDiv" ,
 
+        // LOADING DIV
+        "loadingDivText"     : "jsgame_loadingDiv_text" ,
+        "loadingDiv_status"  : "jsgame_loadingDiv_status" ,
+        "loadingDiv_messages": "jsgame_loadingDiv_messages" ,
+
         // SECTIONS (contents)
         "gameDiv" : "jsgame_app" ,
         "lobbyDiv": "jsgame_lobby" ,

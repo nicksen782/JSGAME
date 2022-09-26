@@ -1,5 +1,6 @@
 // Holds the loaded app.
 let _APP = {};
+
 // Stores the loaded app config.
 // loadedConfig: {},
 
@@ -187,8 +188,13 @@ let _JSG = {
                     await this.addFile(_JSG.loadedConfig.files[i], appRec.appPath);
                 }
                 catch(e){
-                    console.log(`ERROR: Loading file: ${_JSG.loadedConfig.files[i].f}`, e);
-                    console.log("ABORTING APP LOAD.");
+                    let msg1 = `ERROR: Loading file: ${_JSG.loadedConfig.files[i].f}`;
+                    let msg2 = "ABORTING APP LOAD.";
+                    _JSG.loadingDiv.changeStatus("error");
+                    _JSG.loadingDiv.addMessage(msg1);
+                    _JSG.loadingDiv.addMessage(msg2);
+                    console.log(msg1);
+                    console.log(msg2);
                     reject(e); return; 
                 }
             }
@@ -206,6 +212,7 @@ let _JSG = {
             select.value = rec.appKey;
 
             // Load the app's files. 
+            _JSG.loadingDiv.addMessage(`Loading files for: ${rec.appKey}`);
             await _JSG.loadFiles(rec); 
 
             // Display the author data for the app.
@@ -220,21 +227,32 @@ let _JSG = {
                             // console.log("LOADING: JSGAME plugin:", plugins[i].n);
                             await this.addFile(plugins[i], ".");
                             console.log("LOADED: JSGAME plugin:", plugins[i].n);
+                            _JSG.loadingDiv.addMessage(`LOADED: JSGAME plugin: ${plugins[i].n}`);
                         }
                         catch(e){
-                            console.log(`ERROR: Loading JSGAME plugin: ${plugins[i].n}`, e);
-                            console.log("ABORTING APP LOAD.");
+                            let msg1 = `ERROR: Loading JSGAME plugin: ${plugins[i].n}`;
+                            let msg2 = "ABORTING APP LOAD.";
+                            _JSG.loadingDiv.changeStatus("error");
+                            _JSG.loadingDiv.addMessage(msg1);
+                            _JSG.loadingDiv.addMessage(msg2);
+                            console.log(msg1);
+                            console.log(msg2);
                             reject(); return; 
                         }
                     }
                 }
                 
                 // Run the app's init.
-                console.log("LOADING:", rec.appKey);
+                let msg1 = `_APP INIT   : ${rec.appKey}`;
+                _JSG.loadingDiv.addMessage(msg1);
+                console.log(msg1);
                 await _APP.init(); 
-                console.log("LOADED :", rec.appKey);
-                
+                let msg2 = `_APP LOADED : ${rec.appKey}`;
+                _JSG.loadingDiv.addMessage(msg2);
+                console.log(msg2);
+                                
                 // Set visabilities.
+                await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
 
@@ -245,7 +263,9 @@ let _JSG = {
 
                 // Do the login check. 
                 // console.log("running loginCheck after loading:", rec.appKey);
+                _JSG.loadingDiv.addMessage("Running loginCheck...");
                 await _JSG.lobby.login.loginCheck();
+                _JSG.loadingDiv.addMessage("READY!");
 
                 // DEBUG:
                 try{ console.log("_JSG:", _APP); } catch(e){ console.log("_JSG:", "NOT LOADED"); }
@@ -440,17 +460,82 @@ let _JSG = {
         },
     },
 
+    // Loading div.
+    loadingDiv : {
+        parent: null,
+
+        loadingStatus: `` +
+            `-----------------------------\n`+
+            `. . . . L O A D I N G . . . .\n`+
+            `-----------------------------`+
+        ``,
+        loadedStatus: `` +
+            `-----------------------------\n`+
+            `. . . .  L O A D E D  . . . .\n`+
+            `-----------------------------`+
+        ``,
+        errorStatus: `` +
+            `-----------------------------\n`+
+            `. . . . . E R R O R . . . . .\n`+
+            `-----------------------------`+
+        ``,
+
+        addMessage: function(str){
+            // _JSG.loadingDiv.addMessage("string");
+
+            // Add the message and a "\n" if the string does not end with "\n".
+            this.parent.DOM["loadingDiv_messages"].innerHTML += str + (str.slice(-1) != "\n" ? "\n" : "");
+            
+            // Add the populated class to add padding. 
+            this.parent.DOM["loadingDiv_messages"].classList.add("populated");
+
+            // Scroll to the bottom of the messages.
+            this.parent.DOM["loadingDiv_messages"].scrollTop = this.parent.DOM["loadingDiv_messages"].scrollHeight;
+        },
+        changeStatus: function(type){
+            // _JSG.loadingDiv.changeStatus("loading");
+            // _JSG.loadingDiv.changeStatus("loaded");
+            // _JSG.loadingDiv.changeStatus("error");
+
+            // Get the element.
+            let elem = this.parent.DOM["loadingDiv_status"];
+
+            // Remove previous status classes.
+            elem.classList.remove("loading");
+            elem.classList.remove("loaded");
+            elem.classList.remove("error");
+            
+            // Set the correct status message.
+            if     (type == "loading"){ this.parent.DOM["loadingDiv_status"].innerHTML = this.loadingStatus; elem.classList.add("loading"); }
+            else if(type == "loaded" ){ this.parent.DOM["loadingDiv_status"].innerHTML = this.loadedStatus;  elem.classList.add("loaded");  }
+            else if(type == "error"  ){ this.parent.DOM["loadingDiv_status"].innerHTML = this.errorStatus;   elem.classList.add("error");   }
+        },
+        init: async function(parent){
+            return new Promise((resolve,reject)=>{
+                this.parent = parent;
+                
+                this.changeStatus("loading");
+                // this.addMessage("loading");
+                resolve();
+            });
+        },
+    },
+
     // 
     init: async function(){
         // Set parents. 
         this.shared.parent = this;
 
-        // Get the apps.json.
-        _JSG.apps = await _JSG.net.http.send("shared/apps.json", { type:"json", method:"GET" }, 5000);
-
         // JSGAME BASE DOM.
         this.DOM = _JSG.configObjs["base"];
         this.shared.parseObjectStringDOM(this.DOM, true);
+
+        // Init the loading div.
+        await this.loadingDiv.init(this);
+
+        // Get the apps.json.
+        _JSG.loadingDiv.addMessage("Getting apps.json");
+        _JSG.apps = await _JSG.net.http.send("shared/apps.json", { type:"json", method:"GET" }, 5000);
 
         this.DOM["js_game_header_menuBtn"].addEventListener("click", (ev)=>{ 
             this.DOM["js_game_header_menu"].classList.toggle('active');
@@ -476,23 +561,23 @@ let _JSG = {
         if(Object.keys(params).length){
             // Check for and get the app record.
             let rec;
+
             // Does the supplied key match a real key? 
             if(params.appKey && (rec = _JSG.apps[params.appKey]) ){
                 // Load the app and await for it to finish loading. 
                 await _JSG.loadApp(rec); 
-                
-                // Set visabilities.
+            }
+
+            // No match to the supplied key.
+            else{
+                // Do the login check. 
+                _JSG.loadingDiv.addMessage("loadApp: appkey not found in apps.json");
+                console.log("ERROR: appKey not found in apps.json:", params.appKey); 
+                _JSG.loadingDiv.changeStatus("error");
+
                 // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
                 // this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
                 // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
-            }
-            else{
-                // Do the login check. 
-                console.log("appKey not found in apps.json:", params.appKey); 
-            
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
-                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
             
                 // console.log("running loginCheck (appKey not found.)");
                 await _JSG.lobby.login.loginCheck();
@@ -501,7 +586,9 @@ let _JSG = {
         else{
             // Do the login check. 
             // console.log("appKey not specified."); 
-            
+            _JSG.loadingDiv.addMessage("loadApp: appkey not specified.");
+
+            await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
             this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
             // this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
             this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
@@ -514,6 +601,5 @@ let _JSG = {
 
 window.onload = async function(){
     window.onload = null;
-    await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
     await _JSG.init();
 };

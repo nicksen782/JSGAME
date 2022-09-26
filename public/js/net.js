@@ -566,8 +566,9 @@ _JSG.net = {
             this.status              .parent = this;
 
             // Init status.
-            await this.ws.ws_event_handler.init();
-            await this.status.init(configObj.ws);
+            _JSG.loadingDiv.addMessage("Init: net http");             await this.http.init(this);
+            _JSG.loadingDiv.addMessage("Init: net ws.event_handler"); await this.ws.ws_event_handler.init();
+            _JSG.loadingDiv.addMessage("Init: net status");           await this.status.init(configObj.ws);
             
             resolve();
         });
