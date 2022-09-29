@@ -1,8 +1,11 @@
 // Holds the loaded app.
-let _APP = {};
+let _APP = undefined;
 
-// Stores the loaded app config.
-// loadedConfig: {},
+// Holds the loaded _GFX plugin.
+let _GFX = undefined;
+
+// Holds the loaded _SND plugin.
+let _SND = undefined;
 
 // Holds JSGAME.
 let _JSG = {
@@ -268,23 +271,33 @@ let _JSG = {
                 _JSG.loadingDiv.addMessage("READY!");
 
                 // DEBUG:
-                try{ console.log("_JSG:", _APP); } catch(e){ console.log("_JSG:", "NOT LOADED"); }
-                try{ console.log("_APP:", _APP); } catch(e){ console.log("_APP:", "NOT LOADED"); }
-                try{ console.log("_GFX:", _GFX); } catch(e){ console.log("_GFX:", "NOT LOADED"); }
+                try{
+                    console.log("DEBUG: VARS:");
+                    if(_JSG){ console.log("  _JSG:", _JSG); } else { console.log("  _JSG:", "NOT LOADED"); }
+                    if(_APP){ console.log("  _APP:", _APP); } else { console.log("  _APP:", "NOT LOADED"); }
+                    if(_GFX){ console.log("  _GFX:", _GFX); } else { console.log("  _GFX:", "NOT LOADED"); }
+                    if(_SND){ console.log("  _SND:", _SND); } else { console.log("  _SND:", "NOT LOADED"); }
+                }
+                catch(e){
+                    console.log("Error showing debug vars.", e);
+                }
 
                 resolve();
             }
             else{
-                console.log(`ERROR: Cannot load: ${rec.appKey}. Missing init function.` );
+                let msg1 = `ERROR: Cannot load: ${rec.appKey}. Missing init function.`;
+                _JSG.loadingDiv.changeStatus("error");
+                _JSG.loadingDiv.addMessage(msg1);
+                console.log(msg1);
 
                 // Set visabilities.
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], false, false);
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], true, false);
+                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], false, false);
+                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], false, false);
 
                 // Do the login check. 
                 // console.log("running loginCheck after loading:", rec.appKey);
-                await _JSG.lobby.login.loginCheck();
+                // await _JSG.lobby.login.loginCheck();
 
                 resolve();
             }
@@ -471,6 +484,62 @@ let _JSG = {
             console.log("rebuildAppsJson_file", resp);
             alert("rebuildAppsJson_file: DONE");
         },
+
+        // DEBUG: Used to measure how long something takes.
+        timeIt: {
+            // EXAMPLE USAGE: 
+            // _JSG.shared.timeIt.stamp("TESTKEY", "s", "SUBKEY"); // START
+            // _JSG.shared.timeIt.stamp("TESTKEY", "e", "SUBKEY"); // END
+            // _JSG.shared.timeIt.stamp("TESTKEY", "t", "SUBKEY"); // GET TIME
+
+            timeIt_timings : { },
+            timeIt_timings_prev : { },
+
+            stamp: function(key, type, subKey="NOT_DEFINED"){
+                // Is this a timeIt 'start'?
+                if(type == "s"){
+                    // Create the subkey if it doesn't exist.
+                    if(!this.timeIt_timings     [subKey])     { this.timeIt_timings     [subKey] = {}; }
+    
+                    // Create the prev subkey if it doesn't exist.
+                    if(!this.timeIt_timings_prev[subKey])     { this.timeIt_timings_prev[subKey] = {}; }
+    
+                    // Create the prev entry key if it does not exist.
+                    if(!this.timeIt_timings_prev[subKey][key]){ this.timeIt_timings_prev[subKey][key] = {}; }
+    
+                    // Create the entry.
+                    this.timeIt_timings         [subKey][key] = { s: performance.now(), e: 0, t: 0, }; 
+                }
+                // Is this a timeIt 'end'?
+                else if(type == "e"){
+                    if(this.timeIt_timings[subKey][key]){
+                        // Set the end entry.
+                        this.timeIt_timings[subKey][key].e = performance.now();
+    
+                        // Calculate the total entry and format.
+                        this.timeIt_timings[subKey][key].t = parseFloat((this.timeIt_timings[subKey][key].e - this.timeIt_timings[subKey][key].s).toFixed(2));
+    
+                        // Add to prev
+                        this.timeIt_timings_prev[subKey][key] = { t: this.timeIt_timings[subKey][key].t };
+                    }
+                }
+                // Is this just a request for the total time?
+                else if(type == "t"){
+                    try{
+                        // Return the value if it exists.
+                        if(this.timeIt_timings[subKey][key]){ return this.timeIt_timings[subKey][key].t; }
+    
+                        // Return -1 if the value does not exist.
+                        return -1;
+                    }
+                    catch(e){
+                        console.log("Error in timeIt:", e);
+                        return -1;
+                    }
+                }
+            },
+        },
+
     },
 
     // Loading div.
@@ -493,6 +562,10 @@ let _JSG = {
             `-----------------------------`+
         ``,
 
+        addMessageChangeStatus: function(str, type){
+            this.changeStatus(type);
+            this.addMessage(str);
+        },
         addMessage: function(str){
             // _JSG.loadingDiv.addMessage("string");
 
@@ -503,7 +576,9 @@ let _JSG = {
             this.parent.DOM["loadingDiv_messages"].classList.add("populated");
 
             // Scroll to the bottom of the messages.
-            this.parent.DOM["loadingDiv_messages"].scrollTop = this.parent.DOM["loadingDiv_messages"].scrollHeight;
+            setTimeout(()=>{
+                this.parent.DOM["loadingDiv_messages"].scrollTop = this.parent.DOM["loadingDiv_messages"].scrollHeight;
+            }, 100);
         },
         changeStatus: function(type){
             // _JSG.loadingDiv.changeStatus("loading");
