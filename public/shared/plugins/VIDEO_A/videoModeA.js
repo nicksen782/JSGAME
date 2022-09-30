@@ -1,14 +1,9 @@
-/**
-Video Mode A
-
-
-*/
 _GFX = {
     // Tests, etc.
     _debug: {
         drawTest_setTile: function(){
             // TEST: setTile:
-            // tileId, x, y, tilesetIndex, layerIndex=0
+            // setTile : function(tileId, x, y, tilesetIndex, layerIndex)
             _GFX.draw.tiles.setTile(1,  0, 0,  3, 0);
             _GFX.draw.tiles.setTile(2,  1, 0,  3, 1);
             _GFX.draw.tiles.setTile(3,  2, 0,  3, 2);
@@ -21,6 +16,7 @@ _GFX = {
         },
         drawTest_fillTile: function(){
             // TEST: fillTile:
+            // fillTile : function(tileId=" ", x, y, w, h, tilesetIndex, layerIndex)
             _GFX.draw.tiles.fillTile(10,  19, 0,  8, 5,  2, 2);
 
             // Draw from VRAM:
@@ -28,6 +24,7 @@ _GFX = {
         },
         drawTest_print: function(){
             // TEST: print:
+            // print : function(str="", x, y, tilesetIndex, layerIndex)
             _GFX.draw.tiles.print("Test of VideoModeA",  0, 1,  2, 0);
 
             // TEST: print:
@@ -56,6 +53,7 @@ _GFX = {
         },
         drawTest_drawTilemap: function(){
             // TEST: drawTilemap:
+            // drawTilemap : function(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex=0)
             _GFX.draw.tiles.drawTilemap("dpad_all_off", 0, 22, 0, 2);
             _GFX.draw.tiles.drawTilemap("n782_text_f1", 20, 9, 0, 2);
 
@@ -69,55 +67,28 @@ _GFX = {
 
             // Holds the timings of each draw run. 
             times: {
-                method1:[], // 6.05ms - 6.35ms (0.30ms range.)
-                method2:[], // 6.01ms - 6.25ms (0.24ms range.)
-                method3:[], // 5.99ms - 6.14ms (0.15ms range.)
+                method1:[], //  16.11 ms : Draw changes directly to the destination. 
+                method2:[], // 379.92 ms : Draw changes to a temp canvas then draw to the destination. 
+                method3:[], //  23.97 ms : Draw changes to a full temp canvas then draw the full temp canvas to the destination.
             },
-            method1: async function(){
-                let id;
-    
-                // Method1
-                for(let i=0; i<500; i+=1){
-                    let ts = performance.now();
-                    _GFX._debug.drawTest_print(); 
-                    await _GFX.VRAM.draw(1);
-                    let te = performance.now();
-                    if(te-ts != 0){
-                        this.times.method1.push(te-ts);
-                    }
+            test: async function(totalRuns, method, key){
+                for(let i=0; i<totalRuns; i+=1){
+                    await new Promise( async(res,rej)=>{
+                        window.requestAnimationFrame( async ()=> {
+                            let ts = performance.now();
+                            _GFX.VRAM.clearVram();
+                            _GFX.draw.tiles.print(`k: ${key}, m: ${method}, ${i+1}/${totalRuns}`.padEnd(28," "),  0, 0,  2, 0);
+                            // _GFX._debug.drawTest_print(); 
+                            await _GFX.VRAM.draw(method);
+                            let te = performance.now();
+                            if(te-ts != 0){ this.times[key].push(te-ts); }
+                            res();
+                        });
+                    });
                 }
-                let avg = this.times.method1.reduce((a,b)=>a+b)/this.times.method1.length;
-                console.log("method1: avg:", avg);
-            },
-            method2: async function(){
-                // Method2
-                for(let i=0; i<500; i+=1){
-                    let ts = performance.now();
-                    _GFX._debug.drawTest_print(); 
-                    await _GFX.VRAM.draw(1);
-                    let te = performance.now();
-                    if(te-ts != 0){
-                        this.times.method2.push(te-ts);
-                    }
-                }
-                let avg = this.times.method2.reduce((a,b)=>a+b)/this.times.method2.length;
-                console.log("method2: avg:", avg);
-            },
-            method3: async function(){
-                let id;
-    
-                // Method3
-                for(let i=0; i<500; i+=1){
-                    let ts = performance.now();
-                    _GFX._debug.drawTest_print(); 
-                    await _GFX.VRAM.draw(1);
-                    let te = performance.now();
-                    if(te-ts != 0){
-                        this.times.method3.push(te-ts);
-                    }
-                }
-                let avg = this.times.method3.reduce((a,b)=>a+b)/this.times.method3.length;
-                console.log("method3: avg:", avg);
+                
+                let avg = this.times[key].reduce((a,b)=>a+b)/this.times[key].length;
+                console.log(`  key: ${key}, totalRuns: ${totalRuns}, method: ${method}, avg: ${avg.toFixed(2)} ms`);
             },
 
             // Run this to run the tests.
@@ -128,19 +99,18 @@ _GFX = {
                 this.times.method3 = [];
 
                 // Specify how many times to run each test.
-                let numberOfRuns = 2;
+                let testRuns = 3;
+                let innerTestRuns = 10;
 
-                // Run tests using requestAnimationFrame.
-                console.log("Running tests using requestAnimationFrame.");
-                for(let i=0; i<numberOfRuns; i+=1){ await new Promise( async(res,rej)=>{ window.requestAnimationFrame( async ()=> { await _GFX._debug.drawMethodTests.method1(); res(); } ) } ); } 
-                for(let i=0; i<numberOfRuns; i+=1){ await new Promise( async(res,rej)=>{ window.requestAnimationFrame( async ()=> { await _GFX._debug.drawMethodTests.method2(); res(); } ) } ); } 
-                for(let i=0; i<numberOfRuns; i+=1){ await new Promise( async(res,rej)=>{ window.requestAnimationFrame( async ()=> { await _GFX._debug.drawMethodTests.method3(); res(); } ) } ); } 
-                
-                // Run tests WITHOUT using requestAnimationFrame.
-                console.log("Running tests WITHOUT using requestAnimationFrame.");
-                for(let i=0; i<numberOfRuns; i+=1){ await new Promise( async(res,rej)=>{ await _GFX._debug.drawMethodTests.method1(); res(); } ); } 
-                for(let i=0; i<numberOfRuns; i+=1){ await new Promise( async(res,rej)=>{ await _GFX._debug.drawMethodTests.method2(); res(); } ); } 
-                for(let i=0; i<numberOfRuns; i+=1){ await new Promise( async(res,rej)=>{ await _GFX._debug.drawMethodTests.method3(); res(); } ); } 
+                let keys = Object.keys(this.times);
+                for(let t=0; t<testRuns; t+=1){
+                    console.log(`Run ${t+1} of ${testRuns}`);
+                    for(let i=0; i<keys.length; i+=1){
+                        let method = i+1;
+                        let key = keys[i];
+                        await _GFX._debug.drawMethodTests.test(innerTestRuns, method, key);
+                    }
+                }
             },
         },
     },
@@ -150,8 +120,11 @@ _GFX = {
 
     // VRAM - Holds graphics states.
     VRAM: {
-        // One flat array to hold the VRAM state (includes tileset and tileId for each "layer".)
-        indexes: [],
+        // ArrayBuffer of VRAM.
+        _VRAM: undefined,
+
+        // TypedArray view of the VRAM ArrayBuffer.
+        _VRAM_view: undefined,
 
         // Lookup table: Get VRAM index by y, x.
         indexByCoords:[],
@@ -159,21 +132,59 @@ _GFX = {
         // Holds the changes to VRAM that will be drawn on the next draw cycle.
         changes: [],
         
-        initVramIndexes: function(){
+        // Creates the VRAM._VRAM typedArray. (Should only be run once).
+        initVram_typedArray: function(){
             // Get the dimensions.
             let dimensions  = _JSG.loadedConfig.meta.dimensions;
 
             // Get the total number of layers. 
             let numLayers = _JSG.loadedConfig.meta.layers.length;
             
-            // Get the total number of VRAM indexes. 
+            // Get the total size for _VRAM. (number of layers * 2 bytes per layer * rows * cols)
             let numIndexes = (numLayers * 2) * (dimensions.rows * dimensions.cols);
             
-            // Create the indexes array.
-            for(let i=0; i<numIndexes; i+=1){
-                // This will set each layer to tilesetIndex 0, tileId 0. 
-                this.indexes.push(0);
+            // Create the _VRAM arraybuffer and the _VRAM dataview.
+            if(dimensions.pointersSize == 8){
+                this._VRAM      = new ArrayBuffer(numIndexes);
+                this._VRAM_view = new Uint8Array(this._VRAM);
             }
+
+            else if(dimensions.pointersSize == 16){
+                // 16-bit requires twice the indexes for the ArrayBuffer.
+                this._VRAM      = new ArrayBuffer(numIndexes * 2);
+                this._VRAM_view = new Uint16Array(this._VRAM);
+            }
+
+            // This should not be reached because initChecks would have already caught it.
+            else{
+                let msg1 = `ERROR: initVram_typedArray: Invalid pointerSize.`;
+                console.log(msg1);
+                throw msg1;
+            }
+
+            // Fill with 0 (tileIndex to 0, tileId to 0 for each layer and x,y coordinate.)
+            this._VRAM_view.fill(0);
+        },
+
+        // TODO
+        // Returns a copy of the specified VRAM region.
+        getVramRegion: function(x, y, w, h, layers=null){
+            let vramRegionObj = {};
+
+            //. Get all layers.
+            if(!layers){}
+
+            // Get specific layers.
+            else{
+            }
+
+            return vramRegionObj;
+        },
+        
+        // TODO
+        // Sets the specified VRAM region (usually data from getVramRegion).
+        setVramRegion: function(vramRegionObj){
+            // this.updateVram();
         },
 
         // Updates VRAM values and calls addToVramChanges.
@@ -182,10 +193,10 @@ _GFX = {
             let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
             if(!tilesetName){ console.log(`updateVram: Tileset index '${tilesetIndex}' was not found.`); return; }
             
-            // Update VRAM indexes.
+            // Update _VRAM_view.
             let VRAM_startIndex = this.indexByCoords[y][x];
-            this.indexes[VRAM_startIndex + (layerIndex*2) + 0] = tilesetIndex;
-            this.indexes[VRAM_startIndex + (layerIndex*2) + 1] = tileId;
+            this._VRAM_view[VRAM_startIndex + (layerIndex*2) + 0] = tilesetIndex;
+            this._VRAM_view[VRAM_startIndex + (layerIndex*2) + 1] = tileId;
             
             // Add to VRAM changes.
             this.addToVramChanges(x,y);
@@ -219,10 +230,6 @@ _GFX = {
         create_VRAM_indexByCoords:function(){
             let dimensions = _JSG.loadedConfig.meta.dimensions;
             let numLayers = _JSG.loadedConfig.meta.layers.length;
-            if(!numLayers){ 
-                console.log("No layers have been defined. Cannot continue.");
-                return; 
-            }
 
             // This table is used by updateVram and draw to quickly get the starting VRAM index for a given x and y.
             for(let row=0;row<dimensions.rows;row+=1){
@@ -242,6 +249,8 @@ _GFX = {
             // Get the total number of layers. 
             let numLayers = _JSG.loadedConfig.meta.layers.length;
 
+            // TODO: Is this slow because of all the checks in setTile? 
+            // TODO: Use updateVram directly? 
             // Fill the VRAM of each layer with the first tileset's tile 0.
             for(let l=0; l<numLayers; l+=1){
                 _GFX.draw.tiles.fillTile(0,  0, 0,  dimensions.cols, dimensions.rows,  0, l);
@@ -275,10 +284,10 @@ _GFX = {
                         let numLayers = _JSG.loadedConfig.meta.layers.length;
                         for(let l=0; l<numLayers; l+=1){
                             // Get the tilesetIndex.
-                            let tilesetIndex = this.indexes[VRAM_startIndex + (l*2) + 0];
+                            let tilesetIndex = this._VRAM_view[VRAM_startIndex + (l * 2) + 0];
                             
                             // Get the tileId.
-                            let tileId = this.indexes[VRAM_startIndex + (l*2) + 1];
+                            let tileId = this._VRAM_view[VRAM_startIndex + (l * 2) + 1];
         
                             // Get the tilesetName.
                             let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
@@ -301,6 +310,7 @@ _GFX = {
                         canvas.width  = dimensions.tileWidth * dimensions.cols;
                         canvas.height = dimensions.tileHeight * dimensions.rows;
                         let ctx = canvas.getContext("2d", { alpha: true });
+                        // _GFX.gfxConversion.setPixelated(ctx);
 
                         // Get the x and y values. 
                         let x = this.changes[i][0];
@@ -313,10 +323,10 @@ _GFX = {
                         let numLayers = _JSG.loadedConfig.meta.layers.length;
                         for(let l=0; l<numLayers; l+=1){
                             // Get the tilesetIndex.
-                            let tilesetIndex = this.indexes[VRAM_startIndex + (l*2) + 0];
+                            let tilesetIndex = this._VRAM_view[VRAM_startIndex + (l * 2) + 0];
                             
                             // Get the tileId.
-                            let tileId = this.indexes[VRAM_startIndex + (l*2) + 1];
+                            let tileId = this._VRAM_view[VRAM_startIndex + (l * 2) + 1];
         
                             // Get the tilesetName.
                             let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
@@ -342,6 +352,7 @@ _GFX = {
                     canvas.width  = dimensions.tileWidth * dimensions.cols;
                     canvas.height = dimensions.tileHeight * dimensions.rows;
                     let ctx = canvas.getContext("2d", { alpha: true });
+                    // _GFX.gfxConversion.setPixelated(ctx);
 
                     // Go through the VRAM changes.
                     for(let i=0; i<this.changes.length; i+=1){
@@ -356,10 +367,10 @@ _GFX = {
                         let numLayers = _JSG.loadedConfig.meta.layers.length;
                         for(let l=0; l<numLayers; l+=1){
                             // Get the tilesetIndex.
-                            let tilesetIndex = this.indexes[VRAM_startIndex + (l*2) + 0];
+                            let tilesetIndex = this._VRAM_view[VRAM_startIndex + (l * 2) + 0];
                             
                             // Get the tileId.
-                            let tileId = this.indexes[VRAM_startIndex + (l*2) + 1];
+                            let tileId = this._VRAM_view[VRAM_startIndex + (l * 2) + 1];
         
                             // Get the tilesetName.
                             let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
@@ -390,17 +401,11 @@ _GFX = {
         // Init function for the VRAM object.
         init: async function(){
             return new Promise(async (resolve, reject)=>{
-                let numLayers = _JSG.loadedConfig.meta.layers.length;
-                if(!numLayers){ 
-                    console.log("No layers have been defined. Cannot continue.");
-                    return; 
-                }
-
                 // Create the lookup table(s) for VRAM.
                 this.create_VRAM_indexByCoords();
 
                 // Init the VRAM array.
-                this.initVramIndexes();
+                this.initVram_typedArray();
 
                 // Clear the VRAM.
                 this.clearVram();
@@ -462,8 +467,12 @@ _GFX = {
                 // "Draw" the tile to VRAM.
                 _GFX.VRAM.updateVram(tileId, x, y, tilesetIndex, layerIndex);
             },
+
             // Set text tiles into VRAM using a text string.
-            print : function(str="", x, y, tilesetIndex, layerIndex, ){
+            print : function(str="", x, y, tilesetIndex, layerIndex){
+                // NOTE: print assumes that the text tileset only contains one tilemap of the font tiles
+                // and that those tiles generated in ASCII order.
+
                 // Convert to string if the input is a number. 
                 if(typeof str == "number"){ str = str.toString(); }
                 
@@ -479,15 +488,21 @@ _GFX = {
                     dx+=1;
                 }
             },
+
             // Fill a rectangular region with one tile. 
             fillTile : function(tileId=" ", x, y, w, h, tilesetIndex, layerIndex){
+                // For each row...
                 for(let dy=0; dy<h; dy+=1){
+                    
+                    // For each col...
                     for(let dx=0; dx<w; dx+=1){
                         // Add the tile to VRAM via setTile.
                         this.setTile(tileId, x+dx, y+dy, tilesetIndex, layerIndex);
                     }
+
                 }
             },
+
             // Draw the individual tiles of a tilemap to VRAM.
             drawTilemap : function(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex=0){
                 // Get the tilesetName.
@@ -571,7 +586,7 @@ _GFX = {
         // Converts tileset tile data to canvas and stores in _GFX.cache.
         convertTileset: function(jsonTileset){
             for(let index in jsonTileset.tileset){
-                // Convert the array string back to an array.
+                // Get the tileData.
                 let tileData = jsonTileset.tileset[index];
 
                 // Go through each pixel.
@@ -688,17 +703,21 @@ _GFX = {
                     // Get the tilesetName. 
                     let tilesetName = jsonTileset.tilesetName;
                     
-                    // Tile data: Parse/convert the JSON-string(s).
-                    for(let tileId in jsonTileset.tileset){ jsonTileset.tileset[tileId] = JSON.parse(jsonTileset.tileset[tileId]); }
+                    // Tile data: Parse/convert the JSON-string(s) to Uint8Array.
+                    for(let tileId in jsonTileset.tileset){ jsonTileset.tileset[tileId] = new Uint8Array( JSON.parse(jsonTileset.tileset[tileId]) ); }
 
-                    // Tilemap data: Parse/convert the JSON-string(s).
-                    for(let key in jsonTileset.tilemaps){ jsonTileset.tilemaps[key] = JSON.parse(jsonTileset.tilemaps[key]); }
+                    // Tilemap data: Parse/convert the JSON-string(s) to Uint8Array.
+                    for(let key in jsonTileset.tilemaps){ jsonTileset.tilemaps[key] = new Uint8Array( JSON.parse(jsonTileset.tilemaps[key]) ); }
 
                     // Create the initial placeholder structure for this tileset. 
                     this.parent.cache[tilesetName] = {
                         tileset: [],
                         tilemap: {},
-                        config: jsonTileset.config,
+                        json: {
+                            config  : jsonTileset.config,
+                            tileset : jsonTileset.tileset,
+                            tilemaps: jsonTileset.tilemaps,
+                        },
                     };
 
                     let tss, tse;
@@ -708,14 +727,16 @@ _GFX = {
                     this.convertTileset(jsonTileset);
                     tse = performance.now(); 
                     let msg1 = `TILESET : ${tilesetName}: Conversion : ${(tse-tss).toFixed(2)}ms`;
-                    _JSG.loadingDiv.addMessageChangeStatus(`  ${_JSG.loadedAppKey}: convert tileset data: ${msg1}`, "loading");
+                    _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: convert tileset data: ${msg1}`, "loading");
                     
                     // Convert the tilemaps.
                     tss = performance.now(); 
                     this.convertTilemaps(jsonTileset);
                     tse = performance.now(); 
                     let msg2 = `TILEMAPS: ${tilesetName}: Conversion : ${(tse-tss).toFixed(2)}ms`;
-                    _JSG.loadingDiv.addMessageChangeStatus(`  ${_JSG.loadedAppKey}: convert tilemap data: ${msg2}`, "loading");
+                    _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: convert tilemap data: ${msg2}`, "loading");
+
+                    console.log(this.parent.cache[tilesetName].json);
                 }
                 resolve();
             });
@@ -735,12 +756,96 @@ _GFX = {
         },
     },
 
+    // Certain values must be in the appConfig.json file. This checks those values. 
+    initChecks: function(){
+        let tests = {
+            hasMeta: { 
+                test: function(){ if(undefined ==_JSG.loadedConfig.meta){ throw ""; } }, 
+                desc:"meta is defined", 
+                pass:true, 
+            },
+            hasDimensions: {
+                test: function(){ 
+                    let dimensions = _JSG.loadedConfig.meta.dimensions;
+                    if(undefined == dimensions)                      { throw ""; } 
+                    if(undefined == dimensions.tileWidth)            { throw ""; } 
+                    if(undefined == dimensions.tileHeight)           { throw ""; } 
+                    if(undefined == dimensions.rows)                 { throw ""; } 
+                    if(undefined == dimensions.cols)                 { throw ""; } 
+                    if(undefined == dimensions.pointersSize)         { throw ""; } 
+                    if([8,16].indexOf(dimensions.pointersSize) == -1){ throw ""; } 
+                }, 
+                desc:"meta.dimensions is valid", 
+                pass:true, 
+            },
+            hasTilesets: {
+                test: function(){ 
+                    if(undefined == _JSG.loadedConfig.meta.tilesets){ throw ""; } 
+                    try{ _JSG.loadedConfig.meta.tilesets.length ? true : false; } catch(e){ throw ""; }
+                }, 
+                desc:"meta.tilesets is valid", 
+                pass:true, 
+            },
+            numLayersDefined: { 
+                test: function(){ if(undefined == _JSG.loadedConfig.meta.layers){ throw ""; } }, 
+                desc:"meta.layers is defined", 
+                pass:true, 
+            },
+            numLayersLength:  { 
+                test: ()=>{ try{ _JSG.loadedConfig.meta.layers.length ? true : false; } catch(e){ throw ""; } }, 
+                desc:"meta.layers has values", 
+                pass:true, 
+            },
+        };
+
+        for(let key in tests){
+            let test = tests[key];
+            try{ 
+                test.test(); 
+                // let msg1 = `initChecks: PASSED TEST: '${test.desc}'`;
+                // _JSG.loadingDiv.addMessage(`  videoModeA: ${msg1}`);
+                // console.log(msg1);
+                test.pass = true;
+            }
+            catch(e){
+                let msg1 = `initChecks: FAILED TEST: '${test.desc}': `;
+                _JSG.loadingDiv.addMessage(`  videoModeA: ${msg1}`);
+                console.log(msg1);
+                test.pass = false;
+            }
+        };
+
+        return tests;
+    },
+
     // Init the graphics mode and perform conversions. 
     init: async function(){
         return new Promise(async (resolve, reject)=>{
             // Parent(s).
             // this.parent = parent;
             
+            // Do the init checks. 
+            let initChecks = this.initChecks();
+            
+            // Determine if any init checks have failed. 
+            let initChecksAllPassed = true;
+            for(let key in initChecks){ 
+                if( !initChecks[key].pass ){ initChecksAllPassed = false; break; } 
+            }
+
+            // Display init check failure messages. 
+            if(!initChecksAllPassed){
+                let msg1 = "initChecks: Test(s) have failed. Cannot continue.";
+                _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "error");
+                console.log(msg1, initChecks);
+                reject(); return; 
+            }
+            else{
+                let msg1 = `initChecks: All test(s) have passed.`;
+                _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
+                console.log(msg1, initChecks);
+            }
+
             // Init(s).
             _JSG.shared.timeIt.stamp("gfxConversion", "s", "_GFX_INITS"); 
             await this.gfxConversion.init(this); 
