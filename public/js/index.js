@@ -517,7 +517,8 @@ let _JSG = {
                         this.timeIt_timings[subKey][key].e = performance.now();
     
                         // Calculate the total entry and format.
-                        this.timeIt_timings[subKey][key].t = parseFloat((this.timeIt_timings[subKey][key].e - this.timeIt_timings[subKey][key].s).toFixed(2));
+                        // this.timeIt_timings[subKey][key].t = parseFloat((this.timeIt_timings[subKey][key].e - this.timeIt_timings[subKey][key].s).toFixed(2));
+                        this.timeIt_timings[subKey][key].t = ((this.timeIt_timings[subKey][key].e - this.timeIt_timings[subKey][key].s));
     
                         // Add to prev
                         this.timeIt_timings_prev[subKey][key] = { t: this.timeIt_timings[subKey][key].t };
@@ -534,6 +535,20 @@ let _JSG = {
                     }
                     catch(e){
                         console.log("Error in timeIt:", e);
+                        return -1;
+                    }
+                }
+                // Is this just a request for the previous total time?
+                else if(type == "pt"){
+                    try{
+                        // Return the value if it exists.
+                        if(this.timeIt_timings_prev[subKey][key]){ return this.timeIt_timings_prev[subKey][key].t; }
+    
+                        // Return -1 if the value does not exist.
+                        return -1;
+                    }
+                    catch(e){
+                        // console.log("Error in timeIt:", e);
                         return -1;
                     }
                 }

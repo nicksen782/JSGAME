@@ -82,7 +82,7 @@ _GFX.util = {
     // VRAM functions.
     VRAM: {
         // Calls the internal VRAM.draw function. 
-        draw: function(){ _GFX.VRAM.draw(); },
+        draw: async function(){ return _GFX.VRAM.draw(); },
 
         // TODO
         // Returns a copy of the specified VRAM region.
