@@ -3,13 +3,15 @@ _GFX = {};
 // INTERNAL: Canvas caches of tiles, tilemaps, config.
 _GFX.cache = {};
 
+// INTERNAL: 
+_GFX.canvasLayers = [];
+
 // INTERNAL: VRAM - Holds graphics states.
 _GFX.VRAM = {
     // ArrayBuffer of VRAM.
-    _VRAM: undefined,
-
-    // TypedArray view of the VRAM ArrayBuffer.
-    _VRAM_view: undefined,
+    _VRAM: [
+        // {view: undefined, buffer: undefined }
+    ],
 
     // Lookup table: Get VRAM index by y, x.
     indexByCoords:[],
@@ -22,22 +24,49 @@ _GFX.VRAM = {
         // Get the dimensions.
         let dimensions  = _JSG.loadedConfig.meta.dimensions;
 
-        // Get the total number of layers. 
-        let numLayers = _JSG.loadedConfig.meta.layers.length;
-        
         // Get the total size for _VRAM. (number of layers * 2 bytes per layer * rows * cols)
-        let numIndexes = (numLayers * 2) * (dimensions.rows * dimensions.cols);
+        let numIndexes = (2) * (dimensions.rows * dimensions.cols);
         
         // Create the _VRAM arraybuffer and the _VRAM dataview.
         if(dimensions.pointersSize == 8){
-            this._VRAM      = new ArrayBuffer(numIndexes);
-            this._VRAM_view = new Uint8Array(this._VRAM);
+            let entry;
+            for(let i=0, l=_GFX.canvasLayers.length; i<l; i+=1){
+                // Only create VRAM for the "user" type layers (not FADE).
+                if(_GFX.canvasLayers[i].type != "user"){ continue; }
+
+                // Create the object with an ArrayBuffer and a TypedArray view.
+                entry = {};
+                entry.buffer = new ArrayBuffer(numIndexes);
+                entry.view = new Uint8Array(entry.buffer);
+                entry.name = _GFX.canvasLayers[i].name;
+
+                // Fill with 0 (tileIndex to 0, tileId to 0 for each layer and x,y coordinate.)
+                entry.view.fill(0);
+
+                // Add the VRAM layer entry to the _VRAM array.
+                this._VRAM.push( entry ) ;
+            }
         }
 
         else if(dimensions.pointersSize == 16){
             // 16-bit requires twice the indexes for the ArrayBuffer.
-            this._VRAM      = new ArrayBuffer(numIndexes * 2);
-            this._VRAM_view = new Uint16Array(this._VRAM);
+            let entry;
+            for(let i=0, l=_GFX.canvasLayers.length; i<l; i+=1){
+                // Only create VRAM for the "user" type layers (not FADE).
+                if(_GFX.canvasLayers[i].type != "user"){ continue; }
+
+                // Create the object with an ArrayBuffer and a TypedArray view.
+                entry = {};
+                entry.buffer = new ArrayBuffer(numIndexes * 2);
+                entry.view = new Uint16Array(entry.buffer);
+                entry.name = _GFX.canvasLayers[i].name;
+
+                // Fill with 0 (tileIndex to 0, tileId to 0 for each layer and x,y coordinate.)
+                entry.view.fill(0);
+
+                // Add the VRAM layer entry to the _VRAM array.
+                this._VRAM.push( entry ) ;
+            }
         }
 
         // This should not be reached because initChecks would have already caught it.
@@ -46,9 +75,6 @@ _GFX.VRAM = {
             console.log(msg1);
             throw msg1;
         }
-
-        // Fill with 0 (tileIndex to 0, tileId to 0 for each layer and x,y coordinate.)
-        this._VRAM_view.fill(0);
     },
 
     // Updates VRAM values and calls addToVramChanges.
@@ -59,29 +85,53 @@ _GFX.VRAM = {
         
         // Update _VRAM_view.
         let VRAM_startIndex = this.indexByCoords[y][x];
-        this._VRAM_view[VRAM_startIndex + (layerIndex*2) + 0] = tilesetIndex;
-        this._VRAM_view[VRAM_startIndex + (layerIndex*2) + 1] = tileId;
-        
+        this._VRAM[layerIndex].view[VRAM_startIndex + 0] = tilesetIndex;
+        this._VRAM[layerIndex].view[VRAM_startIndex + 1] = tileId;
+
         // Add to VRAM changes.
-        this.addToVramChanges(x,y);
+        this.addToVramChanges(tileId, x, y, tilesetIndex, layerIndex);
     },
 
     // Adds to the changes array. 
-    addToVramChanges: function(x, y){
-        // Try to find a matching change.
-        let change = this.changes.find(c => c[0] == x && c[1] == y);
-        
-        // Add the change if the x,y is not already on the change list.
-        if( !change ){
-            // console.log("addToVramChanges: ADDED", x, y);
-            this.changes.push([x,y]);
-        }
+    addToVramChanges: function(tileId, x, y, tilesetIndex, layerIndex){
+        // Try to find a matching change based on x,y, and layerIndex.
+        let existingChangeRec = this.changes.find(c => {
+            if( c.x == x && c.y == y && c.layerIndex == layerIndex ){ 
+                // console.log("IS EXISTING:", c);
+                return true; 
+            } 
+            
+            // console.log("NOT EXISTING:", c);
+            return false;
+        });
 
-        // Overwrite the existing change.
-        else{
-            // console.log("addToVramChanges: OVERWRITTEN", x, y);
-            change[0] = x; change[1] = y;
+        // Do we have a match on x,y, and layerIndex?
+        if(existingChangeRec){
+            // Yes. Same layer and same position. Have either of the other values changed?
+            if( existingChangeRec.tileId != tileId || existingChangeRec.tilesetIndex != tilesetIndex ){ 
+                existingChangeRec = {
+                    tileId      : tileId,
+                    x           : x, 
+                    y           : y,
+                    tilesetIndex: tilesetIndex,
+                    layerIndex  : layerIndex,
+                };
+                // console.log("addToVramChanges: OVERWRITTEN", existingChangeRec);
+                return; 
+            }
+            // console.log("addToVramChanges: OLD RECORD - UNCHANGED", existingChangeRec);
         }
+        
+        // Add the change since it doesn't already exist.
+        let newChange = {
+            tileId      : tileId,
+            x           : x, 
+            y           : y,
+            tilesetIndex: tilesetIndex,
+            layerIndex  : layerIndex,
+        };
+        this.changes.push(newChange);
+        // console.log("addToVramChanges: ADDED", newChange);
     },
 
     // Clears the changes array.
@@ -93,13 +143,12 @@ _GFX.VRAM = {
     // Creates the indexByCoords lookup table. 
     create_VRAM_indexByCoords:function(){
         let dimensions = _JSG.loadedConfig.meta.dimensions;
-        let numLayers = _JSG.loadedConfig.meta.layers.length;
 
         // This table is used by updateVram and draw to quickly get the starting VRAM index for a given x and y.
         for(let row=0;row<dimensions.rows;row+=1){
             this.indexByCoords.push([]);
             for(let col=0; col < dimensions.cols; col+=1){
-                let index = ( row * ( dimensions.cols * (numLayers+3) ) ) + ( col * (numLayers+3)  );
+                let index = (row * (dimensions.cols *2)) + (col*2);
                 this.indexByCoords[row].push(index);
             }
         }
@@ -110,35 +159,25 @@ _GFX.VRAM = {
         // Dump the changes. 
         this.clearVramChanges();
 
-        // Fill with 0 (tileIndex to 0, tileId to 0 for each layer and x,y coordinate.)
-        this._VRAM_view.fill(0);
+        // Fill all VRAM layers with 0 (tileIndex to 0, tileId to 0, and x,y coordinate to 0.)
+        for(let i=0, l=this._VRAM.length; i<l; i+=1){ this._VRAM[i].view.fill(0); }
 
         // Set flag to indicate a full clear of VRAM. (draw will use clearRect to Clear the whole canvas).
         this.clearVram_flag = true;
-
-        // // Get the dimensions.
-        // let dimensions  = _JSG.loadedConfig.meta.dimensions;
-        
-        // // Get the total number of layers. 
-        // let numLayers = _JSG.loadedConfig.meta.layers.length;
-
-        // // TODO: Is this slow because of all the checks in setTile? 
-        // // TODO: Use updateVram directly? 
-        // // Fill the VRAM of each layer with the first tileset's tile 0.
-        // for(let l=0; l<numLayers; l+=1){
-        //     _GFX.draw.tiles.fillTile(0,  0, 0,  dimensions.cols, dimensions.rows,  0, l);
-        // }
     },
 
     // Draws to the app canvas based on the contents of the changes array.
-    draw: function(method = 1){
+    draw: function(method = 0){
         return new Promise((resolve,reject)=>{
             // Get the dimensions.
             let dimensions  = _JSG.loadedConfig.meta.dimensions;
 
             // If this flag is set just clear the canvas directly. Any changes after clearVram was run will still be available.
             if(this.clearVram_flag){
-                _APP.ctx.clearRect( (0 * dimensions.tileWidth), (0 * dimensions.tileHeight), (_APP.canvas.width), (_APP.canvas.height));
+                for(let i=0, l=_GFX.VRAM._VRAM.length; i<l; i+=1){
+                    // Clear the layer.
+                    _GFX.canvasLayers[i].ctx.clearRect( (0 * dimensions.tileWidth), (0 * dimensions.tileHeight), (_GFX.canvasLayers[i].canvas.width), (_GFX.canvasLayers[i].canvas.height));
+                }
 
                 // Set the flag back to false.
                 this.clearVram_flag = false;
@@ -150,129 +189,29 @@ _GFX.VRAM = {
             // Abort if there are no changes. 
             if(!this.changes.length){ resolve(); return; }
 
-            // Draw changes directly to the destination. 
-            if(method == "1"){
+            // Draw changes to individually layered DOM canvases.
+            if(method == "0"){
                 // Go through the VRAM changes.
                 for(let i=0; i<this.changes.length; i+=1){
-                    // Get the x and y values. 
-                    let x = this.changes[i][0];
-                    let y = this.changes[i][1];
-    
-                    // Get the VRAM_start_index
-                    let VRAM_startIndex = this.indexByCoords[y][x];
-    
+                    // Break out the changes array.
+                    let tileId       = this.changes[i].tileId;
+                    let x            = this.changes[i].x;
+                    let y            = this.changes[i].y;
+                    let tilesetIndex = this.changes[i].tilesetIndex;
+                    let layerIndex   = this.changes[i].layerIndex;
+
+                    // Get the tilesetName.
+                    let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
+
+                    // Get the tileset.
+                    let tileset     = _GFX.cache[tilesetName].tileset;
+
                     // Clear the destination.
-                    _APP.ctx.clearRect( (x * dimensions.tileWidth), (y * dimensions.tileHeight), (dimensions.tileWidth), (dimensions.tileHeight));
-    
-                    // Get the tile at each layer and draw the tiles.
-                    let numLayers = _JSG.loadedConfig.meta.layers.length;
-                    for(let l=0; l<numLayers; l+=1){
-                        // Get the tilesetIndex.
-                        let tilesetIndex = this._VRAM_view[VRAM_startIndex + (l * 2) + 0];
-                        
-                        // Get the tileId.
-                        let tileId = this._VRAM_view[VRAM_startIndex + (l * 2) + 1];
-    
-                        // Get the tilesetName.
-                        let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-    
-                        // Get the tileset.
-                        let tileset     = _GFX.cache[tilesetName].tileset;
-    
-                        // Draw to the canvas. 
-                        _APP.ctx.drawImage(tileset[tileId].canvas, (x * dimensions.tileWidth), (y * dimensions.tileHeight));
-                    }
+                    _GFX.canvasLayers[layerIndex].ctx.clearRect( (x * dimensions.tileWidth), (y * dimensions.tileHeight), (dimensions.tileWidth), (dimensions.tileHeight));
+
+                    // Draw to the destination. 
+                    _GFX.canvasLayers[layerIndex].ctx.drawImage(tileset[tileId].canvas, (x * dimensions.tileWidth), (y * dimensions.tileHeight));
                 }
-    
-            }
-            // Draw changes to a temp canvas then draw to the destination. 
-            else if(method == "2"){
-                // Go through the VRAM changes.
-                for(let i=0; i<this.changes.length; i+=1){
-                    // Create a temp canvas for this change. 
-                    let canvas = document.createElement("canvas");
-                    canvas.width  = dimensions.tileWidth * dimensions.cols;
-                    canvas.height = dimensions.tileHeight * dimensions.rows;
-                    let ctx = canvas.getContext("2d", { alpha: true });
-                    // _GFX.gfxConversion.setPixelated(ctx);
-
-                    // Get the x and y values. 
-                    let x = this.changes[i][0];
-                    let y = this.changes[i][1];
-    
-                    // Get the VRAM_start_index
-                    let VRAM_startIndex = this.indexByCoords[y][x];
-
-                    // Get the tile at each layer and draw the tiles.
-                    let numLayers = _JSG.loadedConfig.meta.layers.length;
-                    for(let l=0; l<numLayers; l+=1){
-                        // Get the tilesetIndex.
-                        let tilesetIndex = this._VRAM_view[VRAM_startIndex + (l * 2) + 0];
-                        
-                        // Get the tileId.
-                        let tileId = this._VRAM_view[VRAM_startIndex + (l * 2) + 1];
-    
-                        // Get the tilesetName.
-                        let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-    
-                        // Get the tileset.
-                        let tileset     = _GFX.cache[tilesetName].tileset;
-    
-                        // Draw to the canvas. 
-                        ctx.drawImage(tileset[tileId].canvas, 0, 0);
-                    }
-                    
-                    // Clear the destination.
-                    _APP.ctx.clearRect( (x * dimensions.tileWidth), (y * dimensions.tileHeight), (dimensions.tileWidth), (dimensions.tileHeight));
-                    
-                    // Draw the completed temp canvas to the main canvas.
-                    _APP.ctx.drawImage(canvas, (x * dimensions.tileWidth), (y * dimensions.tileHeight));
-                }
-            }
-            // Draw changes to a full temp canvas then draw the full temp canvas to the destination.
-            else if(method == "3"){
-                // Create a temp canvas for these changes. 
-                let canvas = document.createElement("canvas");
-                canvas.width  = dimensions.tileWidth * dimensions.cols;
-                canvas.height = dimensions.tileHeight * dimensions.rows;
-                let ctx = canvas.getContext("2d", { alpha: true });
-                // _GFX.gfxConversion.setPixelated(ctx);
-
-                // Go through the VRAM changes.
-                for(let i=0; i<this.changes.length; i+=1){
-                    // Get the x and y values. 
-                    let x = this.changes[i][0];
-                    let y = this.changes[i][1];
-    
-                    // Get the VRAM_start_index
-                    let VRAM_startIndex = this.indexByCoords[y][x];
-
-                    // Get the tile at each layer and draw the tiles.
-                    let numLayers = _JSG.loadedConfig.meta.layers.length;
-                    for(let l=0; l<numLayers; l+=1){
-                        // Get the tilesetIndex.
-                        let tilesetIndex = this._VRAM_view[VRAM_startIndex + (l * 2) + 0];
-                        
-                        // Get the tileId.
-                        let tileId = this._VRAM_view[VRAM_startIndex + (l * 2) + 1];
-    
-                        // Get the tilesetName.
-                        let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-    
-                        // Get the tileset.
-                        let tileset     = _GFX.cache[tilesetName].tileset;
-    
-                        // Draw to the canvas. 
-                        ctx.drawImage(tileset[tileId].canvas, (x * dimensions.tileWidth), (y * dimensions.tileHeight));
-                    }
-                    
-                    // Clear the destination.
-                    _APP.ctx.clearRect( (x * dimensions.tileWidth), (y * dimensions.tileHeight), (dimensions.tileWidth), (dimensions.tileHeight));
-                    
-                }
-
-                // Draw the completed temp canvas to the main canvas.
-                _APP.ctx.drawImage(canvas, 0, 0);
             }
 
             // Done drawing. Clear the VRAM changes. 
@@ -840,7 +779,33 @@ _GFX.initChecks = function(){
 };
 
 // INTERNAL: Init the graphics mode and perform conversions. 
-_GFX.init = async function(){
+_GFX.init = async function(canvasesDestinationDiv){
+    let generateCanvasLayer = function(rec, zIndex, type){
+        let dimensions = _JSG.loadedConfig.meta.dimensions;
+
+        // Create a canvas for this layer.
+        let canvas = document.createElement("canvas");
+        canvas.width  = dimensions.tileWidth * dimensions.cols;
+        canvas.height = dimensions.tileHeight * dimensions.rows;
+        
+        // Create the ctx for this layer. 
+        let ctx = canvas.getContext("2d", rec.canvasOptions || {});
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        _GFX.gfxConversion.setPixelated(ctx);
+
+        // Set some CSS for this canvas layer.
+        if(rec.bg_color){ canvas.style["background-color"] = rec.bg_color; }
+        canvas.style["z-index"] = zIndex;
+
+        canvas.classList.add("videoModeA_canvasLayer");
+
+        // Add the data to canvasLayers.
+        _GFX.canvasLayers.push( { name:rec.name, canvas:canvas, ctx:ctx, type:type } );
+
+        // Return the canvas;
+        return canvas;
+    };
+
     return new Promise(async (resolve, reject)=>{
         // Do the init checks. 
         let initChecks = this.initChecks();
@@ -865,25 +830,43 @@ _GFX.init = async function(){
         }
 
         // Init(s).
+
+        // GRAPHICS CONVERSION.
         _JSG.shared.timeIt.stamp("gfxConversion", "s", "_GFX_INITS"); 
         await this.gfxConversion.init(this); 
         _JSG.shared.timeIt.stamp("gfxConversion", "e", "_GFX_INITS");
 
+        // GENERATE CANVAS LAYERS.
+        _JSG.shared.timeIt.stamp("canvasLayers", "s", "_GFX_INITS"); 
+        let next_zIndex = 5;
+        for(let i=0, l=_JSG.loadedConfig.meta.layers.length; i<l; i+=1){
+            
+            // Get the record.
+            let rec = _JSG.loadedConfig.meta.layers[i];
+            
+            let msg1 = `init: Generating canvas layer: ${rec.name}.`;
+            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
+            console.log(msg1);
+
+            generateCanvasLayer(rec, next_zIndex += 5, "user");
+        }
+        // Add the fade layer last.
+        let msg1 = "init: Generating canvas layer: FADE.";
+        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
+        console.log(msg1);
+        generateCanvasLayer({ "name": "FADE" , "canvasOptions": { "alpha": true } }, next_zIndex += 5), "_FADE_";
+        _JSG.shared.timeIt.stamp("canvasLayers", "e", "_GFX_INITS");
+
+        // INIT DRAW.
         _JSG.shared.timeIt.stamp("draw", "s", "_GFX_INITS"); 
         await this.draw.init(this);          
         _JSG.shared.timeIt.stamp("draw", "e", "_GFX_INITS");
 
+        // INIT VRAM.
         _JSG.shared.timeIt.stamp("VRAM", "s", "_GFX_INITS"); 
         await this.VRAM.init(this);          
         _JSG.shared.timeIt.stamp("VRAM", "e", "_GFX_INITS");
-
-
-        // DEBUG:
-        // this._debug.drawTest_setTile();
-        // this._debug.drawTest_fillTile();
-        // this._debug.drawTest_print();
-        // this._debug.drawTest_drawTilemap();
-
+        
         resolve();
     });
 };
