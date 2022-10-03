@@ -1,5 +1,9 @@
 // INTERNAL/DEBUG: Tests, etc.
 _GFX._debug = {
+    // TESTS:
+    // _GFX._debug.run_drawTest();
+    // _GFX._debug.drawMethodTests();
+
     // draw.tiles function tests.
     run_drawTest: async function(){
         let waitAfterTests = 1000;

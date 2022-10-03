@@ -669,13 +669,13 @@ let _JSG = {
         // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
 
         // Auto-load app?
-        let params = _JSG.getUrlParams();
-        if(Object.keys(params).length){
+        _JSG.params = _JSG.getUrlParams();
+        if(Object.keys(_JSG.params).length){
             // Check for and get the app record.
             let rec;
 
             // Does the supplied key match a real key? 
-            if(params.appKey && (rec = _JSG.apps[params.appKey]) ){
+            if(_JSG.params.appKey && (rec = _JSG.apps[_JSG.params.appKey]) ){
                 // Load the app and await for it to finish loading. 
                 await _JSG.loadApp(rec); 
             }
@@ -683,13 +683,13 @@ let _JSG = {
             // No match to the supplied key.
             else{
                 // Do the login check. 
-                _JSG.loadingDiv.addMessage("loadApp: appkey not found in apps.json");
-                console.log("ERROR: appKey not found in apps.json:", params.appKey); 
+                _JSG.loadingDiv.addMessage("loadApp: appKey not found in apps.json");
+                console.log("ERROR: appKey not found in apps.json:", _JSG.params.appKey); 
                 _JSG.loadingDiv.changeStatus("error");
 
-                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
                 // this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
-                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
             
                 // console.log("running loginCheck (appKey not found.)");
                 await _JSG.lobby.login.loginCheck();

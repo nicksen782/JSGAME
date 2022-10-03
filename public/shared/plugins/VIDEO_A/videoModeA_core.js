@@ -107,28 +107,48 @@ _GFX.VRAM = {
 
     // Set VRAM to all 0 (The tileId of 0 should be the fully transparent tile in each tileset.)
     clearVram: function(){
-        // Get the dimensions.
-        let dimensions  = _JSG.loadedConfig.meta.dimensions;
-        
-        // Get the total number of layers. 
-        let numLayers = _JSG.loadedConfig.meta.layers.length;
+        // Dump the changes. 
+        this.clearVramChanges();
 
-        // TODO: Is this slow because of all the checks in setTile? 
-        // TODO: Use updateVram directly? 
-        // Fill the VRAM of each layer with the first tileset's tile 0.
-        for(let l=0; l<numLayers; l+=1){
-            _GFX.draw.tiles.fillTile(0,  0, 0,  dimensions.cols, dimensions.rows,  0, l);
-        }
+        // Fill with 0 (tileIndex to 0, tileId to 0 for each layer and x,y coordinate.)
+        this._VRAM_view.fill(0);
+
+        // Set flag to indicate a full clear of VRAM. (draw will use clearRect to Clear the whole canvas).
+        this.clearVram_flag = true;
+
+        // // Get the dimensions.
+        // let dimensions  = _JSG.loadedConfig.meta.dimensions;
+        
+        // // Get the total number of layers. 
+        // let numLayers = _JSG.loadedConfig.meta.layers.length;
+
+        // // TODO: Is this slow because of all the checks in setTile? 
+        // // TODO: Use updateVram directly? 
+        // // Fill the VRAM of each layer with the first tileset's tile 0.
+        // for(let l=0; l<numLayers; l+=1){
+        //     _GFX.draw.tiles.fillTile(0,  0, 0,  dimensions.cols, dimensions.rows,  0, l);
+        // }
     },
 
     // Draws to the app canvas based on the contents of the changes array.
     draw: function(method = 1){
         return new Promise((resolve,reject)=>{
-            // Abort if there are no changes. 
-            if(!this.changes.length){ resolve(); return; }
-
             // Get the dimensions.
             let dimensions  = _JSG.loadedConfig.meta.dimensions;
+
+            // If this flag is set just clear the canvas directly. Any changes after clearVram was run will still be available.
+            if(this.clearVram_flag){
+                _APP.ctx.clearRect( (0 * dimensions.tileWidth), (0 * dimensions.tileHeight), (_APP.canvas.width), (_APP.canvas.height));
+
+                // Set the flag back to false.
+                this.clearVram_flag = false;
+            }
+
+            // TODO
+            // Are there any regions to pre-clear before drawing? (tilemaps, fillTile).
+
+            // Abort if there are no changes. 
+            if(!this.changes.length){ resolve(); return; }
 
             // Draw changes directly to the destination. 
             if(method == "1"){
@@ -302,51 +322,125 @@ _GFX.VRAM = {
 _GFX.draw = {
     // Drawing for grid-aligned tiles and tilemaps. 
     tiles: {
+        checks: {
+            setTile                    : function(tileId, x, y, tilesetIndex, layerIndex){
+                // Checks.
+                if(tileId == null)      { console.log("setTile: The tileId was not specified."); return false; }
+                if(x == null)           { console.log("setTile: The x was not specified."); return false; }
+                if(y == null)           { console.log("setTile: The y was not specified."); return false; }
+                if(tilesetIndex == null){ console.log("setTile: The tilesetIndex was not specified."); return false; }
+                if(layerIndex == null)  { console.log("setTile: The layerIndex was not specified."); return false; }
+
+                // Make sure that the layerIndex is valid.
+                let numLayers = _JSG.loadedConfig.meta.layers.length;
+                if(layerIndex < 0 || layerIndex >= numLayers){ console.log("setTile: The layerIndex is not valid."); return false;  }
+
+                // Get the tilesetName.
+                let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
+                if(!tilesetName){ console.log(`setTile: Tileset index '${tilesetIndex}' was not found.`); return false; }
+                
+                // Get the tileset.
+                let tileset     = _GFX.cache[tilesetName].tileset;
+                if(!tileset){ console.log(`setTile: Tileset '${tilesetName}' was not found.`); return false; }
+
+                // Check for the tile. If not found then skip.
+                if(undefined == tileset[tileId] || !tileset[tileId].canvas){ console.log(`setTile: Tile canvas for '${tilesetName}':'${tileId}' was not found.`); return false; }
+
+                // Get the dimensions.
+                let dimensions  = _JSG.loadedConfig.meta.dimensions;
+
+                // Bounds-checking. (Skip any tile that would be written out of bounds.
+                let oob_x = x >= dimensions.cols ? true : false;
+                let oob_y = y >= dimensions.rows ? true : false;
+                if(oob_x){ 
+                    console.log(`setTile: Out-Of-Bounds on X: x: ${x}, y: ${y}, layerIndex: '${layerIndex}', tilesetName: '${tilesetName}', tileId: '${tileId}'`); 
+                    return false;
+                }
+                if(oob_y){ 
+                    console.log(`setTile: Out-Of-Bounds on Y: x: ${x}, y: ${y}, layerIndex: '${layerIndex}', tilesetName: '${tilesetName}', tileId: '${tileId}'`); 
+                    return false;
+                }
+
+                return true; 
+            },
+            // TODO?
+            print                      : function(str, x, y, tilesetIndex, layerIndex){
+                return true; 
+            },
+            // TODO?
+            fillTile                   : function(tileId, x, y, w, h, tilesetIndex, layerIndex){
+                return true; 
+            },
+            drawTilemap                : function(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex){
+                // Get the tilesetName.
+                let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
+                if(!tilesetName){ console.log(`drawTilemap: Tileset index '${tilesetIndex}' was not found.`); return false; }
+
+                // Get the tileset.
+                let tileset = _GFX.cache[tilesetName].tileset;
+                if(!tileset){ console.log(`drawTilemap: Tileset '${tilesetName}' was not found.`); return false; }
+
+                // Get the tilemap object.
+                let tilemapObj  = _GFX.cache[tilesetName].tilemap[tilemapName];
+                if(!tilemapObj){ console.log("drawTilemap: Tilemap object not found.", tilesetName, tilemapName); return false ; }
+
+                // Get the tilemap. 
+                let tilemap = tilemapObj[rotationIndex].orgTilemap;
+
+                // Make sure that the tilemap is valid.
+                if(!tilemap)               { console.log(`drawTilemap: Tilemap was not found.`); return false; }
+                if(!Array.isArray(tilemap)){ console.log(`drawTilemap: Tilemap is not an array.`); return false; }
+                if(!tilemap.length)        { console.log(`drawTilemap: Tilemap has no entries.`); return false; }
+                if(!tilemap.length > 2)    { console.log(`drawTilemap: Tilemap is not valid.`); return false; }
+
+                return true; 
+            },
+            drawTilemap_custom         : function(x, y, tilesetIndex, layerIndex, tilemap){
+                // Get the tilesetName.
+                let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
+                if(!tilesetName){ console.log(`drawTilemap_custom: Tileset index '${tilesetIndex}' was not found.`); return false; }
+
+                // Get the tileset.
+                let tileset = _GFX.cache[tilesetName].tileset;
+                if(!tileset){ console.log(`drawTilemap_custom: Tileset '${tilesetName}' was not found.`); return false; }
+
+                // Make sure that the tilemap is valid.
+                if(!tilemap)               { console.log(`drawTilemap_custom: Tilemap was not found.`); return false; }
+                if(!Array.isArray(tilemap)){ console.log(`drawTilemap_custom: Tilemap is not an array.`); return false; }
+                if(!tilemap.length)        { console.log(`drawTilemap_custom: Tilemap has no entries.`); return false; }
+                if(!tilemap.length > 2)    { console.log(`drawTilemap_custom: Tilemap is not valid.`); return false; }
+
+                return true; 
+            },
+            customTilemapFromTextString: function(str, tilesetIndex){
+                if(tilesetIndex == null){ console.log("customTilemapFromTextString: The tilesetIndex was not specified."); return false; }
+
+                // Get the tilesetName.
+                let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
+                if(!tilesetName){ console.log(`customTilemapFromTextString: Tileset index '${tilesetIndex}' was not found.`); return false; }
+    
+                // Get the tileset.
+                let tileset     = _GFX.cache[tilesetName].tileset;
+                if(!tileset){ console.log(`customTilemapFromTextString: Tileset '${tilesetName}' was not found.`); return false; }
+
+                return true; 
+            },
+        },
+
         // Set one tile into VRAM.
         setTile : function(tileId, x, y, tilesetIndex, layerIndex){
             // Checks.
-            if(tileId == null)      { console.log("setTile: The tileId was not specified."); return; }
-            if(x == null)           { console.log("setTile: The x was not specified."); return; }
-            if(y == null)           { console.log("setTile: The y was not specified."); return; }
-            if(tilesetIndex == null){ console.log("setTile: The tilesetIndex was not specified."); return; }
-            if(layerIndex == null)  { console.log("setTile: The layerIndex was not specified."); return; }
+            if(! this.checks.setTile(tileId, x, y, tilesetIndex, layerIndex)){ return; }
 
-            // Make sure that the layerIndex is valid.
-            let numLayers = _JSG.loadedConfig.meta.layers.length;
-            if(layerIndex < 0 || layerIndex >= numLayers){ console.log("setTile: The layerIndex is not valid."); return;  }
-
-            // Get the tilesetName.
-            let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-            if(!tilesetName){ console.log(`setTile: Tileset index '${tilesetIndex}' was not found.`); return; }
-            
-            // Get the tileset.
-            let tileset     = _GFX.cache[tilesetName].tileset;
-            if(!tileset){ console.log(`setTile: Tileset '${tilesetName}' was not found.`); return; }
-
-            // Check for the tile. If not found then skip.
-            if(undefined == tileset[tileId] || !tileset[tileId].canvas){ console.log(`setTile: Tile canvas for '${tilesetName}':'${tileId}' was not found.`); return; }
-
-            // Get the dimensions.
-            let dimensions  = _JSG.loadedConfig.meta.dimensions;
-
-            // Bounds-checking. (Skip any tile that would be written out of bounds.
-            let oob_x = x >= dimensions.cols ? true : false;
-            let oob_y = y >= dimensions.rows ? true : false;
-            if(oob_x){ 
-                console.log(`setTile: Out-Of-Bounds on X: x: ${x}, y: ${y}, layerIndex: '${layerIndex}', tilesetName: '${tilesetName}', tileId: '${tileId}'`); 
-                return;
-            }
-            if(oob_y){ 
-                console.log(`setTile: Out-Of-Bounds on Y: x: ${x}, y: ${y}, layerIndex: '${layerIndex}', tilesetName: '${tilesetName}', tileId: '${tileId}'`); 
-                return;
-            }
-            
             // "Draw" the tile to VRAM.
             _GFX.VRAM.updateVram(tileId, x, y, tilesetIndex, layerIndex);
         },
 
         // Set text tiles into VRAM using a text string.
         print : function(str="", x, y, tilesetIndex, layerIndex){
+            // Checks.
+            // Done when setTile is called.
+
             // NOTE: print assumes that the text tileset's first tilemap is the fontset and that those tiles are generated in ASCII order.
 
             // Convert to string if the input is a number. 
@@ -367,6 +461,9 @@ _GFX.draw = {
 
         // Fill a rectangular region with one tile. 
         fillTile : function(tileId=" ", x, y, w, h, tilesetIndex, layerIndex){
+            // Checks.
+            // Done when setTile is called.
+
             // For each row...
             for(let dy=0; dy<h; dy+=1){
                 
@@ -381,26 +478,17 @@ _GFX.draw = {
 
         // Draw the individual tiles of a tilemap to VRAM.
         drawTilemap : function(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex=0){
+            // Checks.
+            if(!this.checks.drawTilemap(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex)){ return; }
+            
             // Get the tilesetName.
             let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-            if(!tilesetName){ console.log(`drawTilemap: Tileset index '${tilesetIndex}' was not found.`); return; }
-            
-            // Get the tileset.
-            let tileset = _GFX.cache[tilesetName].tileset;
-            if(!tileset){ console.log(`drawTilemap: Tileset '${tilesetName}' was not found.`); return; }
 
             // Get the tilemap object.
             let tilemapObj  = _GFX.cache[tilesetName].tilemap[tilemapName];
-            if(!tilemapObj){ console.log("drawTilemap: Tilemap object not found.", tilesetName, tilemapName); return ; }
 
             // Get the tilemap. 
             let tilemap = tilemapObj[rotationIndex].orgTilemap;
-
-            // Make sure that the tilemap is valid.
-            if(!tilemap)               { console.log(`drawTilemap: Tilemap was not found.`); return; }
-            if(!Array.isArray(tilemap)){ console.log(`drawTilemap: Tilemap is not an array.`); return; }
-            if(!tilemap.length)        { console.log(`drawTilemap: Tilemap has no entries.`); return; }
-            if(!tilemap.length > 2)    { console.log(`drawTilemap: Tilemap is not valid.`); return; }
 
             // The width of the tilemap is first.
             let w = tilemap[0];
@@ -425,19 +513,8 @@ _GFX.draw = {
 
         // Draw the individual tiles of a custom tilemap to VRAM.
         drawTilemap_custom : function(x, y, tilesetIndex, layerIndex, tilemap){
-            // Get the tilesetName.
-            let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-            if(!tilesetName){ console.log(`drawTilemap_custom: Tileset index '${tilesetIndex}' was not found.`); return; }
-
-            // Get the tileset.
-            let tileset = _GFX.cache[tilesetName].tileset;
-            if(!tileset){ console.log(`drawTilemap_custom: Tileset '${tilesetName}' was not found.`); return; }
-            
-            // Make sure that the tilemap is valid.
-            if(!tilemap)               { console.log(`drawTilemap_custom: Tilemap was not found.`); return; }
-            if(!Array.isArray(tilemap)){ console.log(`drawTilemap_custom: Tilemap is not an array.`); return; }
-            if(!tilemap.length)        { console.log(`drawTilemap_custom: Tilemap has no entries.`); return; }
-            if(!tilemap.length > 2)    { console.log(`drawTilemap_custom: Tilemap is not valid.`); return; }
+            // Checks.
+            if(!this.checks.drawTilemap_custom(x, y, tilesetIndex, layerIndex, tilemap)){ return; }
 
             // The width of the tilemap is first.
             let w = tilemap[0];
@@ -462,18 +539,10 @@ _GFX.draw = {
 
         // Creates a tilemap from a string. (draw with drawTilemap_custom).
         customTilemapFromTextString: function(str, tilesetIndex){
-            // NOTE: print assumes that the text tileset's first tilemap is the fontset and that those tiles are generated in ASCII order.
-
             // Checks.
-            if(tilesetIndex == null){ console.log("customTilemapFromTextString: The tilesetIndex was not specified."); return; }
+            if(!this.checks.customTilemapFromTextString(str, tilesetIndex)){ return; }
 
-            // Get the tilesetName.
-            let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-            if(!tilesetName){ console.log(`customTilemapFromTextString: Tileset index '${tilesetIndex}' was not found.`); return; }
-
-            // Get the tileset.
-            let tileset     = _GFX.cache[tilesetName].tileset;
-            if(!tileset){ console.log(`customTilemapFromTextString: Tileset '${tilesetName}' was not found.`); return; }
+            // NOTE: print assumes that the text tileset's first tilemap is the fontset and that those tiles are generated in ASCII order.
 
             // Convert to string if the input is a number. 
             if(typeof str == "number"){ str = str.toString(); }
@@ -511,6 +580,18 @@ _GFX.draw = {
 
 // INTERNAL: Performs the graphics conversion from json to tiles and stores the data in _GFX.cache. 
 _GFX.gfxConversion = {
+    // Convert rgb32 object to rgb332 pixel.
+    rgb32_to_RGB332: function(R, G, B){
+        // Convert the RGB value to RGB332 as hex string. (Jubation)
+        // #define SQ_COLOR8(r, g, b) (((r >> 5) & 0x07U) | ((g >> 2) & 0x38U) | ((b) & 0xC0U))
+        // var index = ((R >> 5) & 0x07) | ((G >> 2) & 0x38) | ((B) & 0xC0);
+    
+        // Convert the RGB value to RGB332 as hex string. (original)
+        var rgb332 = (B & 0xc0) + ((G >> 2) & 0x38) + (R >> 5);
+    
+        return rgb332;
+    },
+
     // Convert rgb332 pixel to rgb32 object.
     rgb332_to_rgb32 : function(rgb332_byte) {
         let nR = ( ((rgb332_byte >> 0) & 0b00000111) * (255 / 7) ) << 0; // red
