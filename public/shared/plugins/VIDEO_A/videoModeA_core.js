@@ -172,7 +172,7 @@ _GFX.VRAM = {
             // Get the dimensions.
             let dimensions  = _JSG.loadedConfig.meta.dimensions;
 
-            // If this flag is set just clear the canvas directly. Any changes after clearVram was run will still be available.
+            // If this flag is set just clear the canvases directly. Any changes after clearVram was run will still be available.
             if(this.clearVram_flag){
                 for(let i=0, l=_GFX.VRAM._VRAM.length; i<l; i+=1){
                     // Clear the layer.
@@ -206,8 +206,11 @@ _GFX.VRAM = {
                     // Get the tileset.
                     let tileset     = _GFX.cache[tilesetName].tileset;
 
-                    // Clear the destination.
-                    _GFX.canvasLayers[layerIndex].ctx.clearRect( (x * dimensions.tileWidth), (y * dimensions.tileHeight), (dimensions.tileWidth), (dimensions.tileHeight));
+                    // Clear the destination if the new tile has transparency. (This is prevent the old image from showing through.)
+                    if(tileset[tileId].hasTransparency){
+                        // console.log("hasTransparency", `tilesetName: ${tilesetName}, tileId: ${tileId}, layerIndex: ${layerIndex}`);
+                        _GFX.canvasLayers[layerIndex].ctx.clearRect( (x * dimensions.tileWidth), (y * dimensions.tileHeight), (dimensions.tileWidth), (dimensions.tileHeight));
+                    }
 
                     // Draw to the destination. 
                     _GFX.canvasLayers[layerIndex].ctx.drawImage(tileset[tileId].canvas, (x * dimensions.tileWidth), (y * dimensions.tileHeight));
@@ -555,6 +558,7 @@ _GFX.gfxConversion = {
             let tileData = jsonTileset.tileset[index];
 
             // Go through each pixel.
+            let hasTransparency = false;
             let tilePixels = [];
             for(let i=0; i<tileData.length; i+=1){
                 let rgb32 = {};
@@ -565,6 +569,7 @@ _GFX.gfxConversion = {
                     rgb32.g = 0 ;
                     rgb32.b = 0 ;
                     rgb32.a = 0 ;
+                    hasTransparency = true;
                 }
                 else{
                     rgb32 = this.rgb332_to_rgb32(rgb332_byte);
@@ -580,7 +585,7 @@ _GFX.gfxConversion = {
             let tileCanvas = document.createElement("canvas");
             tileCanvas.width = jsonTileset.config.tileWidth;
             tileCanvas.height = jsonTileset.config.tileHeight;
-            tileCanvas.title = index;
+            // tileCanvas.title = index;
             let tileCtx    = tileCanvas.getContext('2d');
             this.setPixelated(tileCanvas);
             this.setPixelated(tileCtx);
@@ -596,7 +601,7 @@ _GFX.gfxConversion = {
             tileCtx.putImageData(tileImageData, 0, 0);
 
             // Add this tile object to the list.
-            _GFX.cache[jsonTileset.tilesetName].tileset.push( { canvas:tileCanvas, ctx:tileCtx } );
+            _GFX.cache[jsonTileset.tilesetName].tileset.push( { canvas:tileCanvas, ctx:tileCtx, hasTransparency: hasTransparency } );
         }
     },
 
@@ -621,7 +626,7 @@ _GFX.gfxConversion = {
             let tilemapCanvas = document.createElement("canvas");
             tilemapCanvas.width  = w * jsonTileset.config.tileWidth;
             tilemapCanvas.height = h * jsonTileset.config.tileHeight;
-            tilemapCanvas.title = key;
+            // tilemapCanvas.title = key;
             let tilemapCtx    = tilemapCanvas.getContext('2d');
             this.setPixelated(tilemapCanvas);
             this.setPixelated(tilemapCtx);
