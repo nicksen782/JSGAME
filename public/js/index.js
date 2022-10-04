@@ -7,8 +7,13 @@ let _GFX = undefined;
 // Holds the loaded _SND plugin.
 let _SND = undefined;
 
+// Holds the any JSGAME WebWorker code.
+let _WEBW = {};
+
 // Holds JSGAME.
 let _JSG = {
+    appStart_timestamp: undefined,
+    
     // Contains config settings for "modules". (POPULATED DURING INIT.)
     configObjs : {},
 
@@ -253,22 +258,19 @@ let _JSG = {
                 let msg2 = `_APP LOADED : ${rec.appKey}`;
                 _JSG.loadingDiv.addMessage(msg2);
                 console.log(msg2);
-                                
-                // Set visabilities.
-                await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
-
-                // Don't show the lobby if the appConfig says not to.
-                if(!_JSG.loadedConfig.meta.hideLobby){
-                    this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
-                }
 
                 // Do the login check. 
                 // console.log("running loginCheck after loading:", rec.appKey);
-                _JSG.loadingDiv.addMessage("Running loginCheck...");
+                let msg3 = "Running loginCheck...";
+                _JSG.loadingDiv.addMessageChangeStatus(msg3, "loading");
+                console.log(msg3);
                 await _JSG.lobby.login.loginCheck();
-                _JSG.loadingDiv.addMessage("READY!");
+                
+                let msg4 = `READY! (Total load time: ${(performance.now() - _JSG.appStart_timestamp).toFixed(2)}ms)`;
+                _JSG.loadingDiv.addMessageChangeStatus(msg4, "loaded");
+                _JSG.loadingDiv.addMessageChangeStatus("", "loaded");
+                console.log(msg4);
+                console.log("");
 
                 // DEBUG:
                 try{
@@ -280,6 +282,15 @@ let _JSG = {
                 }
                 catch(e){
                     console.log("Error showing debug vars.", e);
+                }
+
+                // Set visabilities.
+                await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
+                // Don't show the lobby if the appConfig says not to.
+                if(!_JSG.loadedConfig.meta.hideLobby){
+                    this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
                 }
 
                 resolve();
@@ -577,15 +588,21 @@ let _JSG = {
             `-----------------------------`+
         ``,
 
-        addMessageChangeStatus: function(str, type){
+        addMessageChangeStatus: function(str, type, toConsole=false){
             this.changeStatus(type);
-            this.addMessage(str);
+            this.addMessage(str, toConsole);
         },
-        addMessage: function(str){
+        addMessage: function(str, toConsole=false){
             // _JSG.loadingDiv.addMessage("string");
 
             // Add the message and a "\n" if the string does not end with "\n".
-            this.parent.DOM["loadingDiv_messages"].innerHTML += str + (str.slice(-1) != "\n" ? "\n" : "");
+            let newStr = str + (str.slice(-1) != "\n" ? "\n" : "");
+            this.parent.DOM["loadingDiv_messages"].innerHTML += newStr;
+
+            // Also send to the console?
+            if(toConsole){
+                console.log("loadingDiv:", newStr);
+            }
             
             // Add the populated class to add padding. 
             this.parent.DOM["loadingDiv_messages"].classList.add("populated");
@@ -637,6 +654,7 @@ let _JSG = {
         await this.loadingDiv.init(this);
 
         // Get the apps.json.
+        _JSG.appStart_timestamp = performance.now();
         _JSG.loadingDiv.addMessage("Getting apps.json");
         _JSG.apps = await _JSG.net.http.send("shared/apps.json", { type:"json", method:"GET" }, 5000);
 
@@ -687,7 +705,8 @@ let _JSG = {
                 console.log("ERROR: appKey not found in apps.json:", _JSG.params.appKey); 
                 _JSG.loadingDiv.changeStatus("error");
 
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
+                // await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
+                // this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
                 // this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
             

@@ -1,5 +1,269 @@
 _GFX = {};
 
+// INTERNAL: WebWorker functions.
+_WEBW.videoModeA = {
+    video: {
+        // Holds the WebWorker instance.
+        webworker: undefined,
+
+        // Tracks what part of the conversation per mode is expected.
+        messageStates: {
+            init       : { waiting: false } ,
+            vram_update: { waiting: false } ,
+            fade       : { waiting: false } ,
+        },
+
+        // SHARED: Receives messages from the WebWorker and routes the message to the matching function(s).
+        RECEIVE: function(e){
+            // console.log("_WEBW.videoModeA.video: RECEIVE:", e.data.mode, e.data);
+
+            // Make sure there is data and a data.mode.
+            if(e.data && e.data.mode){
+                switch(e.data.mode){
+                    case "init"       : this.initReceive       (e.data.data); break;
+                    case "vram_update": this.vram_updateReceive(e.data.data); break;
+                    case "fade"       : this.fadeReceive       (e.data.data); break;
+
+                    // Unmatched function.
+                    default     : { 
+                        console.log("ERROR: Unmatched mode", e.data.mode); 
+                        break; 
+                    }
+                }
+            }
+            else{ console.log(`ERROR: No mode? e.data: ${e.data}, e.data.mode: ${e.data.mode}, e:`, e); }
+        },
+        // SHARED: Will repeatedly check for the messageStates "waiting" key to be set to false before resolving.
+        waitForResp: async function(resolve, reject, ww_mode_key, waitCheckMs){
+            try{
+                return new Promise((res,rej)=>{
+                    let id = setInterval( ()=>{
+                        if( _WEBW.videoModeA.video.messageStates[ww_mode_key].waiting == false ){
+                            // console.log("waitForResp: DONE", key);
+                            clearInterval(id);
+                            res();
+                            resolve();
+                        }
+                        // else{ console.log("waitForResp: WAIT", key); }
+                    }, waitCheckMs );
+                });
+            }
+            catch(e){ reject(e); }
+        },
+
+        // INIT: Sends graphics data to the WebWorker for later use.
+        initSend: function(waitForResp=true, waitCheckMs=1){
+            return new Promise(async(resolve,reject)=>{
+                // Update the message state.
+                let ww_mode_key = "init";
+                this.messageStates.init.waiting = true;
+
+                let data = { 
+                    cache: {},
+                    VRAM: { 
+                        _VRAM        : _GFX.VRAM._VRAM ,
+                        indexByCoords: _GFX.VRAM.indexByCoords ,
+                    },
+                    meta: {
+                        layers    : _JSG.loadedConfig.meta.layers,
+                        dimensions: _JSG.loadedConfig.meta.dimensions,
+                    }
+                };console.log("DATA:", data);
+
+                for(let i=0, l=_JSG.loadedConfig.meta.layers.length; i<l; i+=1){
+                }
+
+                // Need full json, each tile imageData, hasTransparency, each tilemap name, rot 0, and orgTilemap.
+                let ts_keys = Object.keys(_GFX.cache);
+                for(let ts_key=0, l=ts_keys.length; ts_key<l; ts_key+=1){
+                    // Get handle to the tileset key.
+                    let key = ts_keys[ts_key];
+                    let tileset = _GFX.cache[key];
+
+                    // Add the key to the data.
+                    data.cache[key] = {
+                        json:{},
+                        tileset:[],
+                        tilemap:{},
+                    };
+
+                    // Add the most of the json.
+                    data.cache[key].json = {
+                        config: tileset.json.config,
+                        tileset: tileset.json.tileset,
+                    }  ;
+                    
+                    // Get the tileWidth and tileHeight for this tileset.
+                    let tileWidth  = tileset.json.config.tileWidth;
+                    let tileHeight = tileset.json.config.tileHeight;
+
+                    // Go through each tile in the tileset and use the ctx to create imageData.
+                    for(let t=0, tl= tileset.tileset.length; t<tl; t+=1){
+                        let tile = tileset.tileset[t];
+                        data.cache[key].tileset.push( {
+                            imgData : tile.ctx.getImageData(0, 0, tileWidth, tileHeight),
+                            hasTransparency: tile.hasTransparency, 
+                        } ) ;
+                    }
+
+                    // Go through each tilemap in the tileset and add the orgTilemap. (First rotation only).
+                    let tilemap_keys = Object.keys(tileset.tilemap);
+                    for(let tm=0, tml= tilemap_keys.length; tm<tml; tm+=1){
+                        let tmKey = tilemap_keys[tm];
+                        let tilemap = tileset.tilemap[tmKey];
+                        data.cache[key].tilemap[tmKey] = tilemap[0].orgTilemap;
+                    }
+                }
+
+                // console.log("_WEBW.videoModeA: initSend:", data);
+                _WEBW.videoModeA.video.webworker.postMessage(
+                    {
+                        mode: "init",
+                        data: data,
+                    }, 
+                    []
+                );
+
+                // Wait until finished?
+                if(waitForResp){ await this.waitForResp(resolve, reject, ww_mode_key, waitCheckMs); resolve(); return; }
+
+                // No wait.
+                resolve();
+            });
+        },
+        initReceive: function(data){
+            // Update the message state.
+            let ww_mode_key = "init";
+            this.messageStates[ww_mode_key].waiting = false;
+            // console.log("_WEBW.videoModeA: initReceive:", data, this.messageStates);
+        },
+
+        // VRAM: Updates to WebWorker VRAM.
+        vram_updateSend   : function(waitForResp=false, waitCheckMs=1){
+            return new Promise(async(resolve,reject)=>{
+                // Update the message state.
+                let ww_mode_key = "vram_update";
+                this.messageStates[ww_mode_key].waiting = true;
+
+                // console.log("_WEBW.videoModeA: vram_updateSend:", _GFX.VRAM._VRAM);
+                _WEBW.videoModeA.video.webworker.postMessage(
+                    {
+                        mode: "vram_update",
+                        data: {
+                            VRAM: {
+                                _VRAM: _GFX.VRAM._VRAM
+                            },
+                        }
+                    }, 
+                    []
+                );
+
+                // Wait until finished?
+                if(waitForResp){ await this.waitForResp(resolve, reject, ww_mode_key, waitCheckMs); resolve(); return; }
+
+                // No wait.
+                resolve();
+            });
+        },
+        vram_updateReceive: function(data){
+            let ww_mode_key = "vram_update";
+            this.messageStates[ww_mode_key].waiting = true;
+
+            console.log("_WEBW.videoModeA: vram_updateReceive:", data, this.messageStates);
+        },
+
+        // FADE: Request/Receive fade layers.
+        fadeObj: {
+        },
+        fadeSend          : function(waitForResp=false, waitCheckMs=1){
+            return new Promise(async(resolve,reject)=>{
+                // Update the message state.
+                let ww_mode_key = "fade";
+                this.messageStates[ww_mode_key].waiting = true;
+
+                console.log("_WEBW.videoModeA: fadeSend:", _GFX.VRAM._VRAM);
+                _WEBW.videoModeA.video.webworker.postMessage(
+                    {
+                        mode: "fade",
+                        data: {
+                            VRAM: {
+                                _VRAM: _GFX.VRAM._VRAM
+                            },
+                        }
+                    }, 
+                    []
+                );
+
+                // Wait until finished?
+                if(waitForResp){ await this.waitForResp(resolve, reject, ww_mode_key, waitCheckMs); resolve(); return; }
+
+                // No wait.
+                resolve();
+            });
+        },
+        fadeReceive       : async function(data){
+            let getDataUrlFromImageData = function(imgData){
+                let canvas = document.createElement("canvas");
+                canvas.width = imgData.width;
+                canvas.height = imgData.height;
+                let ctx = canvas.getContext("2d");
+                ctx.putImageData(imgData, 0, 0);
+                console.log(canvas.toDataURL());
+            };
+            // Update the message state.
+            this.messageStates.fade.waiting = false;
+
+            console.log("_WEBW.videoModeA: fadeReceive:", data, this.messageStates);
+            _GFX.test = data;
+
+            // Hide the "user" canvases.
+            for(let i=0, l=_GFX.canvasLayers.length; i<l; i+=1){
+                if(_GFX.canvasLayers[i].type == "user"){ _GFX.canvasLayers[i].canvas.style["display"] = "none"; }
+            }
+
+            _APP.game.gameLoop.running = false;
+            for(let c=0; c<50; c+=1){
+                for(let i=0, l=data.length; i<l; i+=1){
+                    console.log("fade:", i);
+                    _GFX.canvasLayers[3].ctx.putImageData(data[i], 0, 0);
+                    await new Promise((res,rej)=>{ setTimeout(()=>res(), 100); });
+                }
+                for(let i=data.length-1, l=0; i>=l; i-=1){
+                    console.log("fade:", i);
+                    _GFX.canvasLayers[3].ctx.putImageData(data[i], 0, 0);
+                    await new Promise((res,rej)=>{ setTimeout(()=>res(), 100); });
+                }
+            }
+        },
+
+        // Init this WebWorker.
+        init: function(parent){
+            return new Promise(async (resolve,reject)=>{
+                let ww_ts = performance.now();
+
+                // Create the WebWorkers and their message event listeners.
+                _WEBW.videoModeA.video.webworker = new Worker( "shared/plugins/VIDEO_A/videoModeA_webworker.js" );
+                _WEBW.videoModeA.video.webworker.addEventListener("message", (e)=>_WEBW.videoModeA.video.RECEIVE(e), false);
+
+                // Send the init for the webworker.
+                await _WEBW.videoModeA.video.initSend(true, 1);
+
+                // Update the loadingDiv messages.
+                if( _WEBW.videoModeA.video.messageStates.init.waiting == false ){
+                    msg1 = `init: WebWorker: _WEBW.videoModeA.video - COMPLETE (${(performance.now() - ww_ts).toFixed(2)}ms)`;
+                    _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
+                    console.log(msg1);
+                    resolve();
+                }
+                else{
+                    console.log("_WEBW.videoModeA.video is waiting.");
+                }
+            });
+
+        },
+    },
+};
+
 // INTERNAL: Canvas caches of tiles, tilemaps, config.
 _GFX.cache = {};
 
@@ -626,7 +890,6 @@ _GFX.gfxConversion = {
             let tilemapCanvas = document.createElement("canvas");
             tilemapCanvas.width  = w * jsonTileset.config.tileWidth;
             tilemapCanvas.height = h * jsonTileset.config.tileHeight;
-            // tilemapCanvas.title = key;
             let tilemapCtx    = tilemapCanvas.getContext('2d');
             this.setPixelated(tilemapCanvas);
             this.setPixelated(tilemapCtx);
@@ -650,7 +913,7 @@ _GFX.gfxConversion = {
             // Push to the key.
             _GFX.cache[jsonTileset.tilesetName].tilemap[key].push( { 
                 canvas    : tilemapCanvas, // TODO: Unsure if I intend to keep these.
-                ctx       : tilemapCtx,    // TODO: Unsure if I intend to keep these.
+                // ctx       : tilemapCtx,    // TODO: Unsure if I intend to keep these.
                 orgTilemap: [ w, h, ...tilemap ],
             } );
         }
@@ -684,27 +947,32 @@ _GFX.gfxConversion = {
                     tileset: [],
                     tilemap: {},
                     json: {
-                        config  : jsonTileset.config,
+                        config  : {
+                            ...jsonTileset.config, 
+                            "translucent_color_rgba":_GFX.gfxConversion.rgb332_to_rgb32(jsonTileset.config.translucent_color)
+                        },
                         tileset : jsonTileset.tileset,
                         tilemaps: jsonTileset.tilemaps,
                     },
                 };
 
-                let tss, tse;
+                let msg;
 
                 // Convert the tileset.
-                tss = performance.now(); 
+                _JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "s", "_GFX_INITS");
                 this.convertTileset(jsonTileset);
-                tse = performance.now(); 
-                let msg1 = `TILESET : ${tilesetName}: Conversion : ${(tse-tss).toFixed(2)}ms`;
-                _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: convert tileset data: ${msg1}`, "loading");
-                
+                _JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "e", "_GFX_INITS");
+                msg = `  videoModeA: gfxConversion.convertTileset:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "pt", "_GFX_INITS").toFixed(2)}ms`;
+                _JSG.loadingDiv.addMessageChangeStatus(msg, "loading");
+                console.log(msg);
+
                 // Convert the tilemaps.
-                tss = performance.now(); 
+                _JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "s", "_GFX_INITS");
                 this.convertTilemaps(jsonTileset);
-                tse = performance.now(); 
-                let msg2 = `TILEMAPS: ${tilesetName}: Conversion : ${(tse-tss).toFixed(2)}ms`;
-                _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: convert tilemap data: ${msg2}`, "loading");
+                _JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "e", "_GFX_INITS");
+                msg = `  videoModeA: gfxConversion.convertTileset:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "pt", "_GFX_INITS").toFixed(2)}ms`;
+                _JSG.loadingDiv.addMessageChangeStatus(msg, "loading");
+                console.log(msg);
             }
             resolve();
         });
@@ -783,7 +1051,7 @@ _GFX.initChecks = function(){
     return tests;
 };
 
-// INTERNAL: Init the graphics mode and perform conversions. 
+// INTERNAL: Init the graphics mode and perform conversions. (The _APP should call this one time).
 _GFX.init = async function(canvasesDestinationDiv){
     let generateCanvasLayer = function(rec, zIndex, type){
         let dimensions = _JSG.loadedConfig.meta.dimensions;
@@ -801,6 +1069,12 @@ _GFX.init = async function(canvasesDestinationDiv){
         // Set some CSS for this canvas layer.
         if(rec.bg_color){ canvas.style["background-color"] = rec.bg_color; }
         canvas.style["z-index"] = zIndex;
+        // canvas.style["image-rendering"] = "optimizeSpeed";
+        // canvas.style["image-rendering"] = "-moz-crisp-edges";
+        // canvas.style["image-rendering"] = "-webkit-optimize-contrast";
+        // canvas.style["image-rendering"] = "-o-crisp-edges";
+        // canvas.style["image-rendering"] = "pixelated";
+        // canvas.style["-ms-interpolation-mode"] = "nearest-neighbor";
 
         canvas.classList.add("videoModeA_canvasLayer");
 
@@ -812,6 +1086,8 @@ _GFX.init = async function(canvasesDestinationDiv){
     };
 
     return new Promise(async (resolve, reject)=>{
+        _JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "s", "_GFX_INITS"); 
+
         // Do the init checks. 
         let initChecks = this.initChecks();
         
@@ -835,17 +1111,21 @@ _GFX.init = async function(canvasesDestinationDiv){
         }
 
         // Init(s).
+        let msg;
 
         // GRAPHICS CONVERSION.
         _JSG.shared.timeIt.stamp("gfxConversion", "s", "_GFX_INITS"); 
         await this.gfxConversion.init(this); 
         _JSG.shared.timeIt.stamp("gfxConversion", "e", "_GFX_INITS");
-
+        msg = `gfxConversion TOTAL:  ${_JSG.shared.timeIt.stamp("gfxConversion", "pt", "_GFX_INITS").toFixed(2)}ms`;
+        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
+        console.log(msg);
+        
         // GENERATE CANVAS LAYERS.
         _JSG.shared.timeIt.stamp("canvasLayers", "s", "_GFX_INITS"); 
+        let video_config = _JSG.loadedConfig.meta.jsgame_shared_plugins_config;
         let next_zIndex = 5;
         for(let i=0, l=_JSG.loadedConfig.meta.layers.length; i<l; i+=1){
-            
             // Get the record.
             let rec = _JSG.loadedConfig.meta.layers[i];
             
@@ -855,23 +1135,42 @@ _GFX.init = async function(canvasesDestinationDiv){
 
             generateCanvasLayer(rec, next_zIndex += 5, "user");
         }
-        // Add the fade layer last.
-        let msg1 = "init: Generating canvas layer: FADE.";
-        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
-        console.log(msg1);
-        generateCanvasLayer({ "name": "FADE" , "canvasOptions": { "alpha": true } }, next_zIndex += 5), "_FADE_";
-        _JSG.shared.timeIt.stamp("canvasLayers", "e", "_GFX_INITS");
+        if(video_config.videoModeA && video_config.videoModeA.useFade){
+            // Add the fade layer last.
+            let msg1 = "init: Generating canvas layer: FADE.";
+            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
+            console.log(msg1);
+            generateCanvasLayer({ "name": "FADE" , "canvasOptions": { "alpha": true } }, next_zIndex += 5, "_FADE_");
+            _JSG.shared.timeIt.stamp("canvasLayers", "e", "_GFX_INITS");
+        }
+        else { _JSG.shared.timeIt.stamp("canvasLayers", "e", "_GFX_INITS"); }
 
         // INIT DRAW.
         _JSG.shared.timeIt.stamp("draw", "s", "_GFX_INITS"); 
         await this.draw.init(this);          
         _JSG.shared.timeIt.stamp("draw", "e", "_GFX_INITS");
-
+        
         // INIT VRAM.
         _JSG.shared.timeIt.stamp("VRAM", "s", "_GFX_INITS"); 
         await this.VRAM.init(this);          
         _JSG.shared.timeIt.stamp("VRAM", "e", "_GFX_INITS");
+
+        // Add the fade layer if specified.
+        if(video_config.videoModeA && video_config.videoModeA.useFade){
+            // Init the videoModeA WebWorker.
+            msg1 = "init: WebWorker: _WEBW.videoModeA.video - STARTED";
+            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
+            console.log(msg1);
+            await _WEBW.videoModeA.video.init();
+        }
         
+        _JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "e", "_GFX_INITS"); 
+
+        // End of videoModeA inits.
+        msg = `Inits are complete:  TOTAL TIME: ${_JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "pt", "_GFX_INITS").toFixed(2)}ms`;
+        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
+        console.log(msg);
+
         resolve();
     });
 };
