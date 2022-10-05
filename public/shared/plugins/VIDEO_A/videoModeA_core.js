@@ -34,25 +34,23 @@ _WEBW.videoModeA = {
             else{ console.log(`ERROR: No mode? e.data: ${e.data}, e.data.mode: ${e.data.mode}, e:`, e); }
         },
         // SHARED: Will repeatedly check for the messageStates "waiting" key to be set to false before resolving.
-        waitForResp: async function(resolve, reject, ww_mode_key, waitCheckMs){
-            try{
-                return new Promise((res,rej)=>{
-                    let id = setInterval( ()=>{
-                        if( _WEBW.videoModeA.video.messageStates[ww_mode_key].waiting == false ){
-                            // console.log("waitForResp: DONE", key);
-                            clearInterval(id);
-                            res();
-                            resolve();
-                        }
-                        // else{ console.log("waitForResp: WAIT", key); }
-                    }, waitCheckMs );
-                });
-            }
-            catch(e){ reject(e); }
+        waitForResp: async function(ww_mode_key, waitCheckMs){
+            return new Promise((res,rej)=>{
+                let id = setInterval( ()=>{
+                    if( _WEBW.videoModeA.video.messageStates[ww_mode_key].waiting == false ){
+                        // console.log("waitForResp: DONE", key);
+                        clearInterval(id);
+                        res();
+                    }
+                    // else{ console.log("waitForResp: WAIT", key); }
+                }, waitCheckMs );
+            });
         },
 
         // INIT: Sends graphics data to the WebWorker for later use.
         initSend: function(waitForResp=true, waitCheckMs=1){
+            // console.log("_WEBW.videoModeA: initSend");
+
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
                 let ww_mode_key = "init";
@@ -68,7 +66,8 @@ _WEBW.videoModeA = {
                         layers    : _JSG.loadedConfig.meta.layers,
                         dimensions: _JSG.loadedConfig.meta.dimensions,
                     }
-                };console.log("DATA:", data);
+                };
+                // console.log("DATA:", data);
 
                 for(let i=0, l=_JSG.loadedConfig.meta.layers.length; i<l; i+=1){
                 }
@@ -125,27 +124,38 @@ _WEBW.videoModeA = {
                 );
 
                 // Wait until finished?
-                if(waitForResp){ await this.waitForResp(resolve, reject, ww_mode_key, waitCheckMs); resolve(); return; }
+                if(waitForResp){ 
+                    try{ await this.waitForResp(ww_mode_key, waitCheckMs); } catch(e){ reject(e); return; }
+                    resolve(_GFX.fade.fadeImages); 
+                    return; 
+                }
 
                 // No wait.
                 resolve();
             });
         },
         initReceive: function(data){
-            // Update the message state.
+            // console.log("_WEBW.videoModeA: initReceive:", data);
+
+            // Set the mode key.
             let ww_mode_key = "init";
+            
+            // Update maxFadeSteps.
+            _GFX.fade.maxFadeSteps = data.maxFadeSteps;
+
+            // Update the message state.
             this.messageStates[ww_mode_key].waiting = false;
-            // console.log("_WEBW.videoModeA: initReceive:", data, this.messageStates);
         },
 
         // VRAM: Updates to WebWorker VRAM.
         vram_updateSend   : function(waitForResp=false, waitCheckMs=1){
+            // console.log("_WEBW.videoModeA: vram_updateSend: _VRAM:", _GFX.VRAM._VRAM);
+
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
                 let ww_mode_key = "vram_update";
                 this.messageStates[ww_mode_key].waiting = true;
 
-                // console.log("_WEBW.videoModeA: vram_updateSend:", _GFX.VRAM._VRAM);
                 _WEBW.videoModeA.video.webworker.postMessage(
                     {
                         mode: "vram_update",
@@ -159,81 +169,72 @@ _WEBW.videoModeA = {
                 );
 
                 // Wait until finished?
-                if(waitForResp){ await this.waitForResp(resolve, reject, ww_mode_key, waitCheckMs); resolve(); return; }
+                if(waitForResp){ 
+                    try{ await this.waitForResp(ww_mode_key, waitCheckMs); } catch(e){ reject(e); return; }
+                    resolve(_GFX.fade.fadeImages); 
+                    return; 
+                }
 
                 // No wait.
                 resolve();
             });
         },
         vram_updateReceive: function(data){
-            let ww_mode_key = "vram_update";
-            this.messageStates[ww_mode_key].waiting = true;
+            // console.log("_WEBW.videoModeA: vram_updateReceive:", data);
 
+            // Set the mode key.
+            let ww_mode_key = "vram_update";
+            
             console.log("_WEBW.videoModeA: vram_updateReceive:", data, this.messageStates);
+
+            // Update the message state.
+            this.messageStates[ww_mode_key].waiting = false;
         },
 
         // FADE: Request/Receive fade layers.
-        fadeObj: {
-        },
-        fadeSend          : function(waitForResp=false, waitCheckMs=1){
+        fadeSend          : function(waitForResp=false, waitCheckMs=1, options={}){
+            // console.log("_WEBW.videoModeA: fadeSend");
+
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
                 let ww_mode_key = "fade";
                 this.messageStates[ww_mode_key].waiting = true;
 
-                console.log("_WEBW.videoModeA: fadeSend:", _GFX.VRAM._VRAM);
-                _WEBW.videoModeA.video.webworker.postMessage(
-                    {
-                        mode: "fade",
-                        data: {
-                            VRAM: {
-                                _VRAM: _GFX.VRAM._VRAM
-                            },
-                        }
-                    }, 
-                    []
-                );
+                let dataToSend = {
+                    "mode": "fade",
+                    "data": {
+                        "_options": options,
+                    },
+                };
+                if(options.includeVramUpdate){ dataToSend.data.VRAM = { _VRAM: _GFX.VRAM._VRAM }; }
+                
+                // console.log("_WEBW.videoModeA: fadeSend: VRAM:", _GFX.VRAM._VRAM);
+                _WEBW.videoModeA.video.webworker.postMessage( dataToSend, [] );
 
                 // Wait until finished?
-                if(waitForResp){ await this.waitForResp(resolve, reject, ww_mode_key, waitCheckMs); resolve(); return; }
+                if(waitForResp){ 
+                    try{ await this.waitForResp(ww_mode_key, waitCheckMs); } catch(e){ reject(e); return; }
+                    resolve(_GFX.fade.fadeImages); 
+                    return; 
+                }
 
-                // No wait.
+                // No wait. (fadeReceive will still write them to; _GFX.fade.fadeImages.
                 resolve();
             });
         },
         fadeReceive       : async function(data){
-            let getDataUrlFromImageData = function(imgData){
-                let canvas = document.createElement("canvas");
-                canvas.width = imgData.width;
-                canvas.height = imgData.height;
-                let ctx = canvas.getContext("2d");
-                ctx.putImageData(imgData, 0, 0);
-                console.log(canvas.toDataURL());
-            };
+            // console.log("_WEBW.videoModeA: fadeReceive:", data);
+
+            // Set the mode key.
+            let ww_mode_key = "fade";
+
+            // console.log("_WEBW.videoModeA: fadeReceive:", data, this.messageStates);
+
+            // Save the data.
+            _GFX.fade.fadeImages = data;
+
             // Update the message state.
-            this.messageStates.fade.waiting = false;
-
-            console.log("_WEBW.videoModeA: fadeReceive:", data, this.messageStates);
-            _GFX.test = data;
-
-            // Hide the "user" canvases.
-            for(let i=0, l=_GFX.canvasLayers.length; i<l; i+=1){
-                if(_GFX.canvasLayers[i].type == "user"){ _GFX.canvasLayers[i].canvas.style["display"] = "none"; }
-            }
-
-            _APP.game.gameLoop.running = false;
-            for(let c=0; c<50; c+=1){
-                for(let i=0, l=data.length; i<l; i+=1){
-                    console.log("fade:", i);
-                    _GFX.canvasLayers[3].ctx.putImageData(data[i], 0, 0);
-                    await new Promise((res,rej)=>{ setTimeout(()=>res(), 100); });
-                }
-                for(let i=data.length-1, l=0; i>=l; i-=1){
-                    console.log("fade:", i);
-                    _GFX.canvasLayers[3].ctx.putImageData(data[i], 0, 0);
-                    await new Promise((res,rej)=>{ setTimeout(()=>res(), 100); });
-                }
-            }
+            this.messageStates[ww_mode_key].waiting = false;
         },
 
         // Init this WebWorker.
@@ -261,6 +262,144 @@ _WEBW.videoModeA = {
             });
 
         },
+    },
+};
+
+// INTERNAL: Fade.
+_GFX.fade = {
+    fadeLayer         : undefined, // Will be a reference to the _GFX.canvasLayers entry having the type "_FADE_".
+    isBlocking        : false,
+    isActive          : false,
+    isComplete        : true,
+    isRequested       : false,
+    msBetweenDraws    : 0, // ms between fade frame draws. Use _JSG.shared.msToFramesToMs.
+    lastDraw          : 0, // Timestamp for the last fade frame draw.
+    maxFadeSteps      : 0, // The length of the fader array (in the WebWorker).
+    fadeStep          : 0, // 0 through maxFadeSteps.
+    fadeStepDir       : 1, // 1 is for fadeIn, -1 is for fadeOut.
+    fadeImages        : [], // Will be an array of ImageData
+    mode:"unknown",
+
+    blocking: {
+        parent: undefined,
+
+        // USER: Run this each gameLoop to handle fades. If it returns true then you should end the gameLoop.
+        doFade: async function(){
+            if(!this.parent.isComplete){ await this.processFading(); return true; }
+            return false;
+        },
+
+        // INTERNAL: Handles the drawing of the fade layers onto the fade canvas.
+        processFading: async function(){
+            return new Promise(async (resolve, reject) => {
+                // Do nothing unless the isComplete flag is unset.
+                if(!this.parent.isComplete){
+                    // Request frame data this frame.
+                    if(this.parent.isRequested){
+                        // console.log("processFading: requesting data", `fadeStepDir: ${this.parent.fadeStepDir == 1 ? "UP" : "DOWN"}`);
+                        
+                        // Request the fade images from the WebWorker and wait for them to be updated.
+                        await _WEBW.videoModeA.video.fadeSend(true, 1, { includeVramUpdate:true } );
+                        try{ await _WEBW.videoModeA.video.waitForResp("fade", 0); } catch(e){ console.log(e); return; }
+                        this.parent.isRequested = false;
+                        resolve(); return; 
+                    }
+
+                    // Draw from the requested fade frames. 
+                    else if(performance.now() - this.parent.lastDraw > this.parent.msBetweenDraws){
+                        // console.log("processFading: drawing fade frame layer.", `Layer: ${this.parent.fadeStep}`);
+
+                        // Draw the current fade frame to the fade layer. 
+                        this.parent.fadeLayer.ctx.putImageData(_GFX.fade.fadeImages[this.parent.fadeStep], 0, 0);
+
+                        // Record the last fade draw timestamp.
+                        this.parent.lastDraw = performance.now();
+
+                        // Update the fadeStep by fadeStepDir.
+                        // console.log("this.parent.fadeStepDir:", this.parent.fadeStepDir, this.parent.fadeStep);
+                        this.parent.fadeStep += this.parent.fadeStepDir;
+
+                        // Last frame of fadeUp?
+                        if(this.parent.fadeStep >= this.parent.maxFadeSteps){
+                            // console.log("Last frame: fadeUp");
+                            this.parent.isActive       = false; 
+                            this.parent.isBlocking     = false; 
+                            this.parent.isComplete     = true; 
+                            this.parent.fadeLayer.ctx.clearRect(0,0, this.parent.fadeLayer.canvas.width, this.parent.fadeLayer.canvas.height);
+                            // this.parent.fadeLayer.canvas.classList.add("cleared");
+                        }
+                        
+                        // Last frame of fadeDown?
+                        else if(this.parent.fadeStep < 0){
+                            // console.log("Last frame: fadeDown");
+                            this.parent.isActive       = false; 
+                            this.parent.isBlocking     = false; 
+                            this.parent.isComplete     = true; 
+                            // this.parent.fadeLayer.ctx.clearRect(0,0, this.parent.fadeLayer.canvas.width, this.parent.fadeLayer.canvas.height);
+                            // this.parent.fadeLayer.canvas.classList.add("cleared");
+                        }
+                        resolve(); return; 
+                    }
+
+                    resolve(); return; 
+                }
+                else{
+                    resolve();
+                }
+            });
+        },
+
+        // USER: Sets up the fade to fade from step 0 to the last step.
+        fadeIn: async function(speedMs, blocking){
+            // console.log("--------------fadeIn was called");
+            // Set the fade flags.
+            this.parent.isActive       = true; 
+            this.parent.isBlocking     = blocking; 
+            this.parent.fadeStep       = 0; 
+            this.parent.fadeStepDir    = 1; 
+            this.parent.msBetweenDraws = speedMs;
+            // this.parent.lastDraw       = 0;
+            this.parent.lastDraw       = performance.now()-speedMs;
+            this.parent.isComplete     = false;
+            this.parent.fadeLayer.canvas.classList.remove("cleared");
+            this.parent.isRequested    = true;
+            this.parent.mode    = "fadeIn"
+        },
+
+        // USER: Sets up the fade to fade from the last step to 0.
+        fadeOut: async function(speedMs, blocking){
+            // console.log("--------------fadeOut was called");
+            // Set the fade flags.
+            this.parent.isActive       = true; 
+            this.parent.isBlocking     = blocking; 
+            this.parent.fadeStep       = this.parent.maxFadeSteps - 1 ;
+            this.parent.fadeStepDir    = -1; 
+            this.parent.msBetweenDraws = speedMs;
+            // this.parent.lastDraw       = 0;
+            this.parent.lastDraw       = performance.now()-speedMs;
+            this.parent.isComplete     = false;
+            this.parent.fadeLayer.canvas.classList.remove("cleared");
+            this.parent.isRequested    = true;
+            this.parent.mode    = "fadeOut";
+        },
+    },
+
+    // TODO
+    non_blocking: {
+        parent: undefined,
+    },
+
+    // Init function for the draw object.
+    init: async function(){
+        return new Promise(async (resolve, reject)=>{
+            this.blocking.parent     = this; 
+            this.non_blocking.parent = this; 
+
+            // Set a reference to the fade layer. 
+            this.fadeLayer = _GFX.canvasLayers.find( layer => layer.type == "_FADE_" );
+
+            resolve();
+        });
     },
 };
 
@@ -1155,6 +1294,9 @@ _GFX.init = async function(canvasesDestinationDiv){
         await this.VRAM.init(this);          
         _JSG.shared.timeIt.stamp("VRAM", "e", "_GFX_INITS");
 
+        // TODO: Sprites.
+        //
+
         // Add the fade layer if specified.
         if(video_config.videoModeA && video_config.videoModeA.useFade){
             // Init the videoModeA WebWorker.
@@ -1162,6 +1304,7 @@ _GFX.init = async function(canvasesDestinationDiv){
             _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
             console.log(msg1);
             await _WEBW.videoModeA.video.init();
+            await _GFX.fade.init();
         }
         
         _JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "e", "_GFX_INITS"); 
