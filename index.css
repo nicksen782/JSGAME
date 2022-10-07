@@ -90,6 +90,7 @@ input#canvasScaleSlider {
 }
 .navcol:hover{
 	background-color: rgb(216, 216, 216);
+	background-color: rgba(178, 167, 187, 0.95);
 }
 .navcol:hover .navbutton_label{
 	color:black;
@@ -117,7 +118,7 @@ input#canvasScaleSlider {
 	cursor: pointer;
 }
 .navrow_left {display:inline-block;position: relative;left: 0px;overflow: hidden;white-space: nowrap;text-align: left;width: 40%;/* background-color: rosybrown; */font-size: 1.0em;line-height: 1.25em;}
-.navrow_right{display:inline-block;position: absolute;left: 250px;overflow: hidden;white-space: nowrap;text-align: left;/* width: 60%; */font-size: 0.75em;line-height: 1.75em;/* background-color: cadetblue; */}
+.navrow_right{display:inline-block;position: absolute;left: 250px;overflow: hidden;white-space: nowrap;text-align: left;/* width: 60%; */width: 290px;font-size: 0.75em;line-height: 1.75em;/* background-color: cadetblue; *//* background-color: rgba(178, 178, 178, 0.7); */font-style: italic;}
 .navbutton{
 	border: none;
 	outline: none;
@@ -144,7 +145,8 @@ input#canvasScaleSlider {
 .navbutton_content{
 	display: none;
 	position: absolute;
-	background-color: rgba(216, 216, 216, 0.9);
+	/* background-color: rgba(216, 216, 216, 0.95); */
+	background-color: rgba(178, 167, 187, 0.95);
 	min-width: 446px;
 	width: 98%;
 	box-shadow: 3px 3px 3px 3px #666666;
@@ -159,7 +161,7 @@ input#canvasScaleSlider {
 /* NAVIGATION BAR */
 
 #siteContainerDiv1 {
-	min-width: 600px;
+	min-width: 570px;
 	/* background-color: white; */
 }
 
@@ -189,7 +191,7 @@ input#canvasScaleSlider {
     position: relative;
     margin: auto;
     border: 5px solid #333333;
-    margin-top: 4px;
+    margin-top: 3px;
     margin-bottom: 3px;
 }
 
@@ -200,6 +202,7 @@ input#canvasScaleSlider {
 	border: 2px solid #000000;
 	/* border: 2px solid #5d5c5c; */
 	background-color: black;
+	position: relative;
 }
 
 #indicator_preGame {
@@ -243,7 +246,7 @@ input#canvasScaleSlider {
 
 #indicator_extraText{
 	display: none;
-	background-color: rgba(227, 230, 0, 0.75);
+	background-color: rgba(227, 230, 0, 0.5);
 	border: 2px dashed black;
 	padding: 5px;
 	position: absolute;
@@ -343,17 +346,25 @@ div#sideDiv {
 	display: inline-block;
 	position: relative;
 	border: 5px solid #333333;
-	background-color: #5d5c5c;
-	background-color: rgba(216, 216, 216, 0.9);
+	/* background-color: #5d5c5c; */
+	/* background-color: rgba(216, 216, 216, 0.9); */
 	margin-top: 5px;
+	vertical-align: top;
+	min-width: 450px;
+	min-height: 570px;
+	text-align: left;
+	overflow: auto;
 }
 div#sideDiv.hide {
+	display: none;
+}
+div#debug_container.hide {
 	display: none;
 }
 
 #gameControls {
 	padding: 0px;
-	padding-left: 5px;
+	/* padding-left: 5px; */
 	position: relative;
 	touch-action: manipulation;
 }
@@ -648,9 +659,9 @@ span#topBar_line1_gamename {
 
 #bot_authors table {width: 90%;}
 #bot_authors table td:nth-child(1) {width:10%; }
-#bot_authors table td:nth-child(2) {width: 30%;}
+#bot_authors table td:nth-child(2) {width: 40%;}
 #bot_authors table td:nth-child(3) {width: 20%;}
-#bot_authors table td:nth-child(4) {width: 40%;}
+#bot_authors table td:nth-child(4) {width: 30%;}
 
 #bottom_bar_gamepadDetected{
 	background-color:#5d5c5c;
@@ -674,4 +685,11 @@ span#topBar_line1_gamename {
 
 div#gamepad_ConnectionFound {
     height: 440px;
+}
+
+div#debug_container {
+    /* background-color: #5d5c5c; */
+    /* background-color: rgba(216, 216, 216, 0.9); */
+    background-color: #7d7d7d;
+    /* background-color: rgba(216, 216, 216, 0.9); */
 }

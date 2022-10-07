@@ -124,16 +124,19 @@ core.GRAPHICS.WORKERS      = {
 
 						// Adjust the source image if the destination container was rotated.
 						if( (flags.ROT !== false && flags.ROT !== 0) ){
-							dst_ctx.drawImage(
-								src_canvas,
-								newX + newVRAM.x_offset,
-								newY + newVRAM.y_offset
-							);
+							// dst_ctx.drawImage(
+							// 	src_canvas,
+							// 	newX + newVRAM.x_offset,
+							// 	newY + newVRAM.y_offset
+							// );
+
+							dst_ctx.drawImage( src_canvas, 0, 0, src_canvas.width, src_canvas.height, newX + newVRAM.x_offset, newY + newVRAM.y_offset, src_canvas.width, src_canvas.height);
 						}
 
 						// Draw the source image as-is.
 						else{
-							dst_ctx.drawImage(src_canvas, newX, newY);
+							// dst_ctx.drawImage(src_canvas, newX, newY);
+							dst_ctx.drawImage( src_canvas, 0, 0, src_canvas.width, src_canvas.height, newX, newY, src_canvas.width, src_canvas.height);
 						}
 
 						// Save the new canvas to the canvas key in the newVRAM object.
@@ -254,6 +257,55 @@ core.GRAPHICS.FUNCS        = {
 	 * @namespace core.GRAPHICS.FUNCS.USER
 	*/
 	USER : {
+		/**
+		 * @summary Returns the actual tilemap entry (includes canvas, imgData, ctx, numUsed.)
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {string} tileset --
+		 * @param    {string} tilemap --
+		 *
+		 * @example _CGFU.getRealTilemap("tilesSP1", "badGuySprite1");
+		*/
+		getRealTilemap : function(tileset, tilemap){
+			// Confirm that all arguments were provided.
+			if(tileset   == undefined){ let str = ["=E= getRealTilemap: tileset is undefined."  ]; throw Error(str); }
+			if(tilemap   == undefined){ let str = ["=E= getRealTilemap: tilemap is undefined."  ]; throw Error(str); }
+
+			// Make sure that the specified tileset and tilemap exist.
+			if(_CGA.tilesets[tileset]          == undefined){ let str = ["=E= getRealTilemap: tileset is invalid."  ]; throw Error(str); }
+			if(_CGA.tilemaps[tileset][tilemap] == undefined){ let str = ["=E= getRealTilemap: tilemap is invalid."  ]; throw Error(str); }
+
+			let realMap       = core.GRAPHICS.ASSETS.tilemaps[tileset][tilemap];
+			let widthInTiles  = realMap.canvas.width  / _CS.TILE_WIDTH  << 0;
+			let heightInTiles = realMap.canvas.height / _CS.TILE_HEIGHT << 0;
+
+			return {
+				"realMap"       : realMap      ,
+				"widthInTiles"  : widthInTiles ,
+				"heightInTiles" : heightInTiles,
+			};
+		},
+		/**
+		 * @summary Returns the original tilemap entry (as array.)
+		 * @memberof core.GRAPHICS.FUNCS.USER
+		 * @param    {string} tileset --
+		 * @param    {string} tilemap --
+		 *
+		 * @example _CGFU.getOriginalTilemap("tilesSP1", "badGuySprite1");
+		*/
+		getOriginalTilemap : function(tileset, tilemap){
+			// Confirm that all arguments were provided.
+			if(tileset   == undefined){ let str = ["=E= getRealTilemap: tileset is undefined."  ]; throw Error(str); }
+			if(tilemap   == undefined){ let str = ["=E= getRealTilemap: tilemap is undefined."  ]; throw Error(str); }
+
+			// Make sure that the specified tileset and tilemap exist.
+			if(_CGA.tilesets[tileset]          == undefined){ let str = ["=E= getRealTilemap: tileset is invalid."  ]; throw Error(str); }
+			if(_CGA.tilemaps[tileset][tilemap] == undefined){ let str = ["=E= getRealTilemap: tilemap is invalid."  ]; throw Error(str); }
+
+			let orgMap       = core.GRAPHICS.ASSETS._original_data.tilemaps[tileset][tilemap];
+
+			return orgMap;
+		},
+
 		/**
 		 * @summary   Used to specify the draw position coords on the OUTPUT canvas.
 		 * @memberof core.GRAPHICS.FUNCS.USER
@@ -686,7 +738,7 @@ core.GRAPHICS.FUNCS        = {
 				let NEW_map_name     = tilemap+"_"+string          ;
 
 				// Get the original tilemap for the specified tileset.
-				let fontmap = _CGA._original_data.tilemaps[tileset][tilemap];
+				let fontmap     = _CGA._original_data.tilemaps[tileset][tilemap];
 				let fontmap_len = fontmap.length -2 ; // -2 is for skipping the first two indexes.)
 
 				// Create the placeholders if they do not already exist.
@@ -732,9 +784,25 @@ core.GRAPHICS.FUNCS        = {
 						// Get the tileid and tileIndex.
 						tileid    = string[charIndex].charCodeAt() - 32;
 						tileIndex = fontmap[tileid+2];
+						// tileIndex = tileid;
 
 						// Index within the font map?
-						if(tileIndex >= fontmap_len){ console.log("tile out of counds."); return; }
+						// if(tileIndex >= fontmap_len){
+						if(tileid >= fontmap_len){
+							console.log(
+								"tile out of bounds.",
+								"letter:"   , letter,
+								"tileid:"   , tileid,
+								"tileIndex:", tileIndex,
+								"x:"        , x,
+								"y:"        , y,
+								"tileset:"  , tileset,
+								"tilemap:"  , tilemap,
+								"_CGA.tilesets["+tileset+"]["+tileIndex+"]",
+								""
+							);
+							return;
+						}
 
 						// New line char?
 						if(letter=="\n"){_x=0; _y+=1; return; }
@@ -743,11 +811,7 @@ core.GRAPHICS.FUNCS        = {
 						tile = _CGA.tilesets[tileset][tileIndex];
 
 						// Draw the tile.
-						ctx.drawImage(
-							tile.canvas            , // image
-							(_x * _CS.TILE_WIDTH)  , // dx
-							(_y * _CS.TILE_HEIGHT)   // dy
-						);
+						ctx.drawImage( tile.canvas, 0, 0, _CS.TILE_WIDTH, _CS.TILE_HEIGHT, (_x * _CS.TILE_WIDTH), (_y * _CS.TILE_WIDTH), _CS.TILE_WIDTH, _CS.TILE_HEIGHT);
 
 						// Increment _x.
 						_x+=1;
@@ -771,7 +835,6 @@ core.GRAPHICS.FUNCS        = {
 
 			// Draw each letter individually.
 			else{
-				console.log("OLD WAY!");
 				string=Array.from(string);
 
 				// Turn the string into an iterable array and draw each letter individually.
@@ -836,7 +899,9 @@ core.GRAPHICS.FUNCS        = {
 		 * @example // Fade down from full color to black. (Once completed, remain at full black.)
 			 * _CGFU.chainFade('DOWN', 0, true );
 		*/
-		chainFade           : function(fadeDirection, speed){
+		chainFade           : function(fadeDirection, speed, blockLogicWhileInProgress){
+			if(blockLogicWhileInProgress==undefined){ blockLogicWhileInProgress=false; }
+
 			let stayBlack=false;
 			// _CGFU.chainFade("UP", 0, false);
 			// _CGFU.chainFade("DOWN", 0, true);
@@ -902,6 +967,10 @@ core.GRAPHICS.FUNCS        = {
 			// Set the new speed value.
 			core.GRAPHICS.FADE.msBeforeChange=speed;
 			core.GRAPHICS.FADE.lastChange=performance.now();
+
+			// Block game logic while fading?
+			if(blockLogicWhileInProgress){ core.GRAPHICS.FADE.blockLogic=true ; }
+			else                         { core.GRAPHICS.FADE.blockLogic=false; }
 
 			//
 			core.GRAPHICS.FADE.chainFadeActive=true;
@@ -1101,12 +1170,12 @@ core.GRAPHICS.FUNCS        = {
 			if(useGrid==true){
 				// In bounds on x?
 				if(x >= core.SETTINGS.VRAM_TILES_H) {
-					console.info("x is out of bounds.", x, core.SETTINGS.VRAM_TILES_H, __calledBy);
+					console.info("x is out of bounds.", x, core.SETTINGS.VRAM_TILES_H, __calledBy, data);
 					return;
 				}
 				// In bounds on y?
 				if(y >= core.SETTINGS.VRAM_TILES_V) {
-					console.info("y is out of bounds.", y, core.SETTINGS.VRAM_TILES_V, __calledBy);
+					console.info("y is out of bounds.", y, core.SETTINGS.VRAM_TILES_V, __calledBy, data);
 					return;
 				}
 
@@ -1118,12 +1187,12 @@ core.GRAPHICS.FUNCS        = {
 			else{
 				// In bounds on x?
 				if(x >= core.SETTINGS.VRAM_TILES_H * _CS.TILE_WIDTH) {
-					console.info("x is out of bounds.", x * _CS.TILE_WIDTH);
+					console.info("x is out of bounds.", x * _CS.TILE_WIDTH, data);
 					return;
 				}
 				// In bounds on y?
 				if(y >= core.SETTINGS.VRAM_TILES_V * _CS.TILE_HEIGHT) {
-					console.info("y is out of bounds.", y * _CS.TILE_HEIGHT);
+					console.info("y is out of bounds.", y * _CS.TILE_HEIGHT, data);
 					return;
 				}
 
@@ -1188,12 +1257,14 @@ core.GRAPHICS.FUNCS        = {
 					let newY       = obj.newY  ;
 
 					if( (flags.ROT !== false && flags.ROT !== 0) ){
-						dst_ctx.drawImage(imgObj.canvas, newX+newVRAM_entry.x_offset, newY+newVRAM_entry.y_offset);
+						// dst_ctx.drawImage(imgObj.canvas, newX+newVRAM_entry.x_offset, newY+newVRAM_entry.y_offset);
+						dst_ctx.drawImage( imgObj.canvas, 0, 0, newVRAM_entry.w, newVRAM_entry.h, newX+newVRAM_entry.x_offset, newY+newVRAM_entry.y_offset, newVRAM_entry.w, newVRAM_entry.h);
 					}
 					else{
 						newVRAM_entry.w         = dst_canvas.width  ;
 						newVRAM_entry.h         = dst_canvas.height ;
-						dst_ctx.drawImage(imgObj.canvas, newX, newY);
+						// dst_ctx.drawImage(imgObj.canvas, newX, newY);
+						dst_ctx.drawImage( imgObj.canvas, 0, 0, newVRAM_entry.w, newVRAM_entry.h, newX, newY, newVRAM_entry.w, newVRAM_entry.h);
 					}
 
 					newVRAM_entry.canvas         = dst_canvas ;
@@ -1320,7 +1391,8 @@ core.GRAPHICS.FUNCS        = {
 			src_canvas.height = newVRAM_entry.h ;
 			JSGAME.SHARED.setpixelated(src_canvas);
 			let src_ctx       = src_canvas.getContext("2d") ;
-			src_ctx.drawImage(imgObj_canvas, 0, 0);
+			// src_ctx.drawImage(imgObj_canvas, 0, 0);
+			src_ctx.drawImage( imgObj_canvas, 0, 0, newVRAM_entry.w, newVRAM_entry.h, 0, 0, newVRAM_entry.w, newVRAM_entry.h);
 
 			// Create the destination canvas.
 			let newX=0;
@@ -1514,7 +1586,8 @@ core.GRAPHICS.FUNCS        = {
 				core.GRAPHICS.DEBUG.start("update_layers");
 
 				let layers = Object.keys(core.SETTINGS.layers);
-				for(let i=0; i<layers.length; i+=1){
+				let layersLen = layers.length ;
+				for(let i=0; i<layersLen; i+=1){
 					// Get draw start time.
 					core.GRAPHICS.DEBUG.start("layer_"+layers[i]);
 
@@ -1570,8 +1643,10 @@ core.GRAPHICS.FUNCS        = {
 							// Does this tile have the drawThis flag set?
 							if(VRAM[t].flags.drawThis || REDRAW){
 								// Position and Dimension
-								let x = VRAM[t].x ;
-								let y = VRAM[t].y ;
+								let x = VRAM[t].x << 0 ;
+								let y = VRAM[t].y << 0 ;
+								let w = VRAM[t].w ;
+								let h = VRAM[t].h ;
 								let flags = VRAM[t].flags ;
 								let _textstrings=VRAM[t]._textstrings ;
 
@@ -1635,12 +1710,14 @@ core.GRAPHICS.FUNCS        = {
 									throw Error(str);
 								}
 
-								// Draw the tile.
+								// If this is a rotated image then apply the offset.
 								if( (flags.ROT !== false && flags.ROT !== 0) ){
 									if(VRAM[t].x_offset){ x -= VRAM[t].x_offset ; }
 									if(VRAM[t].y_offset){ y -= VRAM[t].y_offset ; }
 								}
-								ctx.drawImage( finalImage, (x) << 0, (y) << 0 );
+								// Draw the tile.
+								// ctx.drawImage( finalImage, x, y );
+								ctx.drawImage( finalImage, 0, 0, w, h, x, y, w, h);
 
 								// Clear the drawThis flag.
 								VRAM[t].flags.drawThis=false;
@@ -1707,11 +1784,12 @@ core.GRAPHICS.FUNCS        = {
 					let tempOutput_ctx = core.GRAPHICS.ctx.pre_OUTPUT;
 					tempOutput_ctx.clearRect( 0,0, tempOutput.width, tempOutput.height );
 
-					// Draw each layer to the OUTPUT in the order specified by the gamesettings.json file.
+					// Draw each layer to the OUTPUT in the order specified by the gamesettings.jsonc file.
 					for(let i=0; i<core.SETTINGS.layerDrawOrder.length; i+=1){
 						let layerName = core.SETTINGS.layerDrawOrder[i];
 						let canvas = core.GRAPHICS.canvas[layerName];
-						tempOutput_ctx.drawImage( canvas, 0, 0) ;
+						// tempOutput_ctx.drawImage( canvas, 0, 0) ;
+						tempOutput_ctx.drawImage( canvas, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
 					}
 				}
 
@@ -1749,16 +1827,7 @@ core.GRAPHICS.FUNCS        = {
 					let x_offset = core.GRAPHICS.DATA.FLAGS.OUTPUT.x_offset;
 					let y_offset = core.GRAPHICS.DATA.FLAGS.OUTPUT.y_offset;
 
-					// Apply the current level of fading.
-					// let fade_alphas     = core.GRAPHICS.FADE.alphas;
-					// let fade_alphaIndex = core.GRAPHICS.FADE.alphaIndex;
-					// core.GRAPHICS.ctx.OUTPUT.globalAlpha = fade_alphas[fade_alphaIndex] ;
-
-					core.GRAPHICS.ctx.OUTPUT.drawImage(
-						tempOutput,
-						0 + x_offset,
-						0 + y_offset
-					);
+					core.GRAPHICS.ctx.OUTPUT.drawImage( tempOutput, 0, 0, tempOutput.width, tempOutput.height, 0, 0, tempOutput.width, tempOutput.height);
 
 					core.GRAPHICS.DATA.FLAGS.OUTPUT.draw=false;
 
@@ -1786,11 +1855,13 @@ core.GRAPHICS.FUNCS        = {
 			let fadeData = core.GRAPHICS.FADE;
 
 			if(fadeData.chainFadeActive){
+				let now = performance.now();
+
 				// Is it time to change the fade level?
-				if(performance.now()-fadeData.lastChange >= fadeData.msBeforeChange){
+				if(now-fadeData.lastChange >= fadeData.msBeforeChange){
 
 					// Set the last change timestamp.
-					fadeData.lastChange = performance.now();
+					fadeData.lastChange = now;
 
 					// Increment?
 					if     (fadeData.fadeDirection ==  1){
@@ -2497,7 +2568,10 @@ core.GRAPHICS.init         = {
 					for(let x=0; x<mapWidth; x+=1){
 						let tileIndex = org_map[ (y * mapWidth) + x + 2 ];
 						let tile = _CGA.tilesets[tilesetName][tileIndex];
-						ctx.drawImage(tile.canvas, x*tile_w, y*tile_h);
+						// ctx.drawImage(tile.canvas, x*tile_w, y*tile_h);
+
+						ctx.drawImage( tile.canvas, 0, 0, tile_w, tile_h, x*tile_w, y*tile_h, tile_w, tile_h);
+						// src_ctx.drawImage( imgObj_canvas, 0, 0, newVRAM_entry.w, newVRAM_entry.h, 0, 0, newVRAM_entry.w, newVRAM_entry.h);
 					}
 				}
 

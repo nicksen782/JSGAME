@@ -8,7 +8,7 @@ OUTPUT = Output canvas    - Combination of the other 4 layers. (no alpha.)
 
 A "game.runOnce" function must be created in your game. It will be called right before your game starts.
 The "game.runOnce" function will setup the following:
-	settingsSetup : From gamesettings.json.
+	settingsSetup : From gamesettings.jsonc.
 	DOMSetup      : DOM cache for any DOM in your game. Should include a reference to "gameCanvas_DIV".
 	canvasSetup   : Sets up the canvas and ctx for each canvas, dimensions, and adds the output canvas layer to "gameCanvas_DIV".
 	vramSetup     : Creates (blank) ArrayBuffers for the VRAMs.

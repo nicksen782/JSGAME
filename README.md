@@ -44,7 +44,7 @@ chmod +x _install.sh
 
 ## Install a game! (Manual example)
 * To manually install a game you must copy the game directory to JS_GAMES.
-* Then you must create an entry in the APP/gamelist.json file.
+* Then you must create an entry in the APP/gamelist.jsonc file.
 
 ```sh
 # Create/edit the JS_GAME/APP/gameslist.json file to look something like this:

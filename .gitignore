@@ -53,7 +53,7 @@ Thumbs.db
 _gitignoredir
 *-error.txt
 api/phpliteadmin.php
-gamelist.json
+gamelist.jsonc
 DESIGN.TXT
 BKgamelist.json
 COMMITMSG.TXT

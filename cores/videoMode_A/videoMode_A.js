@@ -2241,6 +2241,7 @@ _CFG.init = function(){
 		// Copy some PRELOAD settings into _CS.
 		let settingsSetup = function(){
 			return new Promise(function(res_settingsSetup, rej_settingsSetup){
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_settingsSetup", "ON");
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_settingsSetup"                    , "START");
 
 				// Set the game settings and game consts.
@@ -2301,6 +2302,7 @@ _CFG.init = function(){
 		// Copies some DOM into the core DOM cache.
 		let DOMSetup    = function(){
 			return new Promise(function(res_DOMSetup, rej_DOMSetup){
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_DOMSetup", "ON");
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_DOMSetup"                         , "START");
 
 					// DOM cache (GAME ELEMENTS ONLY.)
@@ -2313,6 +2315,7 @@ _CFG.init = function(){
 		// Configure canvases for the video mode.
 		let canvasSetup = function(){
 			return new Promise(function(res_canvasSetup, rej_canvasSetup){
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_canvasSetup", "ON");
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_canvasSetup"                      , "START");
 
 				// Configure the canvas(es)
@@ -2380,6 +2383,7 @@ _CFG.init = function(){
 		// Create VRAM arrays.
 		let vramSetup   = function(){
 			return new Promise(function(res_vramSetup, rej_vramSetup){
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_vramSetup", "ON");
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_vramSetup"                        , "START");
 
 				let VRAM_ADDR_SIZE = JSGAME.PRELOAD.PHP_VARS.VRAM_ADDR_SIZE;
@@ -2419,6 +2423,7 @@ _CFG.init = function(){
 		let graphicsSetup = function(){
 			// Download and convert the source graphics (first convert.)
 			return new Promise(function(res_graphicsSetup, rej_graphicsSetup){
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_graphicsSetup", "ON");
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_graphicsSetup"                    , "START");
 
 				let gamedir = parentPath + JSGAME.PRELOAD.gameselected_json.gamedir;
@@ -2598,7 +2603,6 @@ _CFG.init = function(){
 			// Getting here means that we do not have support for OffscreenCanvas.
 			return false;
 		};
-
 
 		// Determine if OffscreenCanvas is supported.
 		_CC.OffscreenCanvas_supported = featureDetect_OffscreenCanvas();
@@ -2860,20 +2864,24 @@ _CFG.init = function(){
 
 				// Convert core.ASSETS.graphics.tiles to an array of canvases.
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_post_graphicsConversion" , "START");
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_post_graphicsConversion", "ON");
 				post_graphicsConversion();
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_post_graphicsConversion" , "END");
 
 				// Add the font data from PRELOAD into _CG.fonts.
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_applyFontSettings"       , "START");
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_applyFontSettings", "ON");
 				applyFontSettings();
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_applyFontSettings"       , "END");
 
 				// Make sure all canvases are cleared.
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_clearAllCanvases"        , "START");
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_clearAllCanvases", "ON");
 				_CFG.clearAllCanvases();
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_clearAllCanvases"        , "END");
 
 				JSGAME.SHARED.PERFORMANCE.stamp("VIDEO_INIT_initWebworker"           , "START");
+				JSGAME.GUI.preGame_indicator("VIDEO_INIT_initWebworker", "ON");
 				core.WORKERS.VIDEO = new Worker( JSGAME.TEMP["videoMode_A_webworker.js"] );
 				URL.revokeObjectURL( JSGAME.TEMP["videoMode_A_webworker.js"] );
 				delete JSGAME.TEMP["videoMode_A_webworker.js"] ;

@@ -330,11 +330,17 @@ JSGAME.GUI={
 			"loadingGame"        : "Loading game." ,
 			"loadedGame"         : "Loaded game." ,
 			"gameInited"         : "Initialized game." ,
-			// "gameReady"          : "Game is ready." ,
 			"gestureNeeded"      : "Please click/touch anywhere\nin this window to continue." ,
 			"gestureNeeded_done" : "Gesture detected." ,
-			"gamelistEmpty"      : "No games are installed.\n\nYou will need to install games and\nupdate the gamelist.json file.\n" ,
+			"gamelistEmpty"      : "No games are installed.\n\nYou will need to install games and\nupdate the gamelist.jsonc file.\n" ,
 		};
+
+		let text="";
+		if(textObj[msgKey]){ text=textObj[msgKey]; }
+		else               { text=msgKey; }
+
+		// If this is run from PRESETUP then this key will not exist yet. Make it now.
+		if(!JSGAME.DOM.indicator_preGame){ JSGAME.DOM.indicator_preGame = document.getElementById("indicator_preGame"); }
 
 		if(newState=="OFF"){
 			JSGAME.DOM.indicator_preGame.classList.remove("show");
@@ -342,7 +348,7 @@ JSGAME.GUI={
 		}
 		if(newState=="ON"){
 			JSGAME.DOM.indicator_preGame.classList.add("show");
-			JSGAME.DOM.indicator_preGame.innerText=textObj[msgKey];
+			JSGAME.DOM.indicator_preGame.innerText=text;
 		}
 
 	},

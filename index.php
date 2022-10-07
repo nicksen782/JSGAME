@@ -28,7 +28,7 @@
 	<div style="display:inline-block">
 
 		<!-- Holds the main container and the side div. -->
-		<div id="siteContainerDiv1">
+		<div id="siteContainerDiv1" class="inline_block">
 			<!-- MODALS - HIDDEN BY DEFAULT -->
 			<div id="entireBodyDiv" class="modals" onclick=""></div>
 			<div class="modals verticalCenter" id="panel_config_gamepads">
@@ -199,7 +199,7 @@
 									<div class="navrow_right">(Opens in new tab)</div>
 								</div>
 
-								<!-- Links from the game's gamesettings.json file.  -->
+								<!-- Links from the game's gamesettings.jsonc file.  -->
 								<!--  -->
 							</div>
 						</div>
@@ -307,7 +307,7 @@
 	<div style="display:inline-block">
 
 		<div id="sideDiv" class="hide">
-			<div id="debug_container"></div>
+			<div id="debug_container" class="hide"></div>
 			<!-- </div> -->
 		</div>
 

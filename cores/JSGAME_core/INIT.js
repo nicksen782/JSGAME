@@ -182,6 +182,7 @@ JSGAME.INIT={
 		document.onmouseenter=JSGAME.SHARED.toggleDocumentHidden;
 
 		// DOM cache.
+		JSGAME.GUI.preGame_indicator("... INIT MAIN DOM CACHE ...", "ON");
 		JSGAME.DOM.entireBodyDiv              = document.getElementById("entireBodyDiv")         ;
 		JSGAME.DOM.bottom_bar_gamepadDetected = document.getElementById("bottom_bar_gamepadDetected")         ;
 
@@ -223,6 +224,7 @@ JSGAME.INIT={
 		JSGAME.consts.allowedButtons = [ "BTN_UP" , "BTN_DOWN" , "BTN_LEFT" , "BTN_RIGHT" , "BTN_SELECT", "BTN_START", "BTN_B", "BTN_A", "BTN_SL"   , "BTN_SR"    , "BTN_Y", "BTN_X" ];
 
 		// Add the listeners for real gamepads.
+		JSGAME.GUI.preGame_indicator("... INIT GAMEPAD SUPPORT ...", "ON");
 		JSGAME.GAMEPADS.CONFIG.init();
 
 		// Can we load the game?

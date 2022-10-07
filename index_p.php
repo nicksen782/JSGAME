@@ -314,6 +314,7 @@ function preFlightCheck3( ){
 	// Also returns the filenames of each minified file.
 
 	global $_appdir;
+	global $devServer;
 
 	$alwaysReMinify=false;
 	// $alwaysReMinify=true;
@@ -443,12 +444,12 @@ function removeCommentsFromFile( $filepath ){
 	$regex = [
 		// (pattern                            , replace)
 		[ '/\r\n/'                             , "\n"   ] , // Normalize to Unix line endings.
-		[ '/  +/'                              , ""     ] , // Multiple spaces (to become 0 spaces)
-		[ '/^\s+|\s+$/'                        , ""     ] , // Strip leading and trailing spaces
+		[ '/  +/'                              , ""     ] , // Remove multiple spaces (to become 0 spaces)
+		[ '/^\s+|\s+$/'                        , ""     ] , // Remove leading and trailing spaces
 		[ '/\t/'                               , ""     ] , // Remove tabs.
-		['#^\s*//.+$#m'                        , ""     ] , // Single-line comments ( // )   // https://stackoverflow.com/a/5419241/2731377
-		[ '/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/' , ""     ] , // Multi-line comments ( /* */ ) // https://www.regextester.com/94246
-		[ '/^\s*[\r\n]/m'                      , ""     ] , // Blank lines.
+		['#^\s*//.+$#m'                        , ""     ] , // Remove Single-line comments ( // )   // https://stackoverflow.com/a/5419241/2731377
+		[ '/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/' , ""     ] , // Remove Multi-line comments ( /* */ ) // https://www.regextester.com/94246
+		[ '/^\s*[\r\n]/m'                      , ""     ] , // Remove Blank lines.
 	];
 
 	// Text of the output file.
@@ -479,6 +480,7 @@ function removeCommentsFromFile( $filepath ){
 
 function init2(){
 	global $_appdir;
+	global $devServer;
 
 	$combinedFiles_jsgame = preFlightCheck3();
 	$referrer = $combinedFiles_jsgame['_referrer'] ;
@@ -539,29 +541,47 @@ function init2(){
 	// gameslist.json
 	// **************
 
-	// Is there a gamelist.json file? If not then use the built-in blank one.
-	$gamelistjson_file = "gamelist.json";
+	// Is there a gamelist.jsonc file? If not then use the built-in blank one.
+	$gamelistjson_file = "gamelist.jsonc";
 	if( ! file_exists ($gamelistjson_file) ) {
 		// Create the gamelist file from the template.
 		$oldmask = umask(0);
-		$src     = "template_gamelist.json" ;
-		$dest    = "gamelist.json" ;
+		$src     = "template_gamelist.jsonx" ;
+		$dest    = "gamelist.jsonc" ;
 		copy( $src , $dest ); // Copy the template file into a new file.
 		chmod($dest, 0666);   // Make sure that other users can write to it.
 		umask($oldmask);
 	}
 
-	// Was the gamelist.json file found? Get it and json_decode it.
+	// Was the gamelist.jsonc file found? Get it and json_decode it.
 	if( file_exists ($gamelistjson_file) )   {
-		// Set the flag indicating the gamelist.json file was found.
+		// Set the flag indicating the gamelist.jsonc file was found.
 		$PHP_VARS['gamelist_json']=true;
 
 		// Strip out all comments.
-		// Get a handle on the 'games' key in the gamelist.json file.
-		$games=json_decode(
+		// Get a handle on the 'games' key in the gamelist.jsonc file.
+		$_tmp_games=json_decode(
 			removeCommentsFromFile( $gamelistjson_file ),
 			true
 		)['games'];
+
+		// Remove all entries of not available or devonly.
+		$games = [];
+		for($i=0; $i<count($_tmp_games); $i+=1){
+			$rec = $_tmp_games[$i];
+
+			if($rec['AVAILABLE']) {
+				// If the entry is devonly and this is NOT the dev server then don't include the entry.
+				if($rec['devonly'] && !$devServer ){
+					continue;
+				}
+				// Add the record.
+				else{
+					array_push($games, $rec);
+				}
+			}
+		}
+		unset($_tmp_games);
 
 		// Output as JavaScript variable.
 		$output['gamelist_json'] = json_encode($games) ;
@@ -569,7 +589,7 @@ function init2(){
 
 	// This is likely to be impossible.
 	else{
-		exit("missing gamelist.json file!");
+		exit("missing gamelist.jsonc file!");
 	}
 
 	// Fix the flags.
@@ -611,7 +631,7 @@ function init2(){
 
 	// Now get the game's files and the video/sound core files (if a game was specified.)
 	if($game){
-		// Get the gamesettings.json file for the selected game.
+		// Get the gamesettings.jsonc file for the selected game.
 
 		// Get game dir.
 		$gamekey          = array_search($game, array_column($games, 'header_gameChoice'));
@@ -619,8 +639,8 @@ function init2(){
 		$gamedir          = realpath($games[$gamekey]['gamedir']);
 		$relative_gamedir = $games[$gamekey]['gamedir'];
 
-		// Get gamesettings.json.
-		$gamesettings = json_decode(removeCommentsFromFile( $gamedir."/gamesettings.json" ), true);
+		// Get gamesettings.jsonc.
+		$gamesettings = json_decode(removeCommentsFromFile( $gamedir."/gamesettings.jsonc" ), true);
 
 		// Set the PHP_VARS flags.
 		$PHP_VARS['gamesettings_json'] = true ;
@@ -647,7 +667,7 @@ function init2(){
 		$PHP_VARS['VRAM_ADDR_SIZE']              = 1    ;
 		$PHP_VARS['useBG2']                      = false;
 
-		// Override the default settings with values from gamesettings.json.
+		// Override the default settings with values from gamesettings.jsonc.
 		if( isset($gamesettings["typeGamepads"])                ) { $PHP_VARS['typeGamepads']                = $gamesettings["typeGamepads"];                }
 		if( isset($gamesettings["numGamepads"])                 ) { $PHP_VARS['numGamepads']                 = $gamesettings["numGamepads"];                 }
 		if( isset($gamesettings["fps"])                         ) { $PHP_VARS['fps']                         = $gamesettings["fps"];                         }

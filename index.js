@@ -146,41 +146,7 @@ window.onload = function(){
 				URL.revokeObjectURL(d_url);
 			});
 		};
-		let addScript2 = function (data, key, filename){
-			return new Promise(function(res, rej){
-				let script    = document.createElement('script');
-				script.onload = function(){ script.onload=null; res( {"filename":filename, "script":script, "key":key} ); };
-				script.setAttribute("filename", filename);
-				document.body.appendChild(script);
-				script.src    = data;
-			});
-		};
-		//
-		let addCss    = function (data, key, filename){
-			return new Promise(function(res, rej){
-				let blob   = new Blob([data], { type: 'text/css;charset=utf-8' });
-				let css    = document.createElement("link");
-				css.onload = null; res( {"filename":filename, "css":css, "key":key} );
-				css.setAttribute("filename", filename);
-				css.rel    = 'stylesheet';
-				css.type   = 'text/css';
-				document.body.appendChild(css);
-				let d_url  = URL.createObjectURL(blob);
-				css.href   = d_url;
-				URL.revokeObjectURL(d_url);
-			});
-		};
-		let addCss2    = function (data, key, filename){
-			return new Promise(function(res, rej){
-				let css    = document.createElement("link");
-				css.onload = null; res( {"filename":filename, "css":css, "key":key} );
-				css.setAttribute("filename", filename);
-				css.rel    = 'stylesheet';
-				css.type   = 'text/css';
-				document.body.appendChild(css);
-				css.href   = data;
-			});
-		};
+
 		// Parses the queryString in the url and returns the data as an object of key:value pairs.
 		let getQueryStringAsObj = function() {
 			// Nickolas Andersen (nicksen782)
@@ -369,6 +335,10 @@ window.onload = function(){
 		// Act upon the "hidden" key if it exists.
 		if(qs.hidden){ document.body.style.visibility="hidden" ; }
 		else         { document.body.style.visibility="visible"; }
+
+		// Act upon the "debug" key if it exists.
+		if(qs.debug) { document.getElementById("sideDiv").classList.remove("hide"); }
+		else         { document.getElementById("sideDiv").classList.add   ("hide"); }
 
 		// Create a new form. Add all values from the queryString.
 		let fd = new FormData();

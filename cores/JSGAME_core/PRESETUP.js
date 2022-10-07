@@ -5,64 +5,6 @@
 'use strict';
 
 function STARTJSGAME(){
-	let addScript = function(src){
-		return new Promise(function(res,rej){
-			let script = document.createElement("script");
-			script.onload=function(){
-				script.onload=null;
-				res();
-			};
-			script.src = src;
-			document.body.appendChild(script);
-		});
-	};
-	let addCSS = function(src){
-		return new Promise(function(res,rej){
-			let css = document.createElement("link");
-			css.rel = 'stylesheet';
-			css.type = 'text/css';
-			css.href = src;
-			css.onload=function(){
-				css.onload=null;
-				res();
-			};
-			css.src = src;
-			document.body.appendChild(css);
-		});
-	};
-	let addHTML = function(src, elem){
-		return new Promise(function(res,rej){
-			let finished = function(data) {
-				finished=null;
-				error=null;
-				let resp = this.responseText ;
-				elem.innerHTML+=resp;
-				res( resp );
-			};
-			let error    = function(data) {
-				finished=null;
-				error=null;
-				console.log("getFile_fromUrl: error:", this, data);
-				rej({
-					type: data.type,
-					xhr: xhr
-				});
-			};
-			let xhr = new XMLHttpRequest();
-			xhr.responseType = "text";
-			xhr.addEventListener("load", finished);
-			xhr.addEventListener("error", error);
-			xhr.open(
-				"GET", // Type of method (GET/POST)
-				src,    // Destination
-				true);
-			xhr.send();
-		});
-	};
-	let changeHTML = function(str, elem){
-		elem.innerHTML = str;
-	};
-
 	let relative_gamedir = JSGAME.PRELOAD.PHP_VARS.relative_gamedir ;
 	let gamename         = JSGAME.PRELOAD.PHP_VARS.game             ;
 	let debug            = JSGAME.PRELOAD.PHP_VARS.debug            ;
@@ -70,7 +12,6 @@ function STARTJSGAME(){
 	let gamepads         = JSGAME.PRELOAD.PHP_VARS.gamepads         ;
 
 	let proms = [];
-	// let presetup_div = document.getElementById("presetup_div");
 
 	let debug_mode   = document.getElementById("debug_mode");
 	debug_mode.checked  = debug  ? true : false;
@@ -93,6 +34,7 @@ function STARTJSGAME(){
 	}, false);
 
 	// Add games to the game select menu.
+	JSGAME.GUI.preGame_indicator("... FILLING GAME LIST ..."        , "ON");
 	let gameSelector     = document.getElementById("gameSelector");
 	let frag = document.createDocumentFragment();
 	for(let i=0; i<JSGAME.PRELOAD.gamelist_json.length; i+=1){
@@ -124,6 +66,7 @@ function STARTJSGAME(){
 	gameSelector.appendChild(frag);
 
 	// Add links.
+	JSGAME.GUI.preGame_indicator("... ADDING LINKS ..."             , "ON");
 	if(gamename){
 		let gameinfolinks    = document.getElementById("gamelinks");
 		frag = document.createDocumentFragment();
@@ -181,6 +124,7 @@ function STARTJSGAME(){
 	}
 
 	// Add gamepad HTML/SVG.
+	JSGAME.GUI.preGame_indicator("... ADDING ON-SCREEN GAMEPAD ..." , "ON");
 	if(gamename){
 		let numGamepads  = JSGAME.PRELOAD.PHP_VARS.numGamepads;
 		let typeGamepads = JSGAME.PRELOAD.PHP_VARS.typeGamepads;
@@ -219,81 +163,10 @@ function STARTJSGAME(){
 			gameControls.innerHTML += html;
 		}
 
-
-		// if     (typeGamepads=="nes" && numGamepads > 0){
-		// 	// Create the first gamepad.
-		// 	let css_class="";
-		// 	if(debug){ css_class = "twoGamepads"; }
-		// 	else{
-		// 		if     (numGamepads==1){ css_class="oneGamepad"; }
-		// 		else if(numGamepads==2){ css_class="twoGamepads"; }
-		// 	}
-		// 	let div = document.createElement("div");
-		// 	div.classList.add( css_class );
-		// 	div.classList.add( "gamepad"     );
-		// 	div.classList.add( "gamepad_nes" );
-		// 	div.classList.add( "noSelect2"   );
-		// 	div.setAttribute("pad", 1);
-		// 	let prom = addHTML  ("gamepadconfigs/gamepad_nes.svg", div) ;
-		// 	proms.push(prom);
-		// 	prom.then(
-		// 		function(){
-		// 			frag.appendChild(div);
-
-		// 			// Clone the node if a second gamepad has been specified.
-		// 			for(let i=1; i<numGamepads; i+=1){
-		// 				let pad = div.cloneNode(true);
-		// 				pad.setAttribute("pad", i+1);
-		// 				frag.appendChild(pad);
-		// 			}
-		// 			// Output.
-		// 			gameControls.appendChild(frag);
-
-		// 			// Output the keyboard keys.
-		// 			proms.push(addHTML  ("gamepadconfigs/keyboard_nes.html", gameControls) );
-		// 		},
-		// 		function(err){ console.log("ERR:", err); }
-		// 	);
-		// }
-		// else if(typeGamepads=="snes" && numGamepads > 0){
-		// 	// Create the first gamepad.
-		// 	let css_class="";
-		// 	if(debug){ css_class = "twoGamepads"; }
-		// 	else{
-		// 		if     (numGamepads==1){ css_class="oneGamepad"; }
-		// 		else if(numGamepads==2){ css_class="twoGamepads"; }
-		// 	}
-		// 	let div = document.createElement("div");
-		// 	div.classList.add( css_class );
-		// 	div.classList.add( "gamepad"     );
-		// 	div.classList.add( "gamepad_snes" );
-		// 	div.classList.add( "noSelect2"   );
-		// 	div.setAttribute("pad", 1);
-
-		// 	let prom = addHTML  ("gamepadconfigs/gamepad_snes.svg", div) ;
-		// 	proms.push(prom);
-		// 	prom.then(
-		// 		function(){
-		// 			frag.appendChild(div);
-
-		// 			// Clone the node if a second gamepad has been specified.
-		// 			for(let i=1; i<numGamepads; i+=1){
-		// 				let pad = div.cloneNode(true);
-		// 				pad.setAttribute("pad", i+1);
-		// 				frag.appendChild(pad);
-		// 			}
-		// 			// Output.
-		// 			gameControls.appendChild(frag);
-
-		// 			// Output the keyboard keys.
-		// 			proms.push(addHTML  ("gamepadconfigs/keyboard_snes.html", gameControls) );
-		// 		},
-		// 		function(err){ console.log("ERR:", err); }
-		// 	);
-		// }
 	}
 
 	// Add the author information:
+	JSGAME.GUI.preGame_indicator("... ADDING AUTHOR INFORMATION ...", "ON");
 	if( JSGAME.PRELOAD.PHP_VARS.authors ){
 		let bot_authors = document.querySelector("#bot_authors table");
 		let frag=document.createDocumentFragment();
@@ -320,21 +193,25 @@ function STARTJSGAME(){
 	// Wait for all promises to complete before running the JSGAME __PRE_INIT.
 	Promise.all(proms).then(
 		function(res){
-			// changeHTML("READY !", presetup_div);
+			JSGAME.GUI.preGame_indicator("... PRESETUP IS COMPLETE ...", "ON");
 			// DEBUG AND GAMEPAD FLAGS
 
 			// DEBUG
-			if(debug)   { JSGAME.FLAGS.debug=true ; }
-			else        { JSGAME.FLAGS.debug=false; }
+			if(debug)   {
+				JSGAME.FLAGS.debug=true ;
+				document.getElementById("debug_container").classList.remove("hide");
+			}
+			else        {
+				JSGAME.FLAGS.debug=false;
+				document.getElementById("debug_container").classList.add("hide");
+			}
 
 			// GAMEPADS off?
 			if(gamepads){ JSGAME.SHARED.gamepads=true ; }
 			else        { JSGAME.SHARED.gamepads=false; }
 
 			// START JS GAME
-			setTimeout(function(){
-				JSGAME.INIT.__PRE_INIT();
-			}, 200);
+			JSGAME.INIT.__PRE_INIT();
 		},
 		function(err){ console.log("ERR:", err); }
 	);

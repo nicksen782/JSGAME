@@ -43,8 +43,8 @@ if [ ! -f "APP/JS_GAMES" ] ; then mkdir APP/JS_GAMES ; fi
 cd APP || return
 git clone https://github.com/nicksen782/JSGAME.git JS_GAME
 
-# Test for the existence of the gamelist.json file.
-destfile=JS_GAME/gamelist.json
+# Test for the existence of the gamelist.jsonc file.
+destfile=JS_GAME/gamelist.jsonc
 if [ ! -f "$destfile" ]
 	then
 	# The file was not found. Create a starter gamelist.jsonfile.
