@@ -498,31 +498,30 @@ _GFX.VRAM = {
     // Adds to the changes array. 
     addToVramChanges: function(tileId, x, y, tilesetIndex, layerIndex){
         // Try to find a matching change based on x,y, and layerIndex.
-        let existingChangeRec = this.changes.find(c => {
-            if( c.x == x && c.y == y && c.layerIndex == layerIndex ){ 
-                // console.log("IS EXISTING:", c);
-                return true; 
-            } 
-            
-            // console.log("NOT EXISTING:", c);
+        let existingChangeRecIndex = this.changes.findIndex(c => {
+            if( c.x == x && c.y == y && c.layerIndex == layerIndex ){ return true; } 
             return false;
         });
 
         // Do we have a match on x,y, and layerIndex?
-        if(existingChangeRec){
+        if(existingChangeRecIndex != -1){
+            let rec = this.changes[existingChangeRecIndex];
+
             // Yes. Same layer and same position. Have either of the other values changed?
-            if( existingChangeRec.tileId != tileId || existingChangeRec.tilesetIndex != tilesetIndex ){ 
-                existingChangeRec = {
+            if( rec.tileId != tileId || rec.tilesetIndex != tilesetIndex ){
+                let replacementRec = {
                     tileId      : tileId,
                     x           : x, 
                     y           : y,
                     tilesetIndex: tilesetIndex,
                     layerIndex  : layerIndex,
                 };
-                // console.log("addToVramChanges: OVERWRITTEN", existingChangeRec);
+                // console.log("addToVramChanges: OVERWRITTING. OLD:", JSON.parse(JSON.stringify(this.changes[existingChangeRecIndex])), ", NEW:", replacementRec);
+
+                this.changes[existingChangeRecIndex] = replacementRec;
                 return; 
             }
-            // console.log("addToVramChanges: OLD RECORD - UNCHANGED", existingChangeRec);
+            // console.log("addToVramChanges: OLD RECORD - UNCHANGED", existingChangeRecIndex, this.changes[existingChangeRecIndex]);
         }
         
         // Add the change since it doesn't already exist.

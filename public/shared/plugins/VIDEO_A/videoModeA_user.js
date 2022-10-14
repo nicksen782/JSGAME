@@ -25,7 +25,7 @@ _GFX.util = {
 
         // Set text tiles into VRAM using a text string.
         print             : function(obj) {
-            // EXAMPLE USAGE: _GFX.util.tiles.print({ str:"Text string.", x:0, y:0, tsi:2, li:2 })
+            // EXAMPLE USAGE: _GFX.util.tiles.print({ str:"Text string.", x:0, y:0, tsi:2, li:2 });
             // NOTE: print assumes that the text tileset's first tilemap is the fontset and that those tiles are generated in ASCII order.
             let str          = obj.str || "";
             let x            = obj.x   || 0;
