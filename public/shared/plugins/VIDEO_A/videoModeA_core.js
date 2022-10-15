@@ -482,49 +482,66 @@ _GFX.VRAM = {
 
     // Updates VRAM values and calls addToVramChanges.
     updateVram: function(tileId, x, y, tilesetIndex, layerIndex){
-        // Get the tilesetName.
+        // Get the tilesetName (to make sure that the tilesetIndex is valid.)
         let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
         if(!tilesetName){ console.log(`updateVram: Tileset index '${tilesetIndex}' was not found.`); return; }
         
-        // Update _VRAM_view.
+        // Update _VRAM_view if the changes values are different than the existing values.
         let VRAM_startIndex = this.indexByCoords[y][x];
-        this._VRAM[layerIndex].view[VRAM_startIndex + 0] = tilesetIndex;
-        this._VRAM[layerIndex].view[VRAM_startIndex + 1] = tileId;
+        let tilesetIndexHasChanged = false;
+        if( this._VRAM[layerIndex].view[VRAM_startIndex + 0] != tilesetIndex){ 
+            this._VRAM[layerIndex].view[VRAM_startIndex + 0]  = tilesetIndex;
+            tilesetIndexHasChanged = true;
+        }
+        let tileIdHasChanged = false;
+        if( this._VRAM[layerIndex].view[VRAM_startIndex + 1] != tileId){ 
+            this._VRAM[layerIndex].view[VRAM_startIndex + 1]  = tileId;
+            tileIdHasChanged = true;
+        }
 
-        // Add to VRAM changes.
-        this.addToVramChanges(tileId, x, y, tilesetIndex, layerIndex);
+        // Add to VRAM changes if either the tileset or tileId has changed.
+        if(tilesetIndexHasChanged || tileIdHasChanged){
+            this.addToVramChanges(tileId, x, y, tilesetIndex, layerIndex);
+        }
     },
 
     // Adds to the changes array. 
+    changesStats: {
+        new      : 0,
+        overwrite: 0,
+        ignore   : 0,
+    },
     addToVramChanges: function(tileId, x, y, tilesetIndex, layerIndex){
         // Try to find a matching change based on x,y, and layerIndex.
-        let existingChangeRecIndex = this.changes.findIndex(c => {
-            if( c.x == x && c.y == y && c.layerIndex == layerIndex ){ return true; } 
-            return false;
-        });
-
-        // Do we have a match on x,y, and layerIndex?
-        if(existingChangeRecIndex != -1){
-            let rec = this.changes[existingChangeRecIndex];
-
-            // Yes. Same layer and same position. Have either of the other values changed?
-            if( rec.tileId != tileId || rec.tilesetIndex != tilesetIndex ){
-                let replacementRec = {
-                    tileId      : tileId,
-                    x           : x, 
-                    y           : y,
-                    tilesetIndex: tilesetIndex,
-                    layerIndex  : layerIndex,
-                };
-                // console.log("addToVramChanges: OVERWRITTING. OLD:", JSON.parse(JSON.stringify(this.changes[existingChangeRecIndex])), ", NEW:", replacementRec);
-
-                this.changes[existingChangeRecIndex] = replacementRec;
-                return; 
-            }
-            // console.log("addToVramChanges: OLD RECORD - UNCHANGED", existingChangeRecIndex, this.changes[existingChangeRecIndex]);
+        for(let i=0, l=this.changes.length; i<l; i+=1){
+            if( 
+                this.changes[i].x == x && 
+                this.changes[i].y == y && 
+                this.changes[i].layerIndex == layerIndex
+            ){
+                if(
+                    this.changes[i].tileId       != tileId || 
+                    this.changes[i].tilesetIndex != tilesetIndex
+                ){
+                    this.changes[i] = {
+                        tileId      : tileId,
+                        x           : x, 
+                        y           : y,
+                        tilesetIndex: tilesetIndex,
+                        layerIndex  : layerIndex,
+                    };
+                    this.changesStats.overwrite += 1;
+                    return; 
+                    break; 
+                }
+                else{
+                    this.changesStats.ignore += 1;
+                }
+            } 
         }
-        
+
         // Add the change since it doesn't already exist.
+        this.changesStats.new       += 1;
         let newChange = {
             tileId      : tileId,
             x           : x, 
@@ -540,6 +557,10 @@ _GFX.VRAM = {
     clearVramChanges: function(){
         // console.log(`clearVramChanges`);
         this.changes = [];
+
+        this.changesStats.new      = 0;
+        this.changesStats.overwrite= 0;
+        this.changesStats.ignore   = 0;
     },
     
     // Creates the indexByCoords lookup table. 

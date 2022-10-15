@@ -14,7 +14,7 @@ _GFX.util = {
     tiles: {
         // Set one tile into VRAM.
         setTile           : function(obj) {
-            // EXAMPLE USAGE: _GFX.util.tiles.setTile({ tid:5, x:0, y:0, tsi:0, li:0 })
+            // EXAMPLE USAGE: _GFX.util.tiles.setTile({ tid:5, x:0, y:0, tsi:0, li:0 });
             let tileId       = obj.tid || 0;;
             let x            = obj.x   || 0;
             let y            = obj.y   || 0;
