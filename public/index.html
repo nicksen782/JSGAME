@@ -37,7 +37,7 @@
                         <div id="js_game_header_title" title="App/Game Framework">JS GAME</div>
                     </div>
                     <div id="js_game_header_menu" class="">
-                        <table>
+                        <table id="js_game_header_menu_table1">
                             <tr>
                                 <td>Toggle Views:</td>
                                 <td><button id="jsgame_menu_toggleLoading" class="jsgame_toggleButtons">Toggle loading</button></td>
@@ -106,7 +106,7 @@
             </div>
         </header>
 
-        <main class="flex_jsgame_main_cont" id="">
+        <main class="flex_jsgame_main_cont" id="flex_jsgame_main_cont">
             <div class="" id="jsgame_loadingDiv">
                 <div id="jsgame_loadingDiv_text">
                     <div id="jsgame_loadingDiv_status"></div>
@@ -118,10 +118,13 @@
             <div class="hide" id="jsgame_appDiv">
                 <div class="" id="jsgame_app">jsgame_app</div>
             </div>
+
             <!-- LOBBY -->
             <div class="hide" id="jsgame_lobbyDiv">
                 <div class="" id="jsgame_lobby">jsgame_lobby</div>
             </div>
+
+            <!-- INPUT - Can be added with the input plug-in. -->
         </main>
 
         <footer>

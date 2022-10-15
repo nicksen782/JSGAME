@@ -1,0 +1,345 @@
+#jsgame_inputDiv{}
+#jsgame_inputDiv.hide{ display:none; }
+
+#gamepadsDisplay {
+    border: 1px solid black;
+    /* padding: 2px; */
+    /* display: inline-block; */
+    width: 800px;
+    /* white-space: nowrap; */
+    overflow: auto;
+    height: 470px;
+    display: flex;
+    flex-direction: column;
+    background-color: #333333;
+    /* border: 5px solid cornflowerblue; */
+    align-items: stretch;
+    background-color: #babeef;
+}
+#gamepadsDisplay_top_title_bar{
+    border-top: 1px solid black;
+    background-color: cornflowerblue;
+    width: 100%;
+    height: 2em;
+    /* flex: auto; */
+    /* flex-grow: 1; */
+    flex-shrink: 0;
+    /* flex-basis: auto; */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#gamepadsDisplay_top_title_bar .close{
+    background-color:crimson;
+    color:white;
+    position: relative;
+    right: 5px;
+    max-height: 1em !important;
+    width: 2em;
+    max-width: 56px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    border: 1px solid black;
+    border-radius: 5px;
+    line-height: 1em;
+    cursor: pointer;
+}
+#gamepadsDisplay_top_title_bar .close:hover{
+    background-color:red;
+}
+#gamepadsDisplay_status {
+    border-top: 1px solid black;
+    background-color: cornflowerblue;
+    width: 100%;
+}
+
+div#gamepadsDisplay_top {
+    flex: auto;
+    display: flex;
+    flex-direction: row;
+}
+
+#gamepad_nav {
+    /* border-bottom: 1px solid black; */
+    border-right: 1px solid black;
+    padding: 2px;
+    background-color: cornflowerblue;
+    position: relative;
+    width: 20%;
+}
+
+.gamepad_nav_tab {
+    /* display: inline-block; */
+    /* vertical-align: top; */
+    /* border: 1px solid black; */
+    padding: 5px 5px 5px 5px;
+    background-color: dodgerblue;
+    opacity: 0.4;
+    cursor: pointer;
+    height: 26px;
+    position: relative;
+    /* top: 3px; */
+    display: block;
+    /* width: 150px; */
+    width: 100%;
+}
+
+.gamepad_nav_tab:hover {
+    opacity: 0.75;
+}
+
+.gamepad_nav_tab.active {
+    background-color: #babeef;
+    opacity: 1;
+    border: 1px solid black;
+    border-right: 0px;
+    left: 3px;
+    border-radius: 5px 0px 0px 5px;
+}
+
+.gamepad_nav_tab_label {
+    display: inline-block;
+    vertical-align: top;
+    line-height: 1em;
+}
+
+#gamepad_nav_tab_help {
+    /* padding-left: 15px; */
+    /* padding-right: 15px; */
+}
+
+#gamepad_views {
+    flex: auto;
+    background-color: #babeef;
+    padding: 5px;
+    width: 80%;
+}
+
+.gamepad_view {
+    display: none;
+}
+
+.gamepad_view.active {
+    display: block;
+    /* width: 640px; */
+}
+
+.gamepad_nav_tab_indicator {
+    width: 1em;
+    height: 1em;
+    border: 1px solid black;
+    display: inline-block;
+    margin-right: 0.5em;
+    display: none;
+}
+
+.gamepad_nav_tab_indicator.connectedAndMapped {
+    background-color: springgreen;
+}
+
+.gamepad_nav_tab_indicator.connectedAndNotMapped {
+    background-color: yellow;
+}
+
+.gamepad_nav_tab_indicator.disconnected {
+    background-color: crimson;
+}
+
+.standardGamepad{
+    height: 67px;
+    width: 105px;
+    border: 1px solid black;
+    /* margin: 5px; */
+}
+.SNESGamepad{
+    display: inline-block;
+    vertical-align: top;
+    height: 162px;
+    width: 350px;
+    border: 1px solid black;
+    /* margin:5px; */
+    /* margin: auto; */
+}
+
+#gamepad_nav_view_gp_p1.active{
+    display:flex;
+    flex-direction: column;
+    height: 100%;
+}
+#gamepad_nav_view_gp_p2.active{
+    display:flex;
+    flex-direction: column;
+    height: 100%;
+}
+.mappedGpDiv{
+    flex: auto;
+}
+.standardGpDiv{
+    border-top: 1px dotted black;
+    padding-top: 2px;
+}
+
+div.standardGpDiv_tables{
+    display: inline-block;
+    vertical-align: top;
+    /* max-width: 100px; */
+    /* overflow: hidden; */
+    font-family: monospace;
+}
+div.standardGpDiv_tables table{
+    border:1px solid black;
+/*     width:100%; */
+    border-collapse: collapse
+}
+div.standardGpDiv_tables table td{
+    border:1px solid black;
+    /*     width:100%; */
+    width: 50px;
+    height: 22px;
+    font-size: 12px;
+}
+table.standardGpDiv_table1 {
+    /* display: inline-block; */
+    /* vertical-align: top; */
+}
+
+.standardGpDiv_gp {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.standardGpDiv_table1 td.active{
+    background-color:yellow; 
+}
+
+.SNESGamepad .button.active{
+    fill      : yellow;
+    stroke      : black;
+    stroke-width: 2;
+}
+.SNESGamepad [name="BTN_SELECT"].button.active,
+.SNESGamepad [name="BTN_START"].button.active{
+    /* fill      : black; */
+    stroke      : yellow;
+    stroke-width: 8;
+}
+#gamepad_nav_view_userMappings_flexCont{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+}
+textarea#gamepad_nav_view_userMappings_textOutput {
+    font-family: monospace;
+    white-space: pre;
+    font-size: 12px;
+    overflow-y: auto;
+    height: 353px;
+    /* height: 100%; */
+    width: 99%;
+    /* flex: auto; */
+    /* flex-grow: 62; */
+}
+div#gamepad_nav_view_userMappings_controls{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    /* padding: 5px; */
+    /* background-color: aqua; */
+}
+.userMappings_controls{
+    width: 100%;
+    height: 50px;
+    margin: 2px;
+}
+#mapped_downloadH5ls{}
+#mapped_updateFromFileH5ls{}
+#mapped_updateFromTextH5ls{}
+
+.snesGpDiv_gp{
+    display: inline-block;
+    vertical-align: top;
+}
+.snesGpDiv_tables{
+    display: inline-block;
+    vertical-align: top;
+    /* border:1px solid black; */
+    /* border-bottom: 0px; */
+    /* width:100%; */
+    /* border-collapse: collapse; */
+    /* padding: 0px; */
+    /* margin: 0px; */
+}
+.snesGpDiv_table1{
+    display: inline-block;
+    border-collapse: collapse;
+    /* width: 260px; */
+}
+.snesGpDiv_table1 td.active{ background-color:yellow; }
+.snesGpDiv_table1 td.header{
+    width: 75px;
+    border-left: 1px solid;
+    border-right: 1px solid black;
+}
+.snesGpDiv_table1 td.top{
+    border-top: 1px solid black;
+    background-color: cornflowerblue;
+}
+.snesGpDiv_table1 td.data{
+    border-right: 1px solid black;
+    width: 50px;
+}
+.snesGpDiv_table1 td{
+    border-bottom: 1px solid black;
+    /* width:100%; */
+    /* width: 80px; */
+    height: 23px;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.snesGpDiv_table1 .setOneButton{
+    cursor:pointer; 
+}
+.snesGpDiv_table1 .setOneButton:hover{
+    background-color:rgb(175, 152, 50);
+}
+.snesGpDiv_table1 .setOneButton.waiting{
+    background-color:rgb(175, 175, 50);
+}
+.snesGpDiv_table1 .setOneButton.active{
+    background-color:yellow;
+}
+
+
+
+span.standardGp_id {
+    font-family: monospace;
+    font-size: 14px;
+    display: inline-block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    width: 460px;
+    overflow: hidden;
+    /* background-color: gray; */
+    text-align: right;
+}
+
+span.mappedGp_id {
+    /* font-family: monospace; */
+    /* font-size: 14px; */
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    width: 535px;
+    overflow: hidden;
+    /* background-color: gray; */
+    /* text-align: right; */
+}
+
+div#gamepad_nav_view_userMappings {
+    /* text-align: center; */
+    /* display: flex; */
+    /* flex-direction: column; */
+}

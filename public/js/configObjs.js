@@ -6,9 +6,10 @@ _JSG.configObjs = {
         // "appSelectReload" : "jsgame_appSelectReload" ,
 
         // SHADER
-        "js_game_header_menuBtn" : "js_game_header_menuBtn",
-        "js_game_header_menu"    : "js_game_header_menu",
-        "js_game_backgroundShade": "js_game_backgroundShade" ,
+        "js_game_header_menuBtn"     : "js_game_header_menuBtn",
+        "js_game_header_menu"        : "js_game_header_menu",
+        "js_game_header_menu_table1" : "js_game_header_menu_table1",
+        "js_game_backgroundShade"    : "js_game_backgroundShade" ,
 
         // MENU (JSGAME OPTIONS)
         "jsgame_menu_toggleLoading"    : "jsgame_menu_toggleLoading" ,
@@ -17,9 +18,10 @@ _JSG.configObjs = {
         "jsgame_menu_rebuild_apps_file": "jsgame_menu_rebuild_apps_file" ,
 
         // SECTIONS (containers)
-        "loadingDiv"  : "jsgame_loadingDiv" ,
-        "lobbyDivCont": "jsgame_lobbyDiv" ,
-        "gameDivCont" : "jsgame_appDiv" ,
+        "jsgame_main_cont" : "flex_jsgame_main_cont" ,
+        "loadingDiv"       : "jsgame_loadingDiv" ,
+        "lobbyDivCont"     : "jsgame_lobbyDiv" ,
+        "gameDivCont"      : "jsgame_appDiv" ,
 
         // LOADING DIV
         "loadingDivText"     : "jsgame_loadingDiv_text" ,
@@ -44,6 +46,7 @@ _JSG.configObjs = {
         "repo2Link"       : "repo2Link" ,
         "authorDiv2"      : "authorDiv2" ,
     },
+
     // WebSockets object.
     ws: {
         // ws DOM.

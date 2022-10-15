@@ -158,6 +158,7 @@ funcs_useOnce.startMessage();
 const path       = require('path'); 
 const server     = require('http').createServer();
 const express    = require('express');
+const cookieParser = require('cookie-parser');
 const session    = require('express-session');
 const MemoryStore= require('memorystore')(session);
 const app        = express();
@@ -277,9 +278,15 @@ const compressionObj = {
 		resave: false,
 		saveUninitialized: false,
 		unset: "destroy",
+        cookie : {
+            sameSite: 'strict',
+            // sameSite: 'None',
+            // sameSite: 'Lax',
+        },
 		// cookie: { secure: true },
 		// cookie: { secure: false },
 	});
+    app.use( cookieParser() );
     app.use( _APP.session );
     app.use( _APP.m_sessions.eachConnection );
     // app.use( _APP.loginCheck );

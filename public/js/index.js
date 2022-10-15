@@ -7,6 +7,9 @@ let _GFX = undefined;
 // Holds the loaded _SND plugin.
 let _SND = undefined;
 
+// Holds the loaded _INPUT plugin.
+let _INPUT = {};
+
 // Holds the any JSGAME WebWorker code.
 let _WEBW = {};
 
@@ -219,37 +222,38 @@ let _JSG = {
             let select = this.DOM["appSelectSelect"];
             select.value = rec.appKey;
 
+            
             // Load the app's files. 
             _JSG.loadingDiv.addMessage(`Loading files for: ${rec.appKey}`);
             await _JSG.loadFiles(rec); 
-
+            
             // Display the author data for the app.
             _JSG.updateAuthorData(rec);
 
-            if(_APP.init){ 
-                // Pre-load any specified JSGAME shared plug-ins.
-                if(_JSG.loadedConfig.meta.jsgame_shared_plugins){
-                    let plugins = _JSG.loadedConfig.meta.jsgame_shared_plugins;
-                    for(let i=0; i<plugins.length; i+=1){
-                        try{
-                            // console.log("LOADING: JSGAME plugin:", plugins[i].n);
-                            await this.addFile(plugins[i], ".");
-                            console.log("LOADED: JSGAME plugin:", plugins[i].n);
-                            _JSG.loadingDiv.addMessage(`LOADED: JSGAME plugin: ${plugins[i].n}`);
-                        }
-                        catch(e){
-                            let msg1 = `ERROR: Loading JSGAME plugin: ${plugins[i].n}`;
-                            let msg2 = "ABORTING APP LOAD.";
-                            _JSG.loadingDiv.changeStatus("error");
-                            _JSG.loadingDiv.addMessage(msg1);
-                            _JSG.loadingDiv.addMessage(msg2);
-                            console.log(msg1);
-                            console.log(msg2);
-                            reject(); return; 
-                        }
+            // Pre-load any specified JSGAME shared plug-ins.
+            if(_JSG.loadedConfig.meta.jsgame_shared_plugins){
+                let plugins = _JSG.loadedConfig.meta.jsgame_shared_plugins;
+                for(let i=0; i<plugins.length; i+=1){
+                    try{
+                        // console.log("LOADING: JSGAME plugin:", plugins[i].n);
+                        await this.addFile(plugins[i], ".");
+                        console.log("LOADED: JSGAME plugin:", plugins[i].n);
+                        _JSG.loadingDiv.addMessage(`LOADED: JSGAME plugin: ${plugins[i].n}`);
+                    }
+                    catch(e){
+                        let msg1 = `ERROR: Loading JSGAME plugin: ${plugins[i].n}`;
+                        let msg2 = "ABORTING APP LOAD.";
+                        _JSG.loadingDiv.changeStatus("error");
+                        _JSG.loadingDiv.addMessage(msg1);
+                        _JSG.loadingDiv.addMessage(msg2);
+                        console.log(msg1);
+                        console.log(msg2);
+                        reject(); return; 
                     }
                 }
-                
+            }
+
+            if(_APP.init){ 
                 // Run the app's init.
                 let msg1 = `_APP INIT   : ${rec.appKey}`;
                 _JSG.loadingDiv.addMessage(msg1);
@@ -275,10 +279,12 @@ let _JSG = {
                 // DEBUG:
                 try{
                     console.log("DEBUG: VARS:");
-                    if(_JSG){ console.log("  _JSG:", _JSG); } else { console.log("  _JSG:", "NOT LOADED"); }
-                    if(_APP){ console.log("  _APP:", _APP); } else { console.log("  _APP:", "NOT LOADED"); }
-                    if(_GFX){ console.log("  _GFX:", _GFX); } else { console.log("  _GFX:", "NOT LOADED"); }
-                    if(_SND){ console.log("  _SND:", _SND); } else { console.log("  _SND:", "NOT LOADED"); }
+                    if(_JSG)  { console.log("  _JSG  :", _JSG  ); } else { console.log("  _JSG  :", "NOT LOADED"); }
+                    if(_APP)  { console.log("  _APP  :", _APP  ); } else { console.log("  _APP  :", "NOT LOADED"); }
+                    if(_GFX)  { console.log("  _GFX  :", _GFX  ); } else { console.log("  _GFX  :", "NOT LOADED"); }
+                    if(_SND)  { console.log("  _SND  :", _SND  ); } else { console.log("  _SND  :", "NOT LOADED"); }
+                    if(_INPUT){ console.log("  _INPUT:", _INPUT); } else { console.log("  _INPUT:", "NOT LOADED"); }
+                    console.log("");
                 }
                 catch(e){
                     console.log("Error showing debug vars.", e);
@@ -495,7 +501,25 @@ let _JSG = {
             console.log("rebuildAppsJson_file", resp);
             alert("rebuildAppsJson_file: DONE");
         },
-
+        msToFrames : function(ms, msPerFrame){
+            // Convert seconds to ms then divide by msPerFrame.
+            if(!msPerFrame){ msPerFrame = 16 }
+            let frames = ( (ms) / msPerFrame);
+    
+            // DEBUG
+            // console.log(
+            // 	`msToFrames:` + "\n" + 
+            // 	`  Requested msPerFrame: ${(msPerFrame).toFixed(2)}` + "\n" + 
+            // 	`  Requested ms        : ${(ms).toFixed(2)}`         + "\n" + 
+            // 	`  Calculated frames   : ${frames}`                  + "\n" + 
+            // 	`  Returned frames     : ${Math.ceil(frames)}`       + "\n" + 
+            // 	``
+            // );
+    
+            // Return the number of frames rounded up.
+            return Math.ceil(frames);
+        },
+        TinySimpleHash:s=>{for(var i=0,h=9;i<s.length;)h=Math.imul(h^s.charCodeAt(i++),9**9);return h^h>>>9},
         // DEBUG: Used to measure how long something takes.
         timeIt: {
             // EXAMPLE USAGE: 
@@ -565,7 +589,6 @@ let _JSG = {
                 }
             },
         },
-
     },
 
     // Loading div.
