@@ -8,7 +8,7 @@ _INPUT.web = {
             "input"                  : "jsgame_input",
             "userMappings_textOutput": "gamepad_nav_view_userMappings_textOutput",
             "downloadH5ls"           : "mapped_downloadH5ls",
-            "updateFromFileH5ls"     : "mapped_updateFromFileH5ls",
+            // "updateFromFileH5ls"     : "mapped_updateFromFileH5ls",
             "updateFromTextH5ls"     : "mapped_updateFromTextH5ls",
         },
         "nav":{
@@ -94,7 +94,7 @@ _INPUT.web = {
         prevViews: {
             app    : undefined,
             lobby  : undefined,
-            loading: undefined,
+            // loading: undefined,
         },
         // Record the previous views in main.
         showInput_hideOthers: function(keepAppVisible=false){
@@ -111,13 +111,13 @@ _INPUT.web = {
             if(keepAppVisible){ this.prevViews.app = true; }
             else              { this.prevViews.app = _JSG.DOM["gameDivCont"] .classList.contains("hide") ? false : true; }
             this.prevViews.lobby   = _JSG.DOM["lobbyDivCont"].classList.contains("hide") ? false : true; 
-            this.prevViews.loading = _JSG.DOM["loadingDiv"]  .classList.contains("hide") ? false : true; 
+            // this.prevViews.loading = _JSG.DOM["loadingDiv"]  .classList.contains("hide") ? false : true; 
             
             // Hide those other views. 
             if(keepAppVisible){ _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleApp"] , true, false); }
             else              { _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleApp"] , false, false); }
             _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleLobby"], false, false);
-            _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleLoading"]  , false, false);
+            // _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleLoading"]  , false, false);
     
             // Start the update loop.
             this.parent.loopId = setTimeout(()=>{ window.requestAnimationFrame( ()=>this.parent.updateLoop() ); }, this.loopDelayMs);
@@ -136,7 +136,7 @@ _INPUT.web = {
             // Restore the state of the previous views.
             _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleApp"]    , this.prevViews.app    , false);
             _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleLobby"]  , this.prevViews.lobby  , false);
-            _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleLoading"], this.prevViews.loading, false);
+            // _JSG.shared.setVisibility(_JSG.DOM["jsgame_menu_toggleLoading"], this.prevViews.loading, false);
         },
     },
 
@@ -640,13 +640,13 @@ _INPUT.web = {
             // this.DOM.base["updateFromFileH5ls"].addEventListener("click", ()=>{ console.log("updateFromFileH5ls"); }, false);
 
             // DEBUG.
-            setTimeout(()=>{
+            // setTimeout(()=>{
                 // this.mainView.showInput_hideOthers(false);
-                this.mainView.showInput_hideOthers(true);
+                // this.mainView.showInput_hideOthers(true);
                 // setTimeout(()=>{
                 //     this.hideInput_restoreOthers();
                 // }, 2000);
-            }, 1000);
+            // }, 1000);
             
             resolve();
         });

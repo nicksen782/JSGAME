@@ -29,7 +29,7 @@ let _JSG = {
     loadedAppKey: "",
 
     // Adds the specified file.
-    addFile : function(rec, relativePath){
+    addFile: function(rec, relativePath){
         return new Promise(async (res,rej)=>{
             switch(rec.t){
                 case "js": { 
@@ -254,15 +254,6 @@ let _JSG = {
             }
 
             if(_APP.init){ 
-                // Run the app's init.
-                let msg1 = `_APP INIT   : ${rec.appKey}`;
-                _JSG.loadingDiv.addMessage(msg1);
-                console.log(msg1);
-                await _APP.init(); 
-                let msg2 = `_APP LOADED : ${rec.appKey}`;
-                _JSG.loadingDiv.addMessage(msg2);
-                console.log(msg2);
-
                 // Do the login check. 
                 // console.log("running loginCheck after loading:", rec.appKey);
                 let msg3 = "Running loginCheck...";
@@ -290,15 +281,25 @@ let _JSG = {
                     console.log("Error showing debug vars.", e);
                 }
 
+                // Run the app's init.
+                let msg1 = `_APP INIT   : ${rec.appKey}`;
+                _JSG.loadingDiv.addMessage(msg1);
+                console.log(msg1);
+                await _APP.init(); 
+                let msg2 = `_APP LOADED : ${rec.appKey}`;
+                _JSG.loadingDiv.addMessage(msg2);
+                console.log(msg2);
+                
                 // Set visabilities.
                 await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
+                
                 // Don't show the lobby if the appConfig says not to.
                 if(!_JSG.loadedConfig.meta.hideLobby){
                     this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
                 }
-
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
+                
                 resolve();
             }
             else{
@@ -322,7 +323,7 @@ let _JSG = {
     },
     
     // Generates the app select menu.
-    loadAppMenus : function(){
+    loadAppMenus: function(){
         return new Promise((resolve,reject)=>{
             if(!Object.keys(_JSG.apps).length){ 
                 let msg1 = "ERROR: loadAppMenus: No entries in apps.json.";
@@ -401,7 +402,7 @@ let _JSG = {
     },
     
     // Get url params.
-	getUrlParams                     : function(){
+	getUrlParams: function(){
 		const urlSearchParams = new URLSearchParams(window.location.search);
 		const params          = Object.fromEntries(urlSearchParams.entries());
 		return params;
@@ -592,7 +593,7 @@ let _JSG = {
     },
 
     // Loading div.
-    loadingDiv : {
+    loadingDiv: {
         parent: null,
 
         loadingStatus: `` +
