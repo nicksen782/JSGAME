@@ -8,6 +8,8 @@ let _GFX = {
         indexByCoords: undefined,
     },
 
+    canvasLayers:[],
+
     // Output canvas objects. 
     outputCanvas          : undefined,
     outputCanvasCtx       : undefined,
@@ -46,6 +48,7 @@ let _GFX = {
     meta:{
         layers: undefined,
         dimensions: undefined,
+        videoModeA_config: undefined,
     },
     draw: {
         drawFromVRAM: function(){
@@ -98,7 +101,7 @@ let _GFX = {
         },
     },
     generateCanvasLayer : function(rec){
-        let dimensions = this.meta.dimensions;
+        let dimensions = _GFX.meta.dimensions;
     
         // Create a canvas for this layer.
         let width  = dimensions.tileWidth * dimensions.cols;
@@ -151,20 +154,25 @@ let _GFX = {
 self.postMessage = self.postMessage || self.webkitPostMessage;
 
 self.onmessage = function(event) {
-	switch( event.data.mode ){
-		case "init"        : { init(event);        break; }
-		case "vram_update" : { vram_update(event); break; }
-		case "fade"        : { fade(event);        break; }
+    switch( event.data.mode ){
+        // Method 0: useOffscreenCanvas: false
+        case "init"                    : { init(event);                    break; }
+        case "fade"                    : { fade(event);                    break; }
 
-		// Unmatched function.
-		default     : { 
-            console.log("ERROR: Unmatched mode"); 
+        // Method 1: useOffscreenCanvas: false
+        case "initSend_useOffscreenCanvas" : { init_useOffscreenCanvas(event); break; }
+        case "drawSend_useOffscreenCanvas" : { draw_useOffscreenCanvas(event); break; }
+
+        // Unmatched function.
+        default     : { 
+            console.log("ERROR: Unmatched mode:", event.data.mode); 
             self.postMessage( { "mode" : event.data.mode, "data" : "", "success":false }, [] );
             break; 
         }
-	}
+    }
 };
 
+// Method 0: useOffscreenCanvas: false
 function init(event){
     // console.log(`WW: ${event.data.mode}:`, event.data);
 
@@ -182,6 +190,9 @@ function init(event){
 
     // Update the local canvas layer data. 
     _GFX.meta.layers = event.data.data.meta.layers;
+
+    // Update the jsgame_shared_plugins_config. 
+    _GFX.meta.videoModeA_config = event.data.data.meta.videoModeA_config;
     
     for(let i=0, l=_GFX.fade.CONSTS.fader.length; i<l; i+=1){
         _GFX.fade.fadeLeveledCanvases.push(undefined);
@@ -222,30 +233,7 @@ function init(event){
             "success":true,
         },
         []
-	);
-};
-function vram_update(event){
-    // console.log(`WW: ${event.data.mode}:`, event.data);
-
-    // Update the local copy of VRAM.
-    _GFX.VRAM._VRAM  = event.data.data.VRAM._VRAM;
-
-    // Draw the canvas from VRAM. (updates _GFX.outputCanvas)
-    _GFX.draw.drawFromVRAM();
-
-    // Get the image data for the output canvas (which has just been updated.)
-    _GFX.outputCanvasImageData = _GFX.outputCanvasCtx.getImageData(0,0,_GFX.outputCanvas.width, _GFX.outputCanvas.height);
-    
-    // Send a response.
-    self.postMessage( 
-        { 
-            "mode" : event.data.mode, 
-            "data" : {},
-            // "data" : _GFX.outputCanvasCtx.getImageData(0,0,_GFX.outputCanvas.width, _GFX.outputCanvas.height),
-            "success":true,
-        },
-        []
-	);
+    );
 };
 function fade(event){
     // console.log(`WW: ${event.data.mode}:`, event.data);
@@ -305,3 +293,72 @@ function fade(event){
         []
     );
 };
+
+// Method 1: useOffscreenCanvas: false
+function draw_useOffscreenCanvas(event){
+    // This function updates local VRAM and draws the changes.
+    // It is expected that the data sent to this function is correct and free of duplication.
+
+    let dimensions = _GFX.meta.dimensions;
+    if(event.data.data.clearVram_flag){
+        // Clear the VRAM. Fill all VRAM layers with 0 (tileIndex to 0, tileId to 0, and x,y coordinate to 0.)
+        for(let i=0, l=_GFX.VRAM._VRAM.length; i<l; i+=1){ _GFX.VRAM._VRAM[i].view.fill(0); }
+
+        // Clear each canvas layer.
+        for(let i=0, l=_GFX.VRAM._VRAM.length; i<l; i+=1){
+            _GFX.canvasLayers[i].ctx.clearRect( (0 * dimensions.tileWidth), (0 * dimensions.tileHeight), (_GFX.canvasLayers[i].canvas.width), (_GFX.canvasLayers[i].canvas.height));
+        }
+    }
+
+    // Update the local VRAM with the changes.
+    let tilesetNames = Object.keys(_GFX.cache);
+    let tileset;
+    for(let change of event.data.data.changes){
+        // Get the VRAM index for this x and y.
+        let thisVRAM  = _GFX.VRAM._VRAM[change.layerIndex];
+        let vramIndex = _GFX.VRAM.indexByCoords[change.y][change.x];
+
+        // Set the tilesetIndex and the tileId.
+        thisVRAM[vramIndex + 0] = change.tilesetIndex;
+        thisVRAM[vramIndex + 1] = change.tileId;
+
+        // Get the tileset.
+        tileset = _GFX.cache[ tilesetNames[ change.tilesetIndex ] ].tileset;
+
+        // Clear the destination if the new tile has transparency. 
+        // (This is prevent the previous tile from showing through.)
+        if(tileset[ change.tileId ].hasTransparency){
+            _GFX.canvasLayers[ change.layerIndex ].ctx.clearRect( (change.x * dimensions.tileWidth), (change.y * dimensions.tileHeight), (dimensions.tileWidth), (dimensions.tileHeight));
+        }
+
+        // Draw to the destination. 
+        _GFX.canvasLayers[ change.layerIndex ].ctx.drawImage(tileset[ change.tileId ].canvas, (change.x * dimensions.tileWidth), (change.y * dimensions.tileHeight));
+    }
+
+    // Inform the main thread that we are done. 
+    self.postMessage( 
+        { 
+            "mode" : event.data.mode, 
+            "data" : {},
+            "success":true,
+        }, []
+    );
+};
+function init_useOffscreenCanvas(event){
+    // Break-out the layer data and store the drawing contexts. 
+    for(let layer of event.data.data){
+        layer.ctx = layer.canvas.getContext("2d", layer.canvasOptions || {});
+        layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
+        _GFX.gfxConversion.setPixelated(layer.ctx);
+        _GFX.canvasLayers.push(layer);
+    }
+
+    // Inform the main thread that we are done. 
+    self.postMessage( 
+        { 
+            "mode" : event.data.mode, 
+            "data" : {},
+            "success":true,
+        }, []
+    );
+}
