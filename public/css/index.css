@@ -156,7 +156,8 @@ div#jsgame_appSelectDiv {
     border-radius: 10px;
     padding: 10px;
     width: 60%;
-    min-height: 120px;
+    /* min-height: 120px; */
+    min-height: 550px;
     max-height: 550px;
     font-family: Courier New, monospace;
     display: flex;
@@ -387,8 +388,11 @@ footer {
 }
 
 #jsgame_loadingDiv_messages.populated {
-    padding: 5px;
+    padding: 1em;
     border: 5px solid black;
     border-top: 0px;
     white-space: pre;
+    /* padding-bottom: 15px; */
+    /* padding-top: 1em; */
+    /* padding-bottom: 1em; */
 }

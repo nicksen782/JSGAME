@@ -4,6 +4,9 @@ _GFX._debug = {
     // _GFX._debug.run_drawTest();
     // _GFX._debug.drawMethodTests();
 
+    // Holds a copy of the fadedTileset if debug is on.
+    fadedTileset: {},
+
     // draw.tiles function tests.
     run_drawTest: async function(){
         let waitAfterTests = 1000;

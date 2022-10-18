@@ -298,6 +298,11 @@ let _JSG = {
                 if(!_JSG.loadedConfig.meta.hideLobby){
                     this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
                 }
+
+                // If the app has a separate start function then run it here.
+                if(_APP.start){ await _APP.start(); }
+
+                // Show the app.
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
                 
                 resolve();

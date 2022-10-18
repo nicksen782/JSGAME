@@ -7,17 +7,19 @@ _WEBW.videoModeA = {
         webworker: undefined,
 
         // Tracks what part of the conversation per mode is expected.
-        messageStates: {
-            init                       : { waiting: false } ,
-            fade                       : { waiting: false } ,
-            initSend_useOffscreenCanvas: { waiting: false } ,
-            drawSend_useOffscreenCanvas: { waiting: false } ,
+        createDeferredPromise : function(){
+            var deferred = {};
+            var promise = new Promise(function(resolve, reject) {
+                deferred.resolve = resolve;
+                deferred.reject  = reject;
+            });
+            deferred.promise = promise;
+            return deferred;
         },
+        messageStates2: {},
 
         // SHARED: Receives messages from the WebWorker and routes the message to the matching function(s).
         RECEIVE: function(e){
-            // console.log("_WEBW.videoModeA.video: RECEIVE:", e.data.mode, e.data);
-
             // Make sure there is data and a data.mode.
             if(e.data && e.data.mode){
                 switch(e.data.mode){
@@ -28,6 +30,9 @@ _WEBW.videoModeA = {
                     // Method 1: useOffscreenCanvas: false
                     case "initSend_useOffscreenCanvas" : this.initReceive_useOffscreenCanvas (e.data.data); break;
                     case "drawSend_useOffscreenCanvas" : this.drawReceive_useOffscreenCanvas (e.data.data); break;
+
+                    // Inited by the WebWorker
+                    case "loading_progress" : this.loading_progress (e.data.data); break;
                     
                     // Unmatched function.
                     default     : { 
@@ -56,14 +61,19 @@ _WEBW.videoModeA = {
             });
         },
 
+        loading_progress: function(data){
+            // console.log("loading_progress:", data);
+            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA:   ${data}`, "loading");
+            console.log(`  videoModeA:   ${data}`);
+        },
+
         // INIT: Sends graphics data to the WebWorker for later use.
-        initSend: function(waitForResp=true, waitCheckMs=0){
+        initSend: function(waitForResp=true){
             // console.log("_WEBW.videoModeA: initSend");
 
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
                 let ww_mode_key = "init";
-                this.messageStates.init.waiting = true;
 
                 let data = { 
                     cache: {},
@@ -82,7 +92,7 @@ _WEBW.videoModeA = {
                 for(let i=0, l=_JSG.loadedConfig.meta.layers.length; i<l; i+=1){
                 }
 
-                // Need full json, each tile imageData, hasTransparency, each tilemap name, rot 0, and orgTilemap.
+                // Need full json, each tile imageData, hasTransparency, isFullyTransparent, each tilemap name, rot 0, and orgTilemap.
                 let ts_keys = Object.keys(_GFX.cache);
                 for(let ts_key=0, l=ts_keys.length; ts_key<l; ts_key+=1){
                     // Get handle to the tileset key.
@@ -112,6 +122,7 @@ _WEBW.videoModeA = {
                         data.cache[key].tileset.push( {
                             imgData : tile.ctx.getImageData(0, 0, tileWidth, tileHeight),
                             hasTransparency: tile.hasTransparency, 
+                            isFullyTransparent: tile.isFullyTransparent, 
                         } ) ;
                     }
 
@@ -135,8 +146,9 @@ _WEBW.videoModeA = {
 
                 // Wait until finished?
                 if(waitForResp){ 
-                    try{ await this.waitForResp(ww_mode_key, waitCheckMs); } catch(e){ reject(e); return; }
-                    resolve(_GFX.fade.fadeImages); 
+                    this.messageStates2[ww_mode_key] = this.createDeferredPromise();
+                    await this.messageStates2[ww_mode_key].promise;
+                    resolve(); 
                     return; 
                 }
 
@@ -154,16 +166,15 @@ _WEBW.videoModeA = {
             _GFX.fade.maxFadeSteps = data.maxFadeSteps;
 
             // Update the message state.
-            this.messageStates[ww_mode_key].waiting = false;
+            this.messageStates2[ww_mode_key].resolve();
         },
 
         // Method 0: useOffscreenCanvas: false
-        initSend_useOffscreenCanvas: function(waitForResp=true, waitCheckMs=0){
+        initSend_useOffscreenCanvas: function(waitForResp=true){
             return new Promise(async(resolve,reject)=>{
                 // resolve(); return; 
                 // Update the message state.
                 let ww_mode_key = "initSend_useOffscreenCanvas";
-                this.messageStates[ww_mode_key].waiting = true;
 
                 let offscreenLayers = [];
                 for(let rec of _GFX.canvasLayers){
@@ -184,9 +195,8 @@ _WEBW.videoModeA = {
 
                 // Wait until finished?
                 if(waitForResp){ 
-                    // console.log(`WAITING: ${ww_mode_key}:`, this.messageStates[ww_mode_key].waiting);
-                    try{ await this.waitForResp(ww_mode_key, waitCheckMs); } catch(e){ reject(e); return; }
-                    // console.log(`DONE   : ${ww_mode_key}:`, this.messageStates[ww_mode_key].waiting);
+                    this.messageStates2[ww_mode_key] = this.createDeferredPromise();
+                    await this.messageStates2[ww_mode_key].promise;
                     resolve(); 
                     return; 
                 }
@@ -195,34 +205,23 @@ _WEBW.videoModeA = {
                 resolve();
 
             });
-
-            // WebWorker should already have this.
-            // let data = { 
-            //     cache: {},
-            //     VRAM: { 
-            //         _VRAM        : _GFX.VRAM._VRAM ,
-            //         indexByCoords: _GFX.VRAM.indexByCoords ,
-            //     },
-            //     meta: {
-            //         layers    : _JSG.loadedConfig.meta.layers,
-            //         dimensions: _JSG.loadedConfig.meta.dimensions,
-            //     }
-            // };
-
-            // Just send a flag for useOffscreenCanvas.
         },
         initReceive_useOffscreenCanvas: function(data){
             // Set the mode key.
             let ww_mode_key = "initSend_useOffscreenCanvas";
-            
+
+            // DEBUG: Save the returned ImageData for each tile/fade. Your app's debug can display them if you want.
+            if(!Object.keys(data).length){ 
+                if(_GFX._debug){ _GFX._debug.fadedTileset = data; }
+            }
+
             // Update the message state.
-            this.messageStates[ww_mode_key].waiting = false;
+            this.messageStates2[ww_mode_key].resolve();
         },
-        drawSend_useOffscreenCanvas: function(waitForResp=true, waitCheckMs=0){
+        drawSend_useOffscreenCanvas: function(waitForResp=true){
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
                 let ww_mode_key = "drawSend_useOffscreenCanvas";
-                this.messageStates[ww_mode_key].waiting = true;
 
                 _WEBW.videoModeA.video.webworker.postMessage(
                     {
@@ -238,9 +237,8 @@ _WEBW.videoModeA = {
 
                 // Wait until finished?
                 if(waitForResp){ 
-                    // console.log(`WAITING: ${ww_mode_key}:`, this.messageStates[ww_mode_key].waiting);
-                    try{ await this.waitForResp(ww_mode_key, waitCheckMs); } catch(e){ reject(e); return; }
-                    // console.log(`DONE   : ${ww_mode_key}:`, this.messageStates[ww_mode_key].waiting);
+                    this.messageStates2[ww_mode_key] = this.createDeferredPromise();
+                    await this.messageStates2[ww_mode_key].promise;
                     resolve(); 
                     return; 
                 }
@@ -254,7 +252,7 @@ _WEBW.videoModeA = {
             let ww_mode_key = "drawSend_useOffscreenCanvas";
             
             // Update the message state.
-            this.messageStates[ww_mode_key].waiting = false;
+            this.messageStates2[ww_mode_key].resolve();
         },
 
         // FADE: Request/Receive fade layers.
@@ -264,7 +262,6 @@ _WEBW.videoModeA = {
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
                 let ww_mode_key = "fade";
-                this.messageStates[ww_mode_key].waiting = true;
 
                 let dataToSend = {
                     "mode": "fade",
@@ -279,7 +276,8 @@ _WEBW.videoModeA = {
 
                 // Wait until finished?
                 if(waitForResp){ 
-                    try{ await this.waitForResp(ww_mode_key, waitCheckMs); } catch(e){ reject(e); return; }
+                    this.messageStates2[ww_mode_key] = this.createDeferredPromise();
+                    await this.messageStates2[ww_mode_key].promise;
                     resolve(_GFX.fade.fadeImages); 
                     return; 
                 }
@@ -300,7 +298,7 @@ _WEBW.videoModeA = {
             _GFX.fade.fadeImages = data;
 
             // Update the message state.
-            this.messageStates[ww_mode_key].waiting = false;
+            this.messageStates2[ww_mode_key].resolve();
         },
 
         // Init this WebWorker.
@@ -315,16 +313,10 @@ _WEBW.videoModeA = {
                 // Send the init for the webworker.
                 await _WEBW.videoModeA.video.initSend(true, 0);
 
-                // Update the loadingDiv messages.
-                if( _WEBW.videoModeA.video.messageStates.init.waiting == false ){
-                    msg1 = `init: WebWorker: _WEBW.videoModeA.video - COMPLETE (${(performance.now() - ww_ts).toFixed(2)}ms)`;
-                    _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
-                    console.log(msg1);
-                    resolve();
-                }
-                else{
-                    console.log("_WEBW.videoModeA.video is waiting.");
-                }
+                msg1 = `init: WebWorker: _WEBW.videoModeA.video - COMPLETE (${(performance.now() - ww_ts).toFixed(2)}ms)`;
+                _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
+                console.log(msg1);
+                resolve();
             });
 
         },
@@ -1059,6 +1051,11 @@ _GFX.gfxConversion = {
             // Go through each pixel.
             let hasTransparency = false;
             let tilePixels = [];
+            
+            // Also check if the tile is fully transparent.
+            let transparentPixelCounter = 0;
+            let isFullyTransparent = false;
+
             for(let i=0; i<tileData.length; i+=1){
                 let rgb32 = {};
                 let rgb332_byte = tileData[i];
@@ -1069,6 +1066,7 @@ _GFX.gfxConversion = {
                     rgb32.b = 0 ;
                     rgb32.a = 0 ;
                     hasTransparency = true;
+                    transparentPixelCounter += 1;
                 }
                 else{
                     rgb32 = this.rgb332_to_rgb32(rgb332_byte);
@@ -1080,13 +1078,16 @@ _GFX.gfxConversion = {
                 tilePixels.push(rgb32);
             }
 
+            // If this tile is fully transparent then set the flag for that.
+            if(transparentPixelCounter == tileData.length ){
+                isFullyTransparent = true;
+            }
+
             // Use the pixel data to create imageData for the tile canvas.
             let tileCanvas = document.createElement("canvas");
             tileCanvas.width = jsonTileset.config.tileWidth;
             tileCanvas.height = jsonTileset.config.tileHeight;
-            // tileCanvas.title = index;
             let tileCtx    = tileCanvas.getContext('2d');
-            this.setPixelated(tileCanvas);
             this.setPixelated(tileCtx);
             let tileImageData = tileCtx.createImageData(jsonTileset.config.tileWidth, jsonTileset.config.tileHeight);
             
@@ -1100,7 +1101,12 @@ _GFX.gfxConversion = {
             tileCtx.putImageData(tileImageData, 0, 0);
 
             // Add this tile object to the list.
-            _GFX.cache[jsonTileset.tilesetName].tileset.push( { canvas:tileCanvas, ctx:tileCtx, hasTransparency: hasTransparency } );
+            _GFX.cache[jsonTileset.tilesetName].tileset.push( { 
+                canvas            : tileCanvas, 
+                ctx               : tileCtx, 
+                hasTransparency   : hasTransparency, 
+                isFullyTransparent: isFullyTransparent 
+            } );
         }
     },
 
@@ -1126,7 +1132,6 @@ _GFX.gfxConversion = {
             tilemapCanvas.width  = w * jsonTileset.config.tileWidth;
             tilemapCanvas.height = h * jsonTileset.config.tileHeight;
             let tilemapCtx    = tilemapCanvas.getContext('2d');
-            this.setPixelated(tilemapCanvas);
             this.setPixelated(tilemapCtx);
             
             // Create a tilemap image canvas out of tiles for each tilemap.
@@ -1197,7 +1202,7 @@ _GFX.gfxConversion = {
                 _JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "s", "_GFX_INITS");
                 this.convertTileset(jsonTileset);
                 _JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "e", "_GFX_INITS");
-                msg = `  videoModeA: gfxConversion.convertTileset:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "pt", "_GFX_INITS").toFixed(2)}ms`;
+                msg = `  videoModeA:   gfxConversion.convertTileset:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "pt", "_GFX_INITS").toFixed(2)}ms`;
                 _JSG.loadingDiv.addMessageChangeStatus(msg, "loading");
                 console.log(msg);
 
@@ -1205,7 +1210,7 @@ _GFX.gfxConversion = {
                 _JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "s", "_GFX_INITS");
                 this.convertTilemaps(jsonTileset);
                 _JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "e", "_GFX_INITS");
-                msg = `  videoModeA: gfxConversion.convertTileset:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "pt", "_GFX_INITS").toFixed(2)}ms`;
+                msg = `  videoModeA:   gfxConversion.convertTileset:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "pt", "_GFX_INITS").toFixed(2)}ms`;
                 _JSG.loadingDiv.addMessageChangeStatus(msg, "loading");
                 console.log(msg);
             }
@@ -1326,13 +1331,6 @@ _GFX.init = async function(canvasesDestinationDiv){
         // Set some CSS for this canvas layer.
         if(rec.bg_color){ canvas.style["background-color"] = rec.bg_color; }
         canvas.style["z-index"] = zIndex;
-        // canvas.style["image-rendering"] = "optimizeSpeed";
-        // canvas.style["image-rendering"] = "-moz-crisp-edges";
-        // canvas.style["image-rendering"] = "-webkit-optimize-contrast";
-        // canvas.style["image-rendering"] = "-o-crisp-edges";
-        // canvas.style["image-rendering"] = "pixelated";
-        // canvas.style["-ms-interpolation-mode"] = "nearest-neighbor";
-
         canvas.classList.add("videoModeA_canvasLayer");
 
         // Add the data to canvasLayers.
@@ -1374,15 +1372,21 @@ _GFX.init = async function(canvasesDestinationDiv){
         // Set any missing defaults in _JSG.loadedConfig.jsgame_shared_plugins_config.videoModeA.
         if(_GFX.config.useOffscreenCanvas == undefined){ _GFX.config.useOffscreenCanvas = false; }
         if(_GFX.config.useFade            == undefined){ _GFX.config.useFade            = false; }
+        if(_GFX.config.debugMode          == undefined){ _GFX.config.debugMode          = false; }
 
         // Init(s).
         let msg;
 
         // GRAPHICS CONVERSION.
         _JSG.shared.timeIt.stamp("gfxConversion", "s", "_GFX_INITS"); 
+        msg = `gfxConversion STARTED:`;
+        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
+        console.log(msg);
+
         await this.gfxConversion.init(this); 
+        
         _JSG.shared.timeIt.stamp("gfxConversion", "e", "_GFX_INITS");
-        msg = `gfxConversion TOTAL:  ${_JSG.shared.timeIt.stamp("gfxConversion", "pt", "_GFX_INITS").toFixed(2)}ms`;
+        msg = `gfxConversion COMPLETE (${_JSG.shared.timeIt.stamp("gfxConversion", "pt", "_GFX_INITS").toFixed(2)}ms)`;
         _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
         console.log(msg);
         
@@ -1423,34 +1427,45 @@ _GFX.init = async function(canvasesDestinationDiv){
         //
 
         // Add the fade layer if specified.
-        if(_GFX.config.useFade){
+        if(_GFX.config.useFade || _GFX.config.useOffscreenCanvas){
             // Init the videoModeA WebWorker.
-            msg1 = "init: WebWorker: _WEBW.videoModeA.video - STARTED";
+            let msg1 = "init: WebWorker: _WEBW.videoModeA.video - STARTED";
             _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
             console.log(msg1);
             await _WEBW.videoModeA.video.init();
             await _GFX.fade.init();
         }
         
-        _JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "e", "_GFX_INITS"); 
-
-        // End of videoModeA inits.
-        msg = `Inits are complete:  TOTAL TIME: ${_JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "pt", "_GFX_INITS").toFixed(2)}ms`;
-        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
-        console.log(msg);
-
         if(_GFX.config.useOffscreenCanvas){
+            msg = `Initializing offScreenCanvas WebWorker - START`;
+            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
+            console.log(msg);
+
+            _JSG.shared.timeIt.stamp("OFFSCREEN_CANVAS_WEBWORKER", "s", "_GFX_INITS"); 
             await _GFX.init_useOffscreenCanvas();
-            resolve();
+            _JSG.shared.timeIt.stamp("OFFSCREEN_CANVAS_WEBWORKER", "e", "_GFX_INITS"); 
+            
+            msg = `Initializing offScreenCanvas WebWorker - FINISH` + ` ( ${_JSG.shared.timeIt.stamp("OFFSCREEN_CANVAS_WEBWORKER", "pt", "_GFX_INITS").toFixed(2)}ms)`;
+            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
+            console.log(msg);
         }
         else{
+            // Create contexts for each layer. 
             for(let rec of _GFX.canvasLayers){
                 let ctx = rec.canvas.getContext("2d", rec.canvasOptions || {});
                 ctx.clearRect(0, 0, rec.canvas.width, rec.canvas.height);
                 _GFX.gfxConversion.setPixelated(ctx);
                 rec.ctx = ctx;
             };
-            resolve();
         }
+        
+        _JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "e", "_GFX_INITS"); 
+        
+        // End of videoModeA inits.
+        msg = `Inits are complete:  TOTAL TIME: ${_JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "pt", "_GFX_INITS").toFixed(2)}ms`;
+        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
+        console.log(msg);
+
+        resolve();
     });
 };
