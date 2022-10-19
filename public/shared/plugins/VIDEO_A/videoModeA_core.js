@@ -16,19 +16,15 @@ _WEBW.videoModeA = {
             deferred.promise = promise;
             return deferred;
         },
-        messageStates2: {},
+        differedProms: {},
 
         // SHARED: Receives messages from the WebWorker and routes the message to the matching function(s).
         RECEIVE: function(e){
             // Make sure there is data and a data.mode.
             if(e.data && e.data.mode){
                 switch(e.data.mode){
-                    // Method 0: useOffscreenCanvas: false
-                    case "init"                        : this.initReceive       (e.data.data); break;
-                    case "fade"                        : this.fadeReceive       (e.data.data); break;
-                    
-                    // Method 1: useOffscreenCanvas: false
-                    case "initSend_useOffscreenCanvas" : this.initReceive_useOffscreenCanvas (e.data.data); break;
+                    case "init"     : this.initReceive    (e.data.data); break;
+                    case "initFade" : this.initFadeReceive(e.data.data); break;
                     case "drawSend_useOffscreenCanvas" : this.drawReceive_useOffscreenCanvas (e.data.data); break;
 
                     // Inited by the WebWorker
@@ -45,20 +41,6 @@ _WEBW.videoModeA = {
         },
         // SHARED.
         RECIEVE_ASYNC: async function(){
-        },
-
-        // SHARED: Will repeatedly check for the messageStates "waiting" key to be set to false before resolving.
-        waitForResp: async function(ww_mode_key, waitCheckMs){
-            return new Promise((res,rej)=>{
-                let id = setInterval( ()=>{
-                    if( _WEBW.videoModeA.video.messageStates[ww_mode_key].waiting == false ){
-                        // console.log("waitForResp: DONE", key);
-                        clearInterval(id);
-                        res();
-                    }
-                    // else{ console.log("waitForResp: WAIT", key); }
-                }, waitCheckMs );
-            });
         },
 
         loading_progress: function(data){
@@ -85,7 +67,8 @@ _WEBW.videoModeA = {
                         layers       : _JSG.loadedConfig.meta.layers,
                         dimensions   : _JSG.loadedConfig.meta.dimensions,
                         videoModeA_config: _GFX.config,
-                    }
+                    },
+                    offscreenLayers: []
                 };
                 // console.log("DATA:", data);
 
@@ -135,19 +118,28 @@ _WEBW.videoModeA = {
                     }
                 }
 
+                for(let rec of _GFX.canvasLayers){
+                    data.offscreenLayers.push({
+                        canvas: rec.canvas.transferControlToOffscreen(),
+                        ctx   : null,
+                        name  : rec.name,
+                        type  : rec.type,
+                    });
+                }
+
                 // console.log("_WEBW.videoModeA: initSend:", data);
                 _WEBW.videoModeA.video.webworker.postMessage(
                     {
                         mode: "init",
                         data: data,
                     }, 
-                    []
+                    [...data.offscreenLayers.map(d=>d.canvas)]
                 );
 
                 // Wait until finished?
                 if(waitForResp){ 
-                    this.messageStates2[ww_mode_key] = this.createDeferredPromise();
-                    await this.messageStates2[ww_mode_key].promise;
+                    this.differedProms[ww_mode_key] = this.createDeferredPromise();
+                    await this.differedProms[ww_mode_key].promise;
                     resolve(); 
                     return; 
                 }
@@ -162,62 +154,16 @@ _WEBW.videoModeA = {
             // Set the mode key.
             let ww_mode_key = "init";
             
-            // Update maxFadeSteps.
-            _GFX.fade.maxFadeSteps = data.maxFadeSteps;
-
-            // Update the message state.
-            this.messageStates2[ww_mode_key].resolve();
-        },
-
-        // Method 0: useOffscreenCanvas: false
-        initSend_useOffscreenCanvas: function(waitForResp=true){
-            return new Promise(async(resolve,reject)=>{
-                // resolve(); return; 
-                // Update the message state.
-                let ww_mode_key = "initSend_useOffscreenCanvas";
-
-                let offscreenLayers = [];
-                for(let rec of _GFX.canvasLayers){
-                    offscreenLayers.push({
-                        canvas: rec.canvas.transferControlToOffscreen(),
-                        ctx   : null,
-                        name  : rec.name,
-                        type  : rec.type,
-                    });
-                }
-                _WEBW.videoModeA.video.webworker.postMessage(
-                    {
-                        mode: ww_mode_key,
-                        data: offscreenLayers,
-                    }, 
-                    [...offscreenLayers.map(d=>d.canvas)]
-                );
-
-                // Wait until finished?
-                if(waitForResp){ 
-                    this.messageStates2[ww_mode_key] = this.createDeferredPromise();
-                    await this.messageStates2[ww_mode_key].promise;
-                    resolve(); 
-                    return; 
-                }
-
-                // No wait.
-                resolve();
-
-            });
-        },
-        initReceive_useOffscreenCanvas: function(data){
-            // Set the mode key.
-            let ww_mode_key = "initSend_useOffscreenCanvas";
-
             // DEBUG: Save the returned ImageData for each tile/fade. Your app's debug can display them if you want.
-            if(!Object.keys(data).length){ 
+            if(_GFX.config.debugMode && Object.keys(data).length){ 
                 if(_GFX._debug){ _GFX._debug.fadedTileset = data; }
             }
 
             // Update the message state.
-            this.messageStates2[ww_mode_key].resolve();
+            this.differedProms[ww_mode_key].resolve();
         },
+
+        // Method 0: useOffscreenCanvas: false
         drawSend_useOffscreenCanvas: function(waitForResp=true){
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
@@ -228,8 +174,10 @@ _WEBW.videoModeA = {
                         mode: ww_mode_key,
                         data: {
                             // _VRAM         : _GFX.VRAM._VRAM ,
-                            clearVram_flag: _GFX.VRAM.clearVram_flag,
-                            changes       : _GFX.VRAM.changes,
+                            clearVram_flag    : _GFX.VRAM.clearVram_flag,
+                            changes           : _GFX.VRAM.changes,
+                            previousFadeIndex : _GFX.fade.previousFadeIndex,
+                            currentFadeIndex  : _GFX.fade.currentFadeIndex,
                         },
                     }, 
                     []
@@ -237,48 +185,48 @@ _WEBW.videoModeA = {
 
                 // Wait until finished?
                 if(waitForResp){ 
-                    this.messageStates2[ww_mode_key] = this.createDeferredPromise();
-                    await this.messageStates2[ww_mode_key].promise;
+                    this.differedProms[ww_mode_key] = this.createDeferredPromise();
+                    await this.differedProms[ww_mode_key].promise;
                     resolve(); 
                     return; 
                 }
 
                 // No wait.
-                resolve();
+                else{
+                    resolve();
+                }
+
             });
         },
         drawReceive_useOffscreenCanvas: function(data){
             // Set the mode key.
             let ww_mode_key = "drawSend_useOffscreenCanvas";
             
+            _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
+            
             // Update the message state.
-            this.messageStates2[ww_mode_key].resolve();
+            this.differedProms[ww_mode_key].resolve();
         },
 
         // FADE: Request/Receive fade layers.
-        fadeSend          : function(waitForResp=false, waitCheckMs=0, options={}){
-            // console.log("_WEBW.videoModeA: fadeSend");
-
+        initFadeSend          : function(waitForResp=false){
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
-                let ww_mode_key = "fade";
+                let ww_mode_key = "initFade";
 
                 let dataToSend = {
-                    "mode": "fade",
-                    "data": {
-                        "_options": options,
-                    },
+                    "mode": ww_mode_key,
+                    "data": {},
                 };
-                if(options.includeVramUpdate){ dataToSend.data.VRAM = { _VRAM: _GFX.VRAM._VRAM }; }
                 
                 // console.log("_WEBW.videoModeA: fadeSend: VRAM:", _GFX.VRAM._VRAM);
                 _WEBW.videoModeA.video.webworker.postMessage( dataToSend, [] );
 
                 // Wait until finished?
                 if(waitForResp){ 
-                    this.messageStates2[ww_mode_key] = this.createDeferredPromise();
-                    await this.messageStates2[ww_mode_key].promise;
-                    resolve(_GFX.fade.fadeImages); 
+                    this.differedProms[ww_mode_key] = this.createDeferredPromise();
+                    await this.differedProms[ww_mode_key].promise;
+                    resolve(); 
                     return; 
                 }
 
@@ -286,25 +234,23 @@ _WEBW.videoModeA = {
                 resolve();
             });
         },
-        fadeReceive       : async function(data){
-            // console.log("_WEBW.videoModeA: fadeReceive:", data);
-
+        initFadeReceive       : async function(data){
             // Set the mode key.
-            let ww_mode_key = "fade";
+            let ww_mode_key = "initFade";
 
-            // console.log("_WEBW.videoModeA: fadeReceive:", data, this.messageStates);
-
-            // Save the data.
-            _GFX.fade.fadeImages = data;
+            // DEBUG: Save the returned ImageData for each tile/fade. Your app's debug can display them if you want.
+            if(_GFX.config.debugMode && Object.keys(data).length){ 
+                if(_GFX._debug){ _GFX._debug.fadedTileset = data; }
+            }
 
             // Update the message state.
-            this.messageStates2[ww_mode_key].resolve();
+            this.differedProms[ww_mode_key].resolve();
         },
 
         // Init this WebWorker.
         init: function(parent){
             return new Promise(async (resolve,reject)=>{
-                let ww_ts = performance.now();
+                // let ww_ts = performance.now();
 
                 // Create the WebWorkers and their message event listeners.
                 _WEBW.videoModeA.video.webworker = new Worker( "shared/plugins/VIDEO_A/videoModeA_webworker.js" );
@@ -313,9 +259,9 @@ _WEBW.videoModeA = {
                 // Send the init for the webworker.
                 await _WEBW.videoModeA.video.initSend(true, 0);
 
-                msg1 = `init: WebWorker: _WEBW.videoModeA.video - COMPLETE (${(performance.now() - ww_ts).toFixed(2)}ms)`;
-                _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
-                console.log(msg1);
+                // msg1 = `init: WebWorker: _WEBW.videoModeA.video - COMPLETE (${(performance.now() - ww_ts).toFixed(2)}ms)`;
+                // _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
+                // console.log(msg1);
                 resolve();
             });
 
@@ -325,6 +271,39 @@ _WEBW.videoModeA = {
 
 // INTERNAL: Fade.
 _GFX.fade = {
+    // Set by fadeIn and fadeOut. Used to determine if the fade level has changed.
+    currentFadeIndex : 0,
+    previousFadeIndex : 0,
+
+    // Ran by the game loop to handle the processing of fading (out/in) in a chain.
+    processFading: async function(){
+        return new Promise(async (resolve, reject) => {
+            resolve(); return; 
+        });
+    },
+    fadeIn: async function(){},
+    fadeOut: async function(){},
+
+    // TODO: REPLACE AND REMOVE.
+    blocking: {
+        doFade: async function(){},
+        fadeIn: async function(){},
+        fadeOut: async function(){},
+    },
+
+    // Init function for the draw object.
+    init: async function(){
+        return new Promise(async (resolve, reject)=>{
+            resolve();
+        });
+    },
+
+};
+
+_GFX.OLDfade = {
+    currentFadeIndex : 0,
+    previousFadeIndex : 0,
+
     fadeLayer         : undefined, // Will be a reference to the _GFX.canvasLayers entry having the type "_FADE_".
     isBlocking        : false,
     isActive          : false,
@@ -355,6 +334,8 @@ _GFX.fade = {
         processFading: async function(){
             return new Promise(async (resolve, reject) => {
                 resolve(); return; 
+
+
                 // Do nothing unless the isComplete flag is unset.
                 if(!this.parent.isComplete){
                     // Request frame data this frame.
@@ -485,9 +466,136 @@ _GFX.VRAM = {
     indexByCoords:[],
 
     // Holds the changes to VRAM that will be drawn on the next draw cycle.
-    changes: [],
+    changes: {},
+
+    // Stats for changes (this frame).
+    changesStats: {
+        new      : 0,
+        overwrite: 0,
+        ignore   : 0,
+    },
     
-    // Creates the VRAM._VRAM typedArray. (Should only be run once).
+    // Updates VRAM values and calls addToVramChanges.
+    updateVram: function(tileId, x, y, tilesetIndex, layerIndex){
+        // Get the tilesetName (to make sure that the tilesetIndex is valid.)
+        let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
+        if(!tilesetName){ console.log(`updateVram: Tileset index '${tilesetIndex}' was not found.`); return; }
+        
+        // Update _VRAM_view if the changes values are different than the existing values.
+        let VRAM_startIndex = this.indexByCoords[y][x];
+        let tilesetIndexHasChanged = false;
+        if( this._VRAM[layerIndex].view[VRAM_startIndex + 0] != tilesetIndex){ 
+            this._VRAM[layerIndex].view[VRAM_startIndex + 0]  = tilesetIndex;
+            tilesetIndexHasChanged = true;
+        }
+        let tileIdHasChanged = false;
+        if( this._VRAM[layerIndex].view[VRAM_startIndex + 1] != tileId){ 
+            this._VRAM[layerIndex].view[VRAM_startIndex + 1]  = tileId;
+            tileIdHasChanged = true;
+        }
+
+        // Add to VRAM changes if either the tileset or tileId has changed.
+        if(tilesetIndexHasChanged || tileIdHasChanged){
+            this.addToVramChanges(tileId, x, y, tilesetIndex, layerIndex);
+        }
+    },
+
+    addToVramChanges: function(tileId, x, y, tilesetIndex, layerIndex){
+        let key = `C${layerIndex}:${x}:${y}`;
+        
+        // Is there a change with this key?
+        if(this.changes[key]){
+            // Yes. Has either the tileId or tilesetIndex changed? 
+            if(
+                this.changes[key].tileId       != tileId       || 
+                this.changes[key].tilesetIndex != tilesetIndex
+            ){
+                // Update the values that have changed. 
+                if(this.changes[key].tileId       != tileId      ){ this.changes[key].tileId       = tileId; }
+                if(this.changes[key].tilesetIndex != tilesetIndex){ this.changes[key].tilesetIndex = tilesetIndex; }
+                this.changesStats.overwrite += 1;
+                return;
+            }
+
+            // No.
+            else{
+                this.changesStats.ignore += 1;
+                return;
+            }
+        }
+
+        // Add the change since it doesn't already exist.
+        this.changesStats.new += 1;
+        this.changes[key] = {
+            tileId      : tileId,
+            x           : x, 
+            y           : y,
+            tilesetIndex: tilesetIndex,
+            layerIndex  : layerIndex,
+        };
+    },
+
+    // Clears the changes array.
+    clearVramChanges: function(){
+        // console.log(`clearVramChanges`);
+        this.changes = {};
+        this.clearVram_flag = false;
+
+        this.changesStats.new      = 0;
+        this.changesStats.overwrite= 0;
+        this.changesStats.ignore   = 0;
+    },
+
+    // Set VRAM to all 0 (The tileId of 0 should be the fully transparent tile in each tileset.)
+    clearVram: function(){
+        // Dump the changes. 
+        this.clearVramChanges();
+
+        // Fill all VRAM layers with 0 (tileIndex to 0, tileId to 0, and x,y coordinate to 0.)
+        for(let i=0, l=this._VRAM.length; i<l; i+=1){ this._VRAM[i].view.fill(0); }
+
+        // Set flag to indicate a full clear of VRAM. (draw will use clearRect to Clear the whole canvas).
+        this.clearVram_flag = true;
+    },
+
+    // Draws to the app canvas based on the contents of the changes array.
+    draw: function(){
+        return new Promise( async (resolve,reject)=>{
+            // Abort if there are no changes. 
+            // console.log("Changes:", this.changesStats.new);
+            if( (_GFX.fade.currentFadeIndex == _GFX.fade.previousFadeIndex) && !this.changesStats.new ){ resolve(); return; }
+
+            // Uses WebWorker. Draws occur in the WebWorker.
+            if(_GFX.config.useOffscreenCanvas){
+                await _WEBW.videoModeA.video.drawSend_useOffscreenCanvas(true);
+
+                // Done drawing. Clear the VRAM changes. 
+                this.clearVramChanges();
+
+                resolve();
+            }
+
+            // resolve();
+        });
+    },
+
+    // TODO
+    // Returns a copy of the specified VRAM region.
+    getVramRegion: function(x, y, w, h){
+        let vramRegionObj = {};
+
+        //. Get all layers.
+
+        return vramRegionObj;
+    },
+    
+    // TODO
+    // Sets the specified VRAM region (usually data from getVramRegion).
+    setVramRegion: function(vramRegionObj){
+        // this.updateVram();
+    },
+
+    // INIT: Creates the VRAM._VRAM typedArray. (Should only be run once).
     initVram_typedArray: function(){
         // Get the dimensions.
         let dimensions  = _JSG.loadedConfig.meta.dimensions;
@@ -544,92 +652,8 @@ _GFX.VRAM = {
             throw msg1;
         }
     },
-
-    // Updates VRAM values and calls addToVramChanges.
-    updateVram: function(tileId, x, y, tilesetIndex, layerIndex){
-        // Get the tilesetName (to make sure that the tilesetIndex is valid.)
-        let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-        if(!tilesetName){ console.log(`updateVram: Tileset index '${tilesetIndex}' was not found.`); return; }
-        
-        // Update _VRAM_view if the changes values are different than the existing values.
-        let VRAM_startIndex = this.indexByCoords[y][x];
-        let tilesetIndexHasChanged = false;
-        if( this._VRAM[layerIndex].view[VRAM_startIndex + 0] != tilesetIndex){ 
-            this._VRAM[layerIndex].view[VRAM_startIndex + 0]  = tilesetIndex;
-            tilesetIndexHasChanged = true;
-        }
-        let tileIdHasChanged = false;
-        if( this._VRAM[layerIndex].view[VRAM_startIndex + 1] != tileId){ 
-            this._VRAM[layerIndex].view[VRAM_startIndex + 1]  = tileId;
-            tileIdHasChanged = true;
-        }
-
-        // Add to VRAM changes if either the tileset or tileId has changed.
-        if(tilesetIndexHasChanged || tileIdHasChanged){
-            this.addToVramChanges(tileId, x, y, tilesetIndex, layerIndex);
-        }
-    },
-
-    // Adds to the changes array. 
-    changesStats: {
-        new      : 0,
-        overwrite: 0,
-        ignore   : 0,
-    },
-    addToVramChanges: function(tileId, x, y, tilesetIndex, layerIndex){
-        // Try to find a matching change based on x,y, and layerIndex.
-        for(let i=0, l=this.changes.length; i<l; i+=1){
-            if( 
-                this.changes[i].x == x && 
-                this.changes[i].y == y && 
-                this.changes[i].layerIndex == layerIndex
-            ){
-                if(
-                    this.changes[i].tileId       != tileId || 
-                    this.changes[i].tilesetIndex != tilesetIndex
-                ){
-                    this.changes[i] = {
-                        tileId      : tileId,
-                        x           : x, 
-                        y           : y,
-                        tilesetIndex: tilesetIndex,
-                        layerIndex  : layerIndex,
-                    };
-                    this.changesStats.overwrite += 1;
-                    return; 
-                    break; 
-                }
-                else{
-                    this.changesStats.ignore += 1;
-                }
-            } 
-        }
-
-        // Add the change since it doesn't already exist.
-        this.changesStats.new       += 1;
-        let newChange = {
-            tileId      : tileId,
-            x           : x, 
-            y           : y,
-            tilesetIndex: tilesetIndex,
-            layerIndex  : layerIndex,
-        };
-        this.changes.push(newChange);
-        // console.log("addToVramChanges: ADDED", newChange);
-    },
-
-    // Clears the changes array.
-    clearVramChanges: function(){
-        // console.log(`clearVramChanges`);
-        this.changes = [];
-        this.clearVram_flag = false;
-
-        this.changesStats.new      = 0;
-        this.changesStats.overwrite= 0;
-        this.changesStats.ignore   = 0;
-    },
     
-    // Creates the indexByCoords lookup table. 
+    // INIT: Creates the indexByCoords lookup table. 
     create_VRAM_indexByCoords:function(){
         let dimensions = _JSG.loadedConfig.meta.dimensions;
 
@@ -643,94 +667,6 @@ _GFX.VRAM = {
         }
     },
 
-    // Set VRAM to all 0 (The tileId of 0 should be the fully transparent tile in each tileset.)
-    clearVram: function(){
-        // Dump the changes. 
-        this.clearVramChanges();
-
-        // Fill all VRAM layers with 0 (tileIndex to 0, tileId to 0, and x,y coordinate to 0.)
-        for(let i=0, l=this._VRAM.length; i<l; i+=1){ this._VRAM[i].view.fill(0); }
-
-        // Set flag to indicate a full clear of VRAM. (draw will use clearRect to Clear the whole canvas).
-        this.clearVram_flag = true;
-    },
-
-    // Draws to the app canvas based on the contents of the changes array.
-    draw: function(){
-        return new Promise( async (resolve,reject)=>{
-            // Abort if there are no changes. 
-            if(!this.changes.length){ resolve(); return; }
-
-            // Draw changes to individually layered DOM canvases.
-
-            // No WebWorker. Draw here within the main thread.
-            if(!_GFX.config.useOffscreenCanvas){
-                // Get the dimensions.
-                let dimensions  = _JSG.loadedConfig.meta.dimensions;
-
-                // If this flag is set just clear the canvases directly. Any changes after clearVram was run will still be available.
-                if(this.clearVram_flag){
-                    for(let i=0, l=_GFX.VRAM._VRAM.length; i<l; i+=1){
-                        // Clear the layer.
-                        _GFX.canvasLayers[i].ctx.clearRect( (0 * dimensions.tileWidth), (0 * dimensions.tileHeight), (_GFX.canvasLayers[i].canvas.width), (_GFX.canvasLayers[i].canvas.height));
-                    }
-                }
-
-                // Go through the VRAM changes.
-                // for(let i=0; i<this.changes.length; i+=1){
-                for(let change of this.changes){
-                    // Break out the changes object.
-                    let tileId       = change.tileId;
-                    let x            = change.x;
-                    let y            = change.y;
-                    let tilesetIndex = change.tilesetIndex;
-                    let layerIndex   = change.layerIndex;
-    
-                    // Get the tilesetName.
-                    let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-    
-                    // Get the tileset.
-                    let tileset     = _GFX.cache[tilesetName].tileset;
-    
-                    // Clear the destination if the new tile has transparency. 
-                    // (This is prevent the previous tile from showing through.)
-                    if(tileset[tileId].hasTransparency){
-                        _GFX.canvasLayers[layerIndex].ctx.clearRect( (x * dimensions.tileWidth), (y * dimensions.tileHeight), (dimensions.tileWidth), (dimensions.tileHeight));
-                    }
-    
-                    // Draw to the destination. 
-                    _GFX.canvasLayers[layerIndex].ctx.drawImage(tileset[tileId].canvas, (x * dimensions.tileWidth), (y * dimensions.tileHeight));
-                }
-            }
-
-            // Uses WebWorker. Draws occur in the WebWorker.
-            else if(_GFX.config.useOffscreenCanvas){
-                await _WEBW.videoModeA.video.drawSend_useOffscreenCanvas(true, 0, {} );
-            }
-
-            // Done drawing. Clear the VRAM changes. 
-            this.clearVramChanges();
-
-            resolve();
-        });
-    },
-
-    // TODO
-    // Returns a copy of the specified VRAM region.
-    getVramRegion: function(x, y, w, h){
-        let vramRegionObj = {};
-
-        //. Get all layers.
-
-        return vramRegionObj;
-    },
-    
-    // TODO
-    // Sets the specified VRAM region (usually data from getVramRegion).
-    setVramRegion: function(vramRegionObj){
-        // this.updateVram();
-    },
-    
     // Init function for the VRAM object.
     init: async function(){
         return new Promise(async (resolve, reject)=>{
@@ -794,14 +730,6 @@ _GFX.draw = {
                     return false;
                 }
 
-                return true; 
-            },
-            // TODO?
-            print                      : function(str, x, y, tilesetIndex, layerIndex){
-                return true; 
-            },
-            // TODO?
-            fillTile                   : function(tileId, x, y, w, h, tilesetIndex, layerIndex){
                 return true; 
             },
             drawTilemap                : function(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex){
@@ -871,8 +799,7 @@ _GFX.draw = {
 
         // Set text tiles into VRAM using a text string.
         print : function(str="", x, y, tilesetIndex, layerIndex){
-            // Checks.
-            // Done when setTile is called.
+            // Checks are done by setTile.
 
             // NOTE: print assumes that the text tileset's first tilemap is the fontset and that those tiles are generated in ASCII order.
 
@@ -894,8 +821,7 @@ _GFX.draw = {
 
         // Fill a rectangular region with one tile. 
         fillTile : function(tileId=" ", x, y, w, h, tilesetIndex, layerIndex){
-            // Checks.
-            // Done when setTile is called.
+            // Checks are done by setTile.
 
             // For each row...
             for(let dy=0; dy<h; dy+=1){
@@ -1301,15 +1227,6 @@ _GFX.initChecks = function(){
     return tests;
 };
 
-// INTERNAL:
-_GFX.init_useOffscreenCanvas = async function(){
-    // Inform the WebWorker to use useOffscreenCanvas.
-    // This will convert the canvases to offScreen. 
-    // They will only be able to be drawn to by the WebWorker.
-    await _WEBW.videoModeA.video.initSend_useOffscreenCanvas(true, 0);
-    // Needs canvas, ctx.
-},
-
 // INTERNAL: Init the graphics mode and perform conversions. (The _APP should call this one time).
 _GFX.init = async function(canvasesDestinationDiv){
     let generateCanvasLayer = function(rec, zIndex, type){
@@ -1321,12 +1238,6 @@ _GFX.init = async function(canvasesDestinationDiv){
         canvas.height = dimensions.tileHeight * dimensions.rows;
         
         let ctx;
-        if(!_GFX.config.useOffscreenCanvas){
-            // Create the ctx for this layer. 
-            ctx = canvas.getContext("2d", rec.canvasOptions || {});
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            _GFX.gfxConversion.setPixelated(ctx);
-        }
 
         // Set some CSS for this canvas layer.
         if(rec.bg_color){ canvas.style["background-color"] = rec.bg_color; }
@@ -1342,6 +1253,18 @@ _GFX.init = async function(canvasesDestinationDiv){
 
     return new Promise(async (resolve, reject)=>{
         _JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "s", "_GFX_INITS"); 
+
+        // Save the videoMode config.
+        _GFX.config = _JSG.loadedConfig.meta.jsgame_shared_plugins_config.videoModeA;
+
+        // Get the support files.
+        let proms = [
+            new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/VIDEO_A/videoModeA_user.js"    , t:"js", n:"videoModeA_user" }, "."); res(); } ),
+        ];
+        if(_GFX.config.debugMode){
+            proms.push( new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/VIDEO_A/videoModeA_debug.js"   , t:"js", n:"videoModeA_debug"}, "."); res(); } ) );
+        }
+        await Promise.all(proms);
 
         // Do the init checks. 
         let initChecks = this.initChecks();
@@ -1365,12 +1288,8 @@ _GFX.init = async function(canvasesDestinationDiv){
             console.log(msg1, initChecks);
         }
 
-        
-        // Save the videoMode config.
-        _GFX.config = _JSG.loadedConfig.meta.jsgame_shared_plugins_config.videoModeA;
-        
         // Set any missing defaults in _JSG.loadedConfig.jsgame_shared_plugins_config.videoModeA.
-        if(_GFX.config.useOffscreenCanvas == undefined){ _GFX.config.useOffscreenCanvas = false; }
+        if(_GFX.config.useOffscreenCanvas == undefined){ _GFX.config.useOffscreenCanvas = true; }
         if(_GFX.config.useFade            == undefined){ _GFX.config.useFade            = false; }
         if(_GFX.config.debugMode          == undefined){ _GFX.config.debugMode          = false; }
 
@@ -1422,46 +1341,26 @@ _GFX.init = async function(canvasesDestinationDiv){
         _JSG.shared.timeIt.stamp("VRAM", "s", "_GFX_INITS"); 
         await this.VRAM.init(this);          
         _JSG.shared.timeIt.stamp("VRAM", "e", "_GFX_INITS");
-
+        
         // TODO: Sprites.
         //
-
-        // Add the fade layer if specified.
-        if(_GFX.config.useFade || _GFX.config.useOffscreenCanvas){
-            // Init the videoModeA WebWorker.
-            let msg1 = "init: WebWorker: _WEBW.videoModeA.video - STARTED";
-            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
-            console.log(msg1);
-            await _WEBW.videoModeA.video.init();
-            await _GFX.fade.init();
-        }
         
-        if(_GFX.config.useOffscreenCanvas){
-            msg = `Initializing offScreenCanvas WebWorker - START`;
-            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
-            console.log(msg);
-
-            _JSG.shared.timeIt.stamp("OFFSCREEN_CANVAS_WEBWORKER", "s", "_GFX_INITS"); 
-            await _GFX.init_useOffscreenCanvas();
-            _JSG.shared.timeIt.stamp("OFFSCREEN_CANVAS_WEBWORKER", "e", "_GFX_INITS"); 
-            
-            msg = `Initializing offScreenCanvas WebWorker - FINISH` + ` ( ${_JSG.shared.timeIt.stamp("OFFSCREEN_CANVAS_WEBWORKER", "pt", "_GFX_INITS").toFixed(2)}ms)`;
-            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
-            console.log(msg);
-        }
-        else{
-            // Create contexts for each layer. 
-            for(let rec of _GFX.canvasLayers){
-                let ctx = rec.canvas.getContext("2d", rec.canvasOptions || {});
-                ctx.clearRect(0, 0, rec.canvas.width, rec.canvas.height);
-                _GFX.gfxConversion.setPixelated(ctx);
-                rec.ctx = ctx;
-            };
-        }
+        // Init the videoModeA WebWorker.
+        msg = "init: WebWorker: _WEBW.videoModeA.video - STARTED";
+        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
+        console.log(msg);
+        _JSG.shared.timeIt.stamp("WEBWORKER", "s", "_GFX_INITS"); 
+        await _WEBW.videoModeA.video.init();
+        await _GFX.fade.init();
+        _JSG.shared.timeIt.stamp("WEBWORKER", "e", "_GFX_INITS"); 
+        msg = `init: WebWorker: _WEBW.videoModeA.video - COMPLETE (${_JSG.shared.timeIt.stamp("WEBWORKER", "pt", "_GFX_INITS").toFixed(2)}ms`;
+        _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
+        console.log(msg);
         
         _JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "e", "_GFX_INITS"); 
         
         // End of videoModeA inits.
+        // COMPLETE (${(performance.now() - ww_ts).toFixed(2)}ms)`
         msg = `Inits are complete:  TOTAL TIME: ${_JSG.shared.timeIt.stamp("TOTAL_INIT_TIME", "pt", "_GFX_INITS").toFixed(2)}ms`;
         _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg}`, "loading");
         console.log(msg);
