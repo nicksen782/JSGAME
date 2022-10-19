@@ -31,7 +31,6 @@ _INPUT.gamepadMappings = {
     },
     "internal": {
         "ids": [
-            { "genName":"(N:Gamepad):(A:4):(B:17):(V:05ac):(P:111d)"                      , "active": true, "mapKey": "standard_xinput" },
             { "genName":"(N:Xbox 360 Controller (XInput STANDARD GAMEPAD)):(A:4):(B:17)"  , "active": true, "mapKey": "standard_xinput" },
             { "genName":"(N:xinput):(A:4):(B:17)"                                         , "active": true, "mapKey": "standard_xinput" },
         ],

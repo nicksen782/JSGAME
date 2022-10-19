@@ -159,11 +159,13 @@ _INPUT.web = {
             let gp;
             // foundBy
             
+            // Get the parent div and the gamepad.
             if     (mappedDiv.parentNode.id == _INPUT.web.nav.views.gp_p1.id){ gp = _INPUT.gamepad.gp_list.find(d=>d.data.playerKey=="p1"); }
             else if(mappedDiv.parentNode.id == _INPUT.web.nav.views.gp_p2.id){ gp = _INPUT.gamepad.gp_list.find(d=>d.data.playerKey=="p2"); }
             else   { console.log("updateOrCreateMap: ERROR: Unknown mappedDiv parentNode."); return; }
             if(!gp){ console.log("updateOrCreateMap: ERROR: Missing gp."); return; }
             
+            // Set the new foundBy value. 
             gp.data.mapObj.foundBy = "id-user";
 
             // Rebuild the button map from the table values. 
@@ -176,6 +178,9 @@ _INPUT.web = {
             // Set activeMap to the rebuilt mapRec.
             // gp.data.mapObj.activeMap = gp.data.mapObj.mapRec;
             
+            // TODO: BUG: Uses existing idRec from internal if creating new mapping from an internal mapping. 
+            // This is not a problem if the gamepad was NOT previously known by either internal or user maps.
+
             // If idRec is not populated then create it. 
             let idMatchFound = false;
             if( !Object.keys(gp.data.mapObj.idRec).length ){
@@ -508,12 +513,17 @@ _INPUT.web = {
                 }
             }
 
-            let updateTd = function(dest, type, index, value){
+            let updateTd = function(dest, type, index, value, rawValue){
                 let elem = dest;
                 let str = `${type}${index.toString().padStart(2, " ")}:${value.toString().padStart(2, " ")}`;
                 if(elem){ 
+                    if(elem.getAttribute("lastRaw") != rawValue){
+                        elem.title = `RAW: ${rawValue}`;
+                        elem.setAttribute("lastRaw", elem.title); 
+                    }
                     if(elem.getAttribute("last") != value){
-                        elem.innerText = str; elem.setAttribute("last", value); 
+                        elem.innerText = str; 
+                        elem.setAttribute("last", value); 
                         if(value != 0){ elem.classList.add("active"); }
                         else          { elem.classList.remove("active"); }
                     }
@@ -539,20 +549,34 @@ _INPUT.web = {
                 updateStandardGp_id( _INPUT.gamepad.gp_list[i], elem1 );
 
                 for(let index in _INPUT.gamepad.gp_list[i].gamepad.axes){
-                    let value = Math.round( _INPUT.gamepad.gp_list[i].gamepad.axes[index].toFixed(0) ); 
+                    // Get value for raw and a value forced the value into a range.
+                    let rawValue = Math.round( _INPUT.gamepad.gp_list[i].gamepad.axes[index].toFixed(0) ); 
+                    let value    = Math.min(Math.max(rawValue,-1),1);
+                    
                     let type = "A";
                     let elem2;
                     if     (i==0){ elem2 = elem1.querySelector(`.standardGpDiv_table1 td[name="${type}${index}"]`); }
                     else if(i==1){ elem2 = elem1.querySelector(`.standardGpDiv_table1 td[name="${type}${index}"]`); }
-                    updateTd(elem2, type, index, value);
+                    // elem2.title = value;
+                    
+
+                    updateTd(elem2, type, index, value, rawValue);
                 }
                 for(let index in _INPUT.gamepad.gp_list[i].gamepad.buttons){
-                    let value = Math.round( _INPUT.gamepad.gp_list[i].gamepad.buttons[index].value.toFixed(0) ); 
+                    // Get value for raw and a value forced the value into a range.
+                    let rawValue = Math.round( _INPUT.gamepad.gp_list[i].gamepad.buttons[index].value.toFixed(0) ); 
+                    let value    = Math.min(Math.max(rawValue,-1),1);
+
                     let type = "B";
                     let elem2;
                     if     (i==0){ elem2 = elem1.querySelector(`.standardGpDiv_table1 td[name="${type}${index}"]`); }
                     else if(i==1){ elem2 = elem1.querySelector(`.standardGpDiv_table1 td[name="${type}${index}"]`); }
-                    updateTd(elem2, type, index, value);
+                    // elem2.title = value;
+
+                    // Force the value into a range.
+                    value = Math.min(Math.max(value,-1),1);
+
+                    updateTd(elem2, type, index, value, rawValue);
                 }
             }
         }

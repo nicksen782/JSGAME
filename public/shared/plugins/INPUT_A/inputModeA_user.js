@@ -73,6 +73,53 @@ _INPUT.util = {
         return byte;
     },
 
+    // Utility function to check user-input state.
+    checkButton: function(playerKey="p1", type="press", buttonNames=[]){
+        // Function: 
+        //   Will return true on matches and false otherwise.
+        //   Can check for one button of a type.
+        //   Can check multiple buttons for a type and will return true if any of those buttons are set.
+        //   Can check against ANY button being active for a type. (Ex: "Press any button to continue")
+
+        // Example usages:
+        //   _INPUT.util.checkButton("p1", "press"  , "BTN_Y");            // One button: press.
+        //   _INPUT.util.checkButton("p1", "release", "BTN_Y");            // One button: release.
+        //   _INPUT.util.checkButton("p2", "held"   , "BTN_A");            // One button: held.
+        //   _INPUT.util.checkButton("p1", "press"  , ["BTN_A", "BTN_B"]); // Multiple button: press.
+
+        // Input checks:
+        // Will return false if the buttonName(s) specified are not valid.
+        if(!_INPUT.states[playerKey]){ return false; }
+        if(["press", "held", "release"].indexOf(type) == -1){ return false; }
+
+        // If buttonNames is not an array, do the simple check. 
+        if(!Array.isArray(buttonNames)){
+            if(_INPUT.consts.bits[buttonNames]){
+                let data = _INPUT.states[playerKey][type];
+                if(data & (1 <<_INPUT.consts.bits[buttonNames])){ return true; }
+            }
+        }
+        
+        // If the buttonNames is an array...
+        else{
+            // If the array is empty then check for a non-zero value matching the type specified for the player.
+            if(buttonNames.length == 0){ 
+                if(_INPUT.states[playerKey][type]){ return true; } 
+            }
+
+            // Look for any of the specified buttons matching the specified type for the player.
+            else{
+                for(let button of buttonNames){ 
+                    if(_INPUT.consts.bits[button]){
+                        let data = _INPUT.states[playerKey][type];
+                        if(data & (1 <<_INPUT.consts.bits[button])){ return true; }
+                    }
+                }
+            }
+        }
+        return false;
+    },
+
     init: function(parent){
         // Set parent(s).
         this.parent = parent;

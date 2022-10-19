@@ -366,28 +366,27 @@ _INPUT = {
             return new Promise(async (resolve, reject)=>{
                 this.parent = parent;
 
-                if(this.parent.config.includeJsgConfig){
-                    // Get the web files for the button map creator.
-                    let proms = [
-                        new Promise( async (res,rej) => { await _JSG.addFile({f: "shared/plugins/INPUT_A/inputModeA_web.html", t:"html", n:"JSG_inputModeA_web.html" }, "."); res(); } ),
-                        new Promise( async (res,rej) => { await _JSG.addFile({f: "shared/plugins/INPUT_A/inputModeA_web.js"  , t:"js"  , n:"JSG_inputModeA_web.js"   }, "."); res(); } ),
-                        new Promise( async (res,rej) => { await _JSG.addFile({f: "shared/plugins/INPUT_A/inputModeA_web.css" , t:"css" , n:"JSG_inputModeA_web.css"  }, "."); res(); } ),
-                    ]
-                    await Promise.all(proms);
+                // Get the support files. 
+                let proms = [
+                    new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/INPUT_A/inputModeA_user.js"    , t:"js"  , n:"inputModeA_user"         }, "."); res(); } ),
+                    new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/INPUT_A/inputModeA_mappings.js", t:"js"  , n:"inputModeA_mappings"     }, "."); res(); } ),
+                    new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/INPUT_A/inputModeA_web.html"   , t:"html", n:"JSG_inputModeA_web.html" }, "."); res(); } ),
+                    new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/INPUT_A/inputModeA_web.js"     , t:"js"  , n:"JSG_inputModeA_web.js"   }, "."); res(); } ),
+                    new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/INPUT_A/inputModeA_web.css"    , t:"css" , n:"JSG_inputModeA_web.css"  }, "."); res(); } ),
+                ];
+                await Promise.all(proms);
 
-                    // Add the HTML to the destination div.
-                    let div = document.createElement("div"); 
-                    div.id = "jsgame_inputDiv"; 
-                    div.classList.add("hide"); 
-                    div.innerHTML = _APP.files["JSG_inputModeA_web.html"];
-                    _JSG.DOM["jsgame_main_cont"].append(div);
+                // Add the HTML to the destination div.
+                let div = document.createElement("div"); 
+                div.id = "jsgame_inputDiv"; 
+                div.classList.add("hide"); 
+                div.innerHTML = _APP.files["JSG_inputModeA_web.html"];
+                _JSG.DOM["jsgame_main_cont"].append(div);
 
-                    // Run the web init.
-                    await _INPUT.web.init();
+                // Run the web init.
+                await _INPUT.web.init();
 
-                    resolve();
-                }
-                else{ resolve(); }
+                resolve();
             });
         },
     },
@@ -399,12 +398,13 @@ _INPUT = {
             // Save the config.
             this.config = _JSG.loadedConfig.meta.jsgame_shared_plugins_config.inputModeA;
 
-            // Get the user gamepad mappings from localStorage.
-            _INPUT.gamepadMappings.user = this.gamepad.getUserGpMappings_localStorage();
-
             // Inits.
             await this.web_pre.init(this);
+            console.log(this);
             this.util.init(this);
+
+            // Get the user gamepad mappings from localStorage.
+            _INPUT.gamepadMappings.user = this.gamepad.getUserGpMappings_localStorage();
 
             // Use the keyboard? 
             if(this.config.useKeyboard){

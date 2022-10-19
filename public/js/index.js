@@ -267,9 +267,19 @@ let _JSG = {
                 console.log(msg4);
                 console.log("");
 
+                // Run the app's init.
+                let msg1 = `_APP INIT   : ${rec.appKey}`;
+                _JSG.loadingDiv.addMessage(msg1);
+                console.log(msg1);
+                await _APP.init(); 
+                let msg2 = `_APP LOADED : ${rec.appKey}`;
+                _JSG.loadingDiv.addMessage(msg2);
+                console.log(msg2);
+                
                 // DEBUG:
                 try{
-                    console.log("DEBUG: VARS:");
+                    console.log("");
+                    console.log("JSGAME DEBUG: VARS:");
                     if(_JSG)  { console.log("  _JSG  :", _JSG  ); } else { console.log("  _JSG  :", "NOT LOADED"); }
                     if(_APP)  { console.log("  _APP  :", _APP  ); } else { console.log("  _APP  :", "NOT LOADED"); }
                     if(_GFX)  { console.log("  _GFX  :", _GFX  ); } else { console.log("  _GFX  :", "NOT LOADED"); }
@@ -281,29 +291,20 @@ let _JSG = {
                     console.log("Error showing debug vars.", e);
                 }
 
-                // Run the app's init.
-                let msg1 = `_APP INIT   : ${rec.appKey}`;
-                _JSG.loadingDiv.addMessage(msg1);
-                console.log(msg1);
-                await _APP.init(); 
-                let msg2 = `_APP LOADED : ${rec.appKey}`;
-                _JSG.loadingDiv.addMessage(msg2);
-                console.log(msg2);
-                
+                // If the app has a separate start function then run it here.
+                if(_APP.start){ await _APP.start(); }
+
                 // Set visabilities.
                 await new Promise((res,rej)=>{ setTimeout(()=>res(), 500); });
                 this.shared.setVisibility(this.DOM["jsgame_menu_toggleLoading"], false, false);
                 
+                // Show the app.
+                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
+
                 // Don't show the lobby if the appConfig says not to.
                 if(!_JSG.loadedConfig.meta.hideLobby){
                     this.shared.setVisibility(this.DOM["jsgame_menu_toggleLobby"], true, false);
                 }
-
-                // If the app has a separate start function then run it here.
-                if(_APP.start){ await _APP.start(); }
-
-                // Show the app.
-                this.shared.setVisibility(this.DOM["jsgame_menu_toggleApp"], true, false);
                 
                 resolve();
             }

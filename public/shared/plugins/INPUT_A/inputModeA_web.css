@@ -240,6 +240,8 @@ textarea#gamepad_nav_view_userMappings_textOutput {
     width: 99%;
     /* flex: auto; */
     /* flex-grow: 62; */
+    outline: none;
+    resize: none;
 }
 div#gamepad_nav_view_userMappings_controls{
     display: flex;

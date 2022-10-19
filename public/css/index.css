@@ -157,8 +157,8 @@ div#jsgame_appSelectDiv {
     padding: 10px;
     width: 60%;
     /* min-height: 120px; */
-    min-height: 550px;
-    max-height: 550px;
+    min-height: 500px;
+    max-height: 500px;
     font-family: Courier New, monospace;
     display: flex;
     flex-direction: column;
