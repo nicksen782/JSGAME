@@ -227,7 +227,11 @@ let _GFX = {
                 self.postMessage( 
                     { 
                         "mode" : "initFade", 
-                        "data" : debugData,
+                        "data" : {
+                            "debugData"    : debugData,
+                            "maxFadeSteps" : _GFX.fade.CONSTS.fader2.length,
+                            "fadeIsEnabled": this.isEnabled,
+                        },
                         "success":true,
                     },
                     []
@@ -271,9 +275,6 @@ let _GFX = {
                 layer       = _GFX.VRAM._VRAM[vramLayerI];
                 layerCanvas = _GFX.canvasLayers[vramLayerI];
                 
-                // let tmpCanvas = new OffscreenCanvas(width, height);
-                // let tmpCtx    = tmpCanvas.getContext('2d');
-
                 // Read through the VRAM for this layer to build up the image.
                 for(let y=0; y<dimensions.rows; y+=1){
                     for(let x=0; x < dimensions.cols; x+=1){
@@ -303,14 +304,8 @@ let _GFX = {
 
                         // Draw this canvas to the output layer. 
                         layerCanvas.ctx.drawImage(tile, x* dimensions.tileWidth, y*dimensions.tileHeight);
-                        
-                        // Draw this tile to the temp layer.
-                        // tmpCtx.drawImage(tile, x* dimensions.tileWidth, y*dimensions.tileHeight);
                     }
                 }
-                
-                // Draw the layer to the actual canvas.
-                // _GFX.canvasLayers[vramLayerI].ctx.drawImage(tmpCanvas, 0, 0);
             }
         }
     },
@@ -331,15 +326,15 @@ let _GFX = {
         }
 
         // Force a redraw using the fadetile versions.
-        if(_GFX.fade.isEnabled && event.data.data.currentFadeIndex != 0){ 
+        if(_GFX.fade.isEnabled && (_GFX.fade.previousFadeIndex != event.data.data.currentFadeIndex)){ 
+            // Update to the new currentFadeIndex.
             _GFX.fade.currentFadeIndex = event.data.data.currentFadeIndex;
-            if(_GFX.fade.currentFadeIndex != _GFX.fade.previousFadeIndex){
-                // Redraw the entire VRAM but with the fadeTiles at the currentFadeIndex.
-                await this.redrawFromVram();
 
-                // Update previousFadeIndex so that this check only happens once per fade level change.
-                _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
-            }
+            // Redraw the entire VRAM but with the fadeTiles at the currentFadeIndex.
+            await this.redrawFromVram();
+
+            // Update previousFadeIndex so that this check only happens once per fade level change.
+            _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
         }
 
         // Update the local VRAM with the changes.

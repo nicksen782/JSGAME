@@ -155,15 +155,16 @@ _WEBW.videoModeA = {
             let ww_mode_key = "init";
             
             // DEBUG: Save the returned ImageData for each tile/fade. Your app's debug can display them if you want.
-            if(_GFX.config.debugMode && Object.keys(data).length){ 
-                if(_GFX._debug){ _GFX._debug.fadedTileset = data; }
+            if(_GFX.config.debugMode && data.debugData && Object.keys(data.debugData).length){ 
+                if(_GFX._debug){ _GFX._debug.fadedTileset = data.debugData; }
             }
+            if("maxFadeSteps"  in data){ _GFX.fade.maxFadeSteps = data.maxFadeSteps; }
+            if("fadeIsEnabled" in data){ _GFX.fade.isEnabled    = data.fadeIsEnabled; }
 
             // Update the message state.
             this.differedProms[ww_mode_key].resolve();
         },
 
-        // Method 0: useOffscreenCanvas: false
         drawSend_useOffscreenCanvas: function(waitForResp=true){
             return new Promise(async(resolve,reject)=>{
                 // Update the message state.
@@ -239,9 +240,11 @@ _WEBW.videoModeA = {
             let ww_mode_key = "initFade";
 
             // DEBUG: Save the returned ImageData for each tile/fade. Your app's debug can display them if you want.
-            if(_GFX.config.debugMode && Object.keys(data).length){ 
-                if(_GFX._debug){ _GFX._debug.fadedTileset = data; }
+            if(_GFX.config.debugMode && data.debugData && Object.keys(data.debugData).length){ 
+                if(_GFX._debug){ _GFX._debug.fadedTileset = data.debugData; }
             }
+            if("maxFadeSteps"  in data){ _GFX.fade.maxFadeSteps = data.maxFadeSteps; }
+            if("fadeIsEnabled" in data){ _GFX.fade.isEnabled    = data.fadeIsEnabled; }
 
             // Update the message state.
             this.differedProms[ww_mode_key].resolve();
@@ -271,179 +274,113 @@ _WEBW.videoModeA = {
 
 // INTERNAL: Fade.
 _GFX.fade = {
-    // Set by fadeIn and fadeOut. Used to determine if the fade level has changed.
-    currentFadeIndex : 0,
-    previousFadeIndex : 0,
+    // Set by fadeIn and fadeOut and _GFX.draw. Used to determine if a frame redraw is needed.
+    currentFadeIndex          : 0,          // What the fade is set to now.
+    previousFadeIndex         : 0,          // What the fade was set to previously.
+    isBlocking                : false,      // Block app logic while the fade is active.
+    isActive                  : false,      // Fade is active true/false.
+    maxFadeSteps              : undefined,  // The length of the fader array (value returned by the WebWorker).
+    isEnabled                 : false,      // Value returned by the WebWorker.
+    framesBetweenFadeChanges  : 0,          // When framesSinceLastFadeChange reaches this then it is time to change fades.
+    framesSinceLastFadeChange : 0,          // Counter used in comparison with framesBetweenFadeChanges.
+    fadeStepDir               : 1,          // 1 is for fadeIn, -1 is for fadeOut.
+    mode                      : "no-chain", // Can be "no-chain", "fadeIn", "fadeOut". 
 
     // Ran by the game loop to handle the processing of fading (out/in) in a chain.
-    processFading: async function(){
+    processFading: async function(callbackFunction=null){
         return new Promise(async (resolve, reject) => {
-            resolve(); return; 
-        });
-    },
-    fadeIn: async function(){},
-    fadeOut: async function(){},
+            // Does the fade level need to change?
 
-    // TODO: REPLACE AND REMOVE.
-    blocking: {
-        doFade: async function(){},
-        fadeIn: async function(){},
-        fadeOut: async function(){},
-    },
+            // No. A fade was set but it is not part of a chain of fades.
+            if(!this.isEnabled || this.isActive == false || this.mode == "no-chain"){ 
+                if(callbackFunction){ callbackFunction(); }
+                resolve(this.isBlocking); 
+            }
+            
+            // Fade ready to change? 
+            else if(this.framesSinceLastFadeChange < this.framesBetweenFadeChanges){
+                // No. Not yet.
+                this.framesSinceLastFadeChange += 1;
+                if(callbackFunction){ callbackFunction(); }
+                resolve(this.isBlocking);
+            }
 
-    // Init function for the draw object.
-    init: async function(){
-        return new Promise(async (resolve, reject)=>{
-            resolve();
-        });
-    },
+            // Yes, fade is ready to change. 
+            else{
+                // Reset the counter.
+                this.framesSinceLastFadeChange = 0;
 
-};
+                // Update the previous and current fadeIndex.
+                this.currentFadeIndex += this.fadeStepDir;
 
-_GFX.OLDfade = {
-    currentFadeIndex : 0,
-    previousFadeIndex : 0,
-
-    fadeLayer         : undefined, // Will be a reference to the _GFX.canvasLayers entry having the type "_FADE_".
-    isBlocking        : false,
-    isActive          : false,
-    isComplete        : true,
-    isRequested       : false,
-    msBetweenDraws    : 0, // ms between fade frame draws. Use _JSG.shared.msToFramesToMs.
-    lastDraw          : 0, // Timestamp for the last fade frame draw.
-    maxFadeSteps      : 0, // The length of the fader array (in the WebWorker).
-    fadeStep          : 0, // 0 through maxFadeSteps.
-    fadeStepDir       : 1, // 1 is for fadeIn, -1 is for fadeOut.
-    fadeImages        : [], // Will be an array of ImageData
-    mode:"unknown",
-
-    blocking: {
-        parent: undefined,
-
-        // USER: Run this each gameLoop to handle fades. If it returns true then you should end the gameLoop.
-        doFade: async function(){
-            // DEBUG: disable the fade effect.
-            this.parent.isComplete = true;
-            return; 
-
-            if(!this.parent.isComplete){ await this.processFading(); return true; }
-            return false;
-        },
-
-        // INTERNAL: Handles the drawing of the fade layers onto the fade canvas.
-        processFading: async function(){
-            return new Promise(async (resolve, reject) => {
-                resolve(); return; 
-
-
-                // Do nothing unless the isComplete flag is unset.
-                if(!this.parent.isComplete){
-                    // Request frame data this frame.
-                    if(this.parent.isRequested){
-                        // console.log("processFading: requesting data", `fadeStepDir: ${this.parent.fadeStepDir == 1 ? "UP" : "DOWN"}`);
-                        
-                        // Request the fade images from the WebWorker and wait for them to be updated.
-                        await _WEBW.videoModeA.video.fadeSend(true, 0, { includeVramUpdate:true } );
-                        try{ await _WEBW.videoModeA.video.waitForResp("fade", 0); } catch(e){ console.log(e); return; }
-                        this.parent.isRequested = false;
-                        resolve(); return; 
-                    }
-
-                    // Draw from the requested fade frames. 
-                    else if(performance.now() - this.parent.lastDraw > this.parent.msBetweenDraws){
-                        // console.log("processFading: drawing fade frame layer.", `Layer: ${this.parent.fadeStep}`);
-
-                        // Draw the current fade frame to the fade layer. 
-                        this.parent.fadeLayer.ctx.putImageData(_GFX.fade.fadeImages[this.parent.fadeStep], 0, 0);
-
-                        // Record the last fade draw timestamp.
-                        this.parent.lastDraw = performance.now();
-
-                        // Update the fadeStep by fadeStepDir.
-                        // console.log("this.parent.fadeStepDir:", this.parent.fadeStepDir, this.parent.fadeStep);
-                        this.parent.fadeStep += this.parent.fadeStepDir;
-
-                        // Last frame of fadeUp?
-                        if(this.parent.fadeStep >= this.parent.maxFadeSteps){
-                            // console.log("Last frame: fadeUp");
-                            this.parent.isActive       = false; 
-                            this.parent.isBlocking     = false; 
-                            this.parent.isComplete     = true; 
-                            this.parent.fadeLayer.ctx.clearRect(0,0, this.parent.fadeLayer.canvas.width, this.parent.fadeLayer.canvas.height);
-                            // this.parent.fadeLayer.canvas.classList.add("cleared");
-                        }
-                        
-                        // Last frame of fadeDown?
-                        else if(this.parent.fadeStep < 0){
-                            // console.log("Last frame: fadeDown");
-                            this.parent.isActive       = false; 
-                            this.parent.isBlocking     = false; 
-                            this.parent.isComplete     = true; 
-                            // this.parent.fadeLayer.ctx.clearRect(0,0, this.parent.fadeLayer.canvas.width, this.parent.fadeLayer.canvas.height);
-                            // this.parent.fadeLayer.canvas.classList.add("cleared");
-                        }
-                        resolve(); return; 
-                    }
-
-                    resolve(); return; 
+                // Is this the last frame?
+                if(this.mode == "fadeIn" && this.currentFadeIndex < 0){
+                    this.setFade(0);
+                    if(callbackFunction){ callbackFunction(); }
+                    resolve(this.isBlocking); 
+                }
+                else if(this.mode == "fadeOut" && this.currentFadeIndex >= this.maxFadeSteps){
+                    this.setFade(this.maxFadeSteps - 1);
+                    if(callbackFunction){ callbackFunction(); }
+                    resolve(this.isBlocking); 
                 }
                 else{
-                    resolve();
+                    if(callbackFunction){ callbackFunction(); }
+                    resolve(this.isBlocking); 
                 }
-            });
-        },
 
-        // USER: Sets up the fade to fade from step 0 to the last step.
-        fadeIn: async function(speedMs, blocking){
-            return; 
-            // console.log("--------------fadeIn was called");
-            // Set the fade flags.
-            this.parent.isActive       = true; 
-            this.parent.isBlocking     = blocking; 
-            this.parent.fadeStep       = 0; 
-            this.parent.fadeStepDir    = 1; 
-            this.parent.msBetweenDraws = speedMs;
-            // this.parent.lastDraw       = 0;
-            this.parent.lastDraw       = performance.now()-speedMs;
-            this.parent.isComplete     = false;
-            this.parent.fadeLayer.canvas.classList.remove("cleared");
-            this.parent.isRequested    = true;
-            this.parent.mode    = "fadeIn"
-        },
-
-        // USER: Sets up the fade to fade from the last step to 0.
-        fadeOut: async function(speedMs, blocking){
-            return; 
-            // console.log("--------------fadeOut was called");
-            // Set the fade flags.
-            this.parent.isActive       = true; 
-            this.parent.isBlocking     = blocking; 
-            this.parent.fadeStep       = this.parent.maxFadeSteps - 1 ;
-            this.parent.fadeStepDir    = -1; 
-            this.parent.msBetweenDraws = speedMs;
-            // this.parent.lastDraw       = 0;
-            this.parent.lastDraw       = performance.now()-speedMs;
-            this.parent.isComplete     = false;
-            this.parent.fadeLayer.canvas.classList.remove("cleared");
-            this.parent.isRequested    = true;
-            this.parent.mode    = "fadeOut";
-        },
+            }
+        });
     },
 
-    // TODO
-    non_blocking: {
-        parent: undefined,
+    // Fade in from black.
+    fadeIn: async function(framesBetweenFadeChanges, isBlocking){
+        if(!this.isEnabled){ console.log("ERROR: Fade tiles have not been generated."); return; }
+
+        this.previousFadeIndex        = 100;
+        this.currentFadeIndex         = this.maxFadeSteps -1;
+
+        this.fadeStepDir              = -1;
+        this.isBlocking               = isBlocking;
+        this.isActive                 = true;
+        
+        this.framesBetweenFadeChanges = framesBetweenFadeChanges;
+        this.mode                     = "fadeIn";
+    },
+
+    // Fade out to black.
+    fadeOut: async function(framesBetweenFadeChanges, isBlocking){
+        if(!this.isEnabled){ console.log("ERROR: Fade tiles have not been generated."); return; }
+
+        this.previousFadeIndex        = 100;
+        this.currentFadeIndex         = 0;
+        
+        this.fadeStepDir              = 1;
+        this.isBlocking               = isBlocking;
+        this.isActive                 = true;
+        
+        this.framesBetweenFadeChanges = framesBetweenFadeChanges;
+        this.mode                     = "fadeOut";
+    },
+
+    // Set the fade level (no chaining).
+    setFade: async function(level){
+        if(!this.isEnabled){ console.log("ERROR: Fade tiles have not been generated."); return; }
+
+        this.previousFadeIndex = 100; //this.currentFadeIndex;
+        this.currentFadeIndex  = level;
+        
+        this.fadeStepDir       = 0;
+        this.isBlocking        = false;
+        this.isActive          = false;
+        
+        this.framesBetweenFadeChanges = 0;
+        this.mode              = "no-chain";
     },
 
     // Init function for the draw object.
     init: async function(){
         return new Promise(async (resolve, reject)=>{
-            this.blocking.parent     = this; 
-            this.non_blocking.parent = this; 
-
-            // Set a reference to the fade layer. 
-            this.fadeLayer = _GFX.canvasLayers.find( layer => layer.type == "_FADE_" );
-
             resolve();
         });
     },
@@ -566,16 +503,18 @@ _GFX.VRAM = {
             if( (_GFX.fade.currentFadeIndex == _GFX.fade.previousFadeIndex) && !this.changesStats.new ){ resolve(); return; }
 
             // Uses WebWorker. Draws occur in the WebWorker.
-            if(_GFX.config.useOffscreenCanvas){
-                await _WEBW.videoModeA.video.drawSend_useOffscreenCanvas(true);
+            
+            // Request the draw.
+            await _WEBW.videoModeA.video.drawSend_useOffscreenCanvas(true);
 
-                // Done drawing. Clear the VRAM changes. 
-                this.clearVramChanges();
+            // console.log("Sent draw");
+            // Update the recorded fade levels. 
+            _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
 
-                resolve();
-            }
+            // Done drawing. Clear the VRAM changes. 
+            this.clearVramChanges();
 
-            // resolve();
+            resolve();
         });
     },
 
@@ -1289,9 +1228,8 @@ _GFX.init = async function(canvasesDestinationDiv){
         }
 
         // Set any missing defaults in _JSG.loadedConfig.jsgame_shared_plugins_config.videoModeA.
-        if(_GFX.config.useOffscreenCanvas == undefined){ _GFX.config.useOffscreenCanvas = true; }
-        if(_GFX.config.useFade            == undefined){ _GFX.config.useFade            = false; }
-        if(_GFX.config.debugMode          == undefined){ _GFX.config.debugMode          = false; }
+        if(_GFX.config.fadeCreateAtStart  == undefined){ _GFX.config.fadeCreateAtStart = false; }
+        if(_GFX.config.debugMode          == undefined){ _GFX.config.debugMode         = false; }
 
         // Init(s).
         let msg;
@@ -1322,15 +1260,7 @@ _GFX.init = async function(canvasesDestinationDiv){
 
             generateCanvasLayer(rec, next_zIndex += 5, "user");
         }
-        if(_GFX.config.useFade){
-            // Add the fade layer last.
-            let msg1 = "init: Generating canvas layer: FADE.";
-            _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "loading");
-            console.log(msg1);
-            generateCanvasLayer({ "name": "FADE" , "canvasOptions": { "alpha": true } }, next_zIndex += 5, "_FADE_");
-            _JSG.shared.timeIt.stamp("canvasLayers", "e", "_GFX_INITS");
-        }
-        else { _JSG.shared.timeIt.stamp("canvasLayers", "e", "_GFX_INITS"); }
+        _JSG.shared.timeIt.stamp("canvasLayers", "e", "_GFX_INITS");
 
         // INIT DRAW.
         _JSG.shared.timeIt.stamp("draw", "s", "_GFX_INITS"); 
