@@ -1059,7 +1059,9 @@ _GFX.gfxConversion = {
                         tileset : jsonTileset.tileset,
                         tilemaps: jsonTileset.tilemaps,
                     },
+                    tilesetIndex: undefined,
                 };
+                _GFX.cache[tilesetName].tilesetIndex = Object.keys(_GFX.cache).length-1;
 
                 let msg;
 
