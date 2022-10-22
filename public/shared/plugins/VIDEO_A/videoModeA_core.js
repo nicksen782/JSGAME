@@ -32,12 +32,12 @@ _WEBW.videoModeA = {
                     
                     // Unmatched function.
                     default     : { 
-                        console.log("ERROR: Unmatched mode", e.data.mode); 
+                        console.error("ERROR: Unmatched mode", e.data.mode); 
                         break; 
                     }
                 }
             }
-            else{ console.log(`ERROR: No mode? e.data: ${e.data}, e.data.mode: ${e.data.mode}, e:`, e); }
+            else{ console.error(`ERROR: No mode? e.data: ${e.data}, e.data.mode: ${e.data.mode}, e:`, e); }
         },
         // SHARED.
         RECIEVE_ASYNC: async function(){
@@ -62,6 +62,7 @@ _WEBW.videoModeA = {
                     VRAM: { 
                         _VRAM        : _GFX.VRAM._VRAM ,
                         indexByCoords: _GFX.VRAM.indexByCoords ,
+                        coordsByIndex: _GFX.VRAM.coordsByIndex ,
                     },
                     meta: {
                         layers       : _JSG.loadedConfig.meta.layers,
@@ -335,7 +336,7 @@ _GFX.fade = {
 
     // Fade in from black.
     fadeIn: async function(framesBetweenFadeChanges, isBlocking){
-        if(!this.isEnabled){ console.log("ERROR: Fade tiles have not been generated."); return; }
+        if(!this.isEnabled){ console.error("ERROR: Fade tiles have not been generated."); return; }
 
         this.previousFadeIndex        = 100;
         this.currentFadeIndex         = this.maxFadeSteps -1;
@@ -350,7 +351,7 @@ _GFX.fade = {
 
     // Fade out to black.
     fadeOut: async function(framesBetweenFadeChanges, isBlocking){
-        if(!this.isEnabled){ console.log("ERROR: Fade tiles have not been generated."); return; }
+        if(!this.isEnabled){ console.error("ERROR: Fade tiles have not been generated."); return; }
 
         this.previousFadeIndex        = 100;
         this.currentFadeIndex         = 0;
@@ -365,7 +366,7 @@ _GFX.fade = {
 
     // Set the fade level (no chaining).
     setFade: async function(level){
-        if(!this.isEnabled){ console.log("ERROR: Fade tiles have not been generated."); return; }
+        if(!this.isEnabled){ console.error("ERROR: Fade tiles have not been generated."); return; }
 
         this.previousFadeIndex = 100; //this.currentFadeIndex;
         this.currentFadeIndex  = level;
@@ -401,6 +402,9 @@ _GFX.VRAM = {
 
     // Lookup table: Get VRAM index by y, x.
     indexByCoords:[],
+    
+    // Lookup table: Get y, x coords by VRAM index.
+    coordsByIndex:[],
 
     // Holds the changes to VRAM that will be drawn on the next draw cycle.
     changes: {},
@@ -416,7 +420,7 @@ _GFX.VRAM = {
     updateVram: function(tileId, x, y, tilesetIndex, layerIndex){
         // Get the tilesetName (to make sure that the tilesetIndex is valid.)
         let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-        if(!tilesetName){ console.log(`updateVram: Tileset index '${tilesetIndex}' was not found.`); return; }
+        if(!tilesetName){ console.error(`updateVram: Tileset index '${tilesetIndex}' was not found.`); return; }
         
         // Update _VRAM_view if the changes values are different than the existing values.
         let VRAM_startIndex = this.indexByCoords[y][x];
@@ -584,10 +588,10 @@ _GFX.VRAM = {
             }
         }
 
-        // This should not be reached because initChecks would have already caught it.
+        // This should not be reached because initChecks should have already caught it.
         else{
             let msg1 = `ERROR: initVram_typedArray: Invalid pointerSize.`;
-            console.log(msg1);
+            console.error(msg1);
             throw msg1;
         }
     },
@@ -597,11 +601,14 @@ _GFX.VRAM = {
         let dimensions = _JSG.loadedConfig.meta.dimensions;
 
         // This table is used by updateVram and draw to quickly get the starting VRAM index for a given x and y.
+        let currentIndex = 0;
         for(let row=0;row<dimensions.rows;row+=1){
             this.indexByCoords.push([]);
             for(let col=0; col < dimensions.cols; col+=1){
                 let index = (row * (dimensions.cols *2)) + (col*2);
                 this.indexByCoords[row].push(index);
+                this.coordsByIndex[currentIndex] = [row, col];
+                currentIndex +=1;
             }
         }
     },
@@ -633,26 +640,26 @@ _GFX.draw = {
         checks: {
             setTile                    : function(tileId, x, y, tilesetIndex, layerIndex){
                 // Checks.
-                if(tileId == null)      { console.log("setTile: The tileId was not specified."); return false; }
-                if(x == null)           { console.log("setTile: The x was not specified."); return false; }
-                if(y == null)           { console.log("setTile: The y was not specified."); return false; }
-                if(tilesetIndex == null){ console.log("setTile: The tilesetIndex was not specified."); return false; }
-                if(layerIndex == null)  { console.log("setTile: The layerIndex was not specified."); return false; }
+                if(tileId == null)      { console.error("setTile: The tileId was not specified."); return false; }
+                if(x == null)           { console.error("setTile: The x was not specified."); return false; }
+                if(y == null)           { console.error("setTile: The y was not specified."); return false; }
+                if(tilesetIndex == null){ console.error("setTile: The tilesetIndex was not specified."); return false; }
+                if(layerIndex == null)  { console.error("setTile: The layerIndex was not specified."); return false; }
 
                 // Make sure that the layerIndex is valid.
                 let numLayers = _JSG.loadedConfig.meta.layers.length;
-                if(layerIndex < 0 || layerIndex >= numLayers){ console.log("setTile: The layerIndex is not valid."); return false;  }
+                if(layerIndex < 0 || layerIndex >= numLayers){ console.error("setTile: The layerIndex is not valid."); return false;  }
 
                 // Get the tilesetName.
                 let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-                if(!tilesetName){ console.log(`setTile: Tileset index '${tilesetIndex}' was not found.`); return false; }
+                if(!tilesetName){ console.error(`setTile: Tileset index '${tilesetIndex}' was not found.`); return false; }
                 
                 // Get the tileset.
                 let tileset     = _GFX.cache[tilesetName].tileset;
-                if(!tileset){ console.log(`setTile: Tileset '${tilesetName}' was not found.`); return false; }
+                if(!tileset){ console.error(`setTile: Tileset '${tilesetName}' was not found.`); return false; }
 
                 // Check for the tile. If not found then skip.
-                if(undefined == tileset[tileId] || !tileset[tileId].canvas){ console.log(`setTile: Tile canvas for '${tilesetName}':'${tileId}' was not found.`); return false; }
+                if(undefined == tileset[tileId] || !tileset[tileId].canvas){ console.error(`setTile: Tile canvas for '${tilesetName}':'${tileId}' was not found.`); return false; }
 
                 // Get the dimensions.
                 let dimensions  = _JSG.loadedConfig.meta.dimensions;
@@ -661,11 +668,11 @@ _GFX.draw = {
                 let oob_x = x >= dimensions.cols ? true : false;
                 let oob_y = y >= dimensions.rows ? true : false;
                 if(oob_x){ 
-                    console.log(`setTile: Out-Of-Bounds on X: x: ${x}, y: ${y}, layerIndex: '${layerIndex}', tilesetName: '${tilesetName}', tileId: '${tileId}'`); 
+                    console.error(`setTile: Out-Of-Bounds on X: x: ${x}, y: ${y}, layerIndex: '${layerIndex}', tilesetName: '${tilesetName}', tileId: '${tileId}'`); 
                     return false;
                 }
                 if(oob_y){ 
-                    console.log(`setTile: Out-Of-Bounds on Y: x: ${x}, y: ${y}, layerIndex: '${layerIndex}', tilesetName: '${tilesetName}', tileId: '${tileId}'`); 
+                    console.error(`setTile: Out-Of-Bounds on Y: x: ${x}, y: ${y}, layerIndex: '${layerIndex}', tilesetName: '${tilesetName}', tileId: '${tileId}'`); 
                     return false;
                 }
 
@@ -674,54 +681,54 @@ _GFX.draw = {
             drawTilemap                : function(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex){
                 // Get the tilesetName.
                 let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-                if(!tilesetName){ console.log(`drawTilemap: Tileset index '${tilesetIndex}' was not found.`); return false; }
+                if(!tilesetName){ console.error(`drawTilemap: Tileset index '${tilesetIndex}' was not found.`); return false; }
 
                 // Get the tileset.
                 let tileset = _GFX.cache[tilesetName].tileset;
-                if(!tileset){ console.log(`drawTilemap: Tileset '${tilesetName}' was not found.`); return false; }
+                if(!tileset){ console.error(`drawTilemap: Tileset '${tilesetName}' was not found.`); return false; }
 
                 // Get the tilemap object.
                 let tilemapObj  = _GFX.cache[tilesetName].tilemap[tilemapName];
-                if(!tilemapObj){ console.log("drawTilemap: Tilemap object not found.", tilesetName, tilemapName); return false ; }
+                if(!tilemapObj){ console.error("drawTilemap: Tilemap object not found.", "tilesetName:", tilesetName, ", tilemapName:", tilemapName); return false ; }
 
                 // Get the tilemap. 
                 let tilemap = tilemapObj[rotationIndex].orgTilemap;
 
                 // Make sure that the tilemap is valid.
-                if(!tilemap)               { console.log(`drawTilemap: Tilemap was not found.`); return false; }
-                if(!Array.isArray(tilemap)){ console.log(`drawTilemap: Tilemap is not an array.`); return false; }
-                if(!tilemap.length)        { console.log(`drawTilemap: Tilemap has no entries.`); return false; }
-                if(!tilemap.length > 2)    { console.log(`drawTilemap: Tilemap is not valid.`); return false; }
+                if(!tilemap)               { console.error(`drawTilemap: Tilemap was not found.`); return false; }
+                if(!Array.isArray(tilemap)){ console.error(`drawTilemap: Tilemap is not an array.`); return false; }
+                if(!tilemap.length)        { console.error(`drawTilemap: Tilemap has no entries.`); return false; }
+                if(!tilemap.length > 2)    { console.error(`drawTilemap: Tilemap is not valid.`); return false; }
 
                 return true; 
             },
             drawTilemap_custom         : function(x, y, tilesetIndex, layerIndex, tilemap){
                 // Get the tilesetName.
                 let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-                if(!tilesetName){ console.log(`drawTilemap_custom: Tileset index '${tilesetIndex}' was not found.`); return false; }
+                if(!tilesetName){ console.error(`drawTilemap_custom: Tileset index '${tilesetIndex}' was not found.`); return false; }
 
                 // Get the tileset.
                 let tileset = _GFX.cache[tilesetName].tileset;
-                if(!tileset){ console.log(`drawTilemap_custom: Tileset '${tilesetName}' was not found.`); return false; }
+                if(!tileset){ console.error(`drawTilemap_custom: Tileset '${tilesetName}' was not found.`); return false; }
 
                 // Make sure that the tilemap is valid.
-                if(!tilemap)               { console.log(`drawTilemap_custom: Tilemap was not found.`); return false; }
-                if(!Array.isArray(tilemap)){ console.log(`drawTilemap_custom: Tilemap is not an array.`); return false; }
-                if(!tilemap.length)        { console.log(`drawTilemap_custom: Tilemap has no entries.`); return false; }
-                if(!tilemap.length > 2)    { console.log(`drawTilemap_custom: Tilemap is not valid.`); return false; }
+                if(!tilemap)               { console.error(`drawTilemap_custom: Tilemap was not found.`); return false; }
+                if(!Array.isArray(tilemap)){ console.error(`drawTilemap_custom: Tilemap is not an array.`); return false; }
+                if(!tilemap.length)        { console.error(`drawTilemap_custom: Tilemap has no entries.`); return false; }
+                if(!tilemap.length > 2)    { console.error(`drawTilemap_custom: Tilemap is not valid.`); return false; }
 
                 return true; 
             },
             customTilemapFromTextString: function(str, tilesetIndex){
-                if(tilesetIndex == null){ console.log("customTilemapFromTextString: The tilesetIndex was not specified."); return false; }
+                if(tilesetIndex == null){ console.error("customTilemapFromTextString: The tilesetIndex was not specified."); return false; }
 
                 // Get the tilesetName.
                 let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
-                if(!tilesetName){ console.log(`customTilemapFromTextString: Tileset index '${tilesetIndex}' was not found.`); return false; }
+                if(!tilesetName){ console.error(`customTilemapFromTextString: Tileset index '${tilesetIndex}' was not found.`); return false; }
     
                 // Get the tileset.
                 let tileset     = _GFX.cache[tilesetName].tileset;
-                if(!tileset){ console.log(`customTilemapFromTextString: Tileset '${tilesetName}' was not found.`); return false; }
+                if(!tileset){ console.error(`customTilemapFromTextString: Tileset '${tilesetName}' was not found.`); return false; }
 
                 return true; 
             },
@@ -991,7 +998,7 @@ _GFX.gfxConversion = {
             tilemap = tilemap.slice(2);
 
             // If a tilemap has no tiles in it then skip it. 
-            if(!tilemap.length){ console.log(`WARNING: Skipping empty tilemap: ${key}.`); return; }
+            if(!tilemap.length){ console.error(`WARNING: Skipping empty tilemap: ${key}.`); return; }
 
             let tilemapCanvas = document.createElement("canvas");
             tilemapCanvas.width  = w * jsonTileset.config.tileWidth;
@@ -1031,7 +1038,7 @@ _GFX.gfxConversion = {
             for(let i=0; i<_JSG.loadedConfig.meta.tilesets.length; i+=1){
                 // Make sure that the required file is loaded.
                 if(!_APP.files[_JSG.loadedConfig.meta.tilesets[i]]){ 
-                    console.log("ERROR: Tileset file not loaded:", _JSG.loadedConfig.meta.tilesets[i]); 
+                    console.error("ERROR: Tileset file not loaded:", _JSG.loadedConfig.meta.tilesets[i]); 
                     continue; 
                 }
 
@@ -1069,7 +1076,7 @@ _GFX.gfxConversion = {
                 _JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "s", "_GFX_INITS");
                 this.convertTileset(jsonTileset);
                 _JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "e", "_GFX_INITS");
-                msg = `  videoModeA:   gfxConversion.convertTileset:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "pt", "_GFX_INITS").toFixed(2)}ms`;
+                msg = `  videoModeA:   TILESET: gfxConversion.convertTileset  :  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTileset", "pt", "_GFX_INITS").toFixed(2)}ms`;
                 _JSG.loadingDiv.addMessageChangeStatus(msg, "loading");
                 console.log(msg);
 
@@ -1077,7 +1084,7 @@ _GFX.gfxConversion = {
                 _JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "s", "_GFX_INITS");
                 this.convertTilemaps(jsonTileset);
                 _JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "e", "_GFX_INITS");
-                msg = `  videoModeA:   gfxConversion.convertTileset:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "pt", "_GFX_INITS").toFixed(2)}ms`;
+                msg = `  videoModeA:   TILEMAPS: gfxConversion.convertTilemaps:  ${jsonTileset.tilesetName}: ${_JSG.shared.timeIt.stamp("gfxConversion.convertTilemaps", "pt", "_GFX_INITS").toFixed(2)}ms`;
                 _JSG.loadingDiv.addMessageChangeStatus(msg, "loading");
                 console.log(msg);
             }
@@ -1160,7 +1167,7 @@ _GFX.initChecks = function(){
         catch(e){
             let msg1 = `initChecks: FAILED TEST: '${test.desc}': `;
             _JSG.loadingDiv.addMessage(`  videoModeA: ${msg1}`);
-            console.log(msg1);
+            console.error(msg1);
             test.pass = false;
         }
     };
@@ -1220,7 +1227,7 @@ _GFX.init = async function(canvasesDestinationDiv){
         if(!initChecksAllPassed){
             let msg1 = "initChecks: Test(s) have failed. Cannot continue.";
             _JSG.loadingDiv.addMessageChangeStatus(`  videoModeA: ${msg1}`, "error");
-            console.log(msg1, initChecks);
+            console.error(msg1, initChecks);
             reject(); return; 
         }
         else{

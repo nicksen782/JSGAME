@@ -53,9 +53,9 @@ let _GFX = {
         convertForTileset: async function(tilesetName){
             return new Promise(async (resolve,reject)=>{
                 let i_32 = new Uint16Array(1);
-                let maxRed   ;//= new Uint8ClampedArray(1) ;
-                let maxGreen ;//= new Uint8ClampedArray(1) ;
-                let maxBlue  ;//= new Uint8ClampedArray(1) ;
+                let maxRed   ;
+                let maxGreen ;
+                let maxBlue  ;
 
                 // Get the tileset data.
                 let tilesetObj = _GFX.cache[tilesetName];
@@ -89,7 +89,6 @@ let _GFX = {
                     maxRed   = fadeColorObj[2] / 100; // 
                     maxGreen = fadeColorObj[1] / 100; // 
                     maxBlue  = fadeColorObj[0] / 100; // 
-                    // console.log("level:", levelI, ", maxRed:", maxRed, ", maxGreen:", maxGreen, ", maxBlue:", maxBlue);
 
                     // Create a 32-bit unsigned view to the image data.
                     let img_view32 = new Uint32Array(fadeImageData.data.buffer);
@@ -103,9 +102,10 @@ let _GFX = {
                         if(tileset_ImageData[i+3]==0){ i_32[0] +=1; continue; }
 
                         // Replace colors (32-bit)
-                        // Explanation: Multiply the rgb values individually by their max (percentage of color.)
-                        // Use << 0 to ensure an integer.
-                        // Use bitshifting to create one 32-bit value out of the individual 8-bit values. 
+                        // Explanation: 
+                        //   Multiply the rgb values individually by their max (percentage of color.)
+                        //   Use << 0 to ensure an integer.
+                        //   Use bitshifting to create one 32-bit value out of the individual 8-bit values. 
                         img_view32[i_32[0]] =
                             ( ( (tileset_ImageData[i+3]           ) << 0 ) << 24) | // alpha
                             ( ( (tileset_ImageData[i+2] * maxBlue ) << 0 ) << 16) | // blue
@@ -161,8 +161,8 @@ let _GFX = {
             await Promise.all(proms);
         },
 
-        previousFadeIndex: 0, 
-        currentFadeIndex: 0, 
+        previousFadeIndex: 0, // TODO: No used in the WebWorker?
+        currentFadeIndex : 0, 
 
         // _GFX.fade.CONSTS.currentFadeIndex
         // _GFX.fade.CONSTS.fader2.length
@@ -195,7 +195,7 @@ let _GFX = {
                 new Uint8ClampedArray([ 66 , 28 , 14  ]), // 7 b: 66 , g: 28  , r: 14 
                 new Uint8ClampedArray([ 66 , 14 , 0   ]), // 8 b: 66 , g: 14  , r: 0  
                 new Uint8ClampedArray([ 33 , 0  , 0   ]), // 9 b: 33 , g: 0   , r: 0  
-                new Uint8ClampedArray([ 0  , 0  , 0   ]), // 10b: 0  , g: 0   , r: 0   // FULL OFF.
+                new Uint8ClampedArray([ 0  , 0  , 0   ]), // 10b: 0  , g: 0   , r: 0   // FULL OFF. (Is this needed?)
             ], // The rgb values for each fade level.
         } ,
 
@@ -241,55 +241,52 @@ let _GFX = {
             return debugData;
         }, 
     },
-    redrawFromVram: async function(){
-        // Draw the background color (if it exists) for the first layer. 
-        // if(_GFX.meta.layers[0].bg_color){
-        //     _GFX.canvasLayers[0].ctx.fillStyle = _GFX.meta.layers[0].bg_color;
-        //     _GFX.canvasLayers[0].ctx.fillRect(0, 0, _GFX.canvasLayers[0].canvas.width, _GFX.canvasLayers[0].canvas.height);
-        // }
-        // // If it doesn't then just use clearRect.
-        // else{
-        //     _GFX.canvasLayers[0].ctx.clearRect(0, 0, _GFX.canvasLayers[0].canvas.width, _GFX.canvasLayers[0].canvas.height);
-        // }
 
-        // Use the VRAM to create combine each layer in order.
+    // Draws from VRAM and/or changes.
+    draw2: async function(type="vram", changes=[] ){
         let dimensions = _GFX.meta.dimensions;
         let tilesetNames = Object.keys(_GFX.cache);
-        let tileset; 
-        let width  = dimensions.tileWidth  * dimensions.cols;
-        let height = dimensions.tileHeight * dimensions.rows;
-
-        // Vars.
-        let layer;
-        let layerCanvas;
+        let tileset;
+        let thisVRAM;
         let vramIndex;
-        let tilesetIndex;
-        let tileId;
-        let tilesetName;
-        let tile;
 
-        for(let i=0, l1=_GFX.meta.layers.length; i<l1; i+=1){
-            // Read through each VRAM layer.
-            for(let vramLayerI=0, l2=_GFX.VRAM._VRAM.length; vramLayerI<l2; vramLayerI+=1){
-                // Get the layer.
-                layer       = _GFX.VRAM._VRAM[vramLayerI];
-                layerCanvas = _GFX.canvasLayers[vramLayerI];
-                
-                // Read through the VRAM for this layer to build up the image.
-                for(let y=0; y<dimensions.rows; y+=1){
-                    for(let x=0; x < dimensions.cols; x+=1){
-                        // Get the VRAM index for this x and y.
+        if     (type=="vram"){
+            let layerCanvas;
+            let tilesetIndex;
+            let tileId;
+            let tilesetName;
+            let tile;
+            let vramLayerI;
+            let y;
+            let x;
+            let l2;
+            let vramLayerIndex;
+            let vramLayerIndex_len;
+
+            for(let i=0, l1=_GFX.meta.layers.length; i<l1; i+=1){
+                // Read through each VRAM layer.
+                for(vramLayerI=0, l2=_GFX.VRAM._VRAM.length; vramLayerI<l2; vramLayerI+=1){
+                    // Get the layer.
+                    thisVRAM    = _GFX.VRAM._VRAM[vramLayerI];
+                    layerCanvas = _GFX.canvasLayers[vramLayerI];
+                    
+                    // Read through the VRAM for this layer to build up the image.
+                    for(vramLayerIndex=0, vramLayerIndex_len=_GFX.VRAM.coordsByIndex.length; vramLayerIndex < vramLayerIndex_len; vramLayerIndex +=1){
+                        // Get the y and x for this vram index (by actual coord count, not vram size.)
+                        [y, x] = _GFX.VRAM.coordsByIndex[vramLayerIndex];
+
+                        // Get the actual VRAM index for this x and y.
                         vramIndex = _GFX.VRAM.indexByCoords[y][x];
 
                         // Get the tilesetIndex and the tileId.
-                        tilesetIndex = layer.view[vramIndex + 0];
-                        tileId       = layer.view[vramIndex + 1];
+                        tilesetIndex = thisVRAM.view[vramIndex + 0];
+                        tileId       = thisVRAM.view[vramIndex + 1];
 
                         // Get the tileset name. 
-                        tilesetName = tilesetNames[tilesetIndex];
+                        tilesetName = tilesetNames[ tilesetIndex ];
 
                         // Get the tileset.
-                        tileset = _GFX.cache[ tilesetNames[ tilesetIndex ] ].tileset;
+                        tileset = _GFX.cache[ tilesetName ].tileset;
 
                         // Get the tile (main).
                         tile = tileset[tileId] ;
@@ -299,7 +296,8 @@ let _GFX = {
 
                         //
                         if(_GFX.fade.isEnabled && _GFX.fade.currentFadeIndex != 0){ 
-                            tile = tile.fadeTiles[ _GFX.fade.currentFadeIndex ].canvas; }
+                            tile = tile.fadeTiles[ _GFX.fade.currentFadeIndex ].canvas; 
+                        }
                         else{ tile = tile.canvas; }
 
                         // Draw this canvas to the output layer. 
@@ -308,8 +306,52 @@ let _GFX = {
                 }
             }
         }
+        else if(type=="changes"){
+            // Update the local VRAM with the changes.
+
+            // Draw changes to the canvases.
+            for(let key in changes){
+                let change = changes[key];
+                
+                // Get the VRAM layer, and VRAM index for this x and y.
+                let thisVRAM  = _GFX.VRAM._VRAM[change.layerIndex].view;
+                let vramIndex = _GFX.VRAM.indexByCoords[change.y][change.x];
+
+                // Update VRAM with this tilesetIndex and tileId.
+                thisVRAM[vramIndex + 0] = change.tilesetIndex;
+                thisVRAM[vramIndex + 1] = change.tileId;
+
+                // Get the tileset.
+                tileset = _GFX.cache[ tilesetNames[ change.tilesetIndex ] ].tileset;
+                
+                // Get the tile (main).
+                let tile = tileset[change.tileId] ;
+
+                // Clear the destination if the new tile has transparency. 
+                // (This is prevent the previous tile from showing through.)
+                if(tile.hasTransparency){
+                    _GFX.canvasLayers[ change.layerIndex ].ctx.clearRect(
+                        change.x* dimensions.tileWidth, change.y*dimensions.tileHeight,
+                        dimensions.tileWidth, dimensions.tileHeight
+                    );
+                }
+
+                // Draw the correct tile to the canvas. 
+                if(_GFX.fade.isEnabled && _GFX.fade.currentFadeIndex != 0){ 
+                    tile = tile.fadeTiles[ _GFX.fade.currentFadeIndex ].canvas; 
+                }
+                else{ tile = tile.canvas; }
+                
+                // Draw to the destination. 
+                _GFX.canvasLayers[ change.layerIndex ].ctx.drawImage(tile, (change.x * dimensions.tileWidth), (change.y * dimensions.tileHeight));
+            }
+        }
+        else{
+            console.log("ERROR: draw2: Invalid type specified.", type);
+        }
     },
 
+    // Wrapper to draw2. Draws from VRAM and/or changes.
     draw: async function(event){
         // This function updates local VRAM and draws the changes.
         // It is expected that the data sent to this function is correct and free of duplication.
@@ -331,51 +373,15 @@ let _GFX = {
             _GFX.fade.currentFadeIndex = event.data.data.currentFadeIndex;
 
             // Redraw the entire VRAM but with the fadeTiles at the currentFadeIndex.
-            await this.redrawFromVram();
+            await this.draw2("vram", []);
 
             // Update previousFadeIndex so that this check only happens once per fade level change.
             _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
         }
 
-        // Update the local VRAM with the changes.
-        let tilesetNames = Object.keys(_GFX.cache);
-        let tileset;
-        
-        // Draw changes to the canvases.
-        for(let key in event.data.data.changes){
-            let change = event.data.data.changes[key];
-            
-            // UPDATE VRAM.
-            // Get the VRAM index for this x and y.
-            // Set the tilesetIndex and the tileId.
-            let thisVRAM  = _GFX.VRAM._VRAM[change.layerIndex].view;
-            let vramIndex = _GFX.VRAM.indexByCoords[change.y][change.x];
-            thisVRAM[vramIndex + 0] = change.tilesetIndex;
-            thisVRAM[vramIndex + 1] = change.tileId;
-
-            // Get the tileset.
-            tileset = _GFX.cache[ tilesetNames[ change.tilesetIndex ] ].tileset;
-            
-            // Get the tile (main).
-            let tile = tileset[change.tileId] ;
-
-            // Clear the destination if the new tile has transparency. 
-            // (This is prevent the previous tile from showing through.)
-            if(tile.hasTransparency){
-                _GFX.canvasLayers[ change.layerIndex ].ctx.clearRect(
-                     change.x* dimensions.tileWidth, change.y*dimensions.tileHeight,
-                     dimensions.tileWidth, dimensions.tileHeight
-                );
-            }
-
-            // Draw the correct tile to the canvas. 
-            if(_GFX.fade.isEnabled && _GFX.fade.currentFadeIndex != 0){ 
-                tile = tile.fadeTiles[ _GFX.fade.currentFadeIndex ].canvas; 
-            }
-            else{ tile = tile.canvas; }
-            
-            // Draw to the destination. 
-            _GFX.canvasLayers[ change.layerIndex ].ctx.drawImage(tile, (change.x * dimensions.tileWidth), (change.y * dimensions.tileHeight));
+        // Draw changes to the canvases and update VRAM?.
+        if(Object.keys(event.data.data.changes).length){
+            await this.draw2("changes", event.data.data.changes);
         }
 
         // Inform the main thread that we are done. 
@@ -394,6 +400,7 @@ let _GFX = {
 
         // Update the indexByCoords x,y lookup array.
         _GFX.VRAM.indexByCoords  = event.data.data.VRAM.indexByCoords;
+        _GFX.VRAM.coordsByIndex  = event.data.data.VRAM.coordsByIndex;
 
         // Update the local graphics cache. 
         _GFX.cache = event.data.data.cache;
