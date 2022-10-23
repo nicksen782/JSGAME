@@ -130,7 +130,9 @@ _GFX.util = {
     // VRAM functions.
     VRAM: {
         // Calls the internal VRAM.draw function. 
-        draw: async function(){ return _GFX.VRAM.draw(); },
+        draw: async function(){ 
+            return _GFX.VRAM.draw(); 
+        },
 
         // TODO
         // Returns a copy of the specified VRAM region.
@@ -145,7 +147,49 @@ _GFX.util = {
         // TODO
         // Sets the specified VRAM region (usually data from getVramRegion).
         setVramRegion: function(vramRegionObj){
-            // this.updateVram();
+            return _GFX.VRAM.setVramRegion(vramRegionObj);
+        },
+    },
+
+    // Fade functions. 
+    fade: {
+        // Called by the gameLoop to handle the processing of fadeIn and fadeOut (chain-fade).
+        processFading: async function(callbackFunction=null){ 
+            return _GFX.fade.processFading(callbackFunction); 
+        },
+
+        // Fade in from black.
+        fadeIn : function(obj){
+            // EXAMPLE USAGE: _GFX.util.fade.fadeIn({ delay: 5, block: true });
+            let isBlocking = obj.block | 0;
+            let delay      = obj.delay | 0;
+
+            // Setup the fade.
+            _GFX.fade.fadeIn(delay, isBlocking);
+            
+            // Set starting fade level?
+            if(obj.startLevel != undefined){ _GFX.fade.currentFadeIndex = obj.startLevel; }
+        },
+        
+        // Fade out to black.
+        fadeOut: function(obj){
+            // EXAMPLE USAGE: _GFX.util.fade.fadeOut({ delay: 5, block: false });
+            let isBlocking = obj.block | 0;
+            let delay      = obj.delay | 0;
+            
+            // Setup the fade.
+            _GFX.fade.fadeOut(delay, isBlocking);
+
+            // Set starting fade level?
+            if(obj.startLevel != undefined){ _GFX.fade.currentFadeIndex = obj.startLevel; }
+        },
+        
+        // Set the fade level (no chaining).
+        setFade: function(obj){
+            // EXAMPLE USAGE: _GFX.util.fade.setFade({ level: 5 });
+            let level      = obj.level | 0;
+            
+            _GFX.fade.setFade(level);
         },
     },
 

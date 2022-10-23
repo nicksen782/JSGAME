@@ -287,7 +287,7 @@ _GFX.fade = {
     fadeStepDir               : 1,          // 1 is for fadeIn, -1 is for fadeOut.
     mode                      : "no-chain", // Can be "no-chain", "fadeIn", "fadeOut". 
 
-    // Ran by the game loop to handle the processing of fading (out/in) in a chain.
+    // Called by the gameLoop to handle the processing of fadeIn and fadeOut (chain-fade).
     processFading: async function(callbackFunction=null){
         return new Promise(async (resolve, reject) => {
             // Does the fade level need to change?
@@ -335,7 +335,7 @@ _GFX.fade = {
     },
 
     // Fade in from black.
-    fadeIn: async function(framesBetweenFadeChanges, isBlocking){
+    fadeIn: function(framesBetweenFadeChanges, isBlocking){
         if(!this.isEnabled){ console.error("ERROR: Fade tiles have not been generated."); return; }
 
         this.previousFadeIndex        = 100;
@@ -350,7 +350,7 @@ _GFX.fade = {
     },
 
     // Fade out to black.
-    fadeOut: async function(framesBetweenFadeChanges, isBlocking){
+    fadeOut: function(framesBetweenFadeChanges, isBlocking){
         if(!this.isEnabled){ console.error("ERROR: Fade tiles have not been generated."); return; }
 
         this.previousFadeIndex        = 100;
@@ -365,10 +365,10 @@ _GFX.fade = {
     },
 
     // Set the fade level (no chaining).
-    setFade: async function(level){
+    setFade: function(level){
         if(!this.isEnabled){ console.error("ERROR: Fade tiles have not been generated."); return; }
 
-        this.previousFadeIndex = 100; //this.currentFadeIndex;
+        this.previousFadeIndex = 100;   // this.currentFadeIndex;
         this.currentFadeIndex  = level;
         
         this.fadeStepDir       = 0;
@@ -379,7 +379,7 @@ _GFX.fade = {
         this.mode              = "no-chain";
     },
 
-    // Init function for the draw object.
+    // Init function for fade.
     init: async function(){
         return new Promise(async (resolve, reject)=>{
             resolve();

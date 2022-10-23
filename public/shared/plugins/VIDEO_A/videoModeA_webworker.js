@@ -61,7 +61,7 @@ let _GFX = {
                 let tilesetObj = _GFX.cache[tilesetName];
                 let tiles = tilesetObj.tileset;
 
-                // Canvas to be a strip tiles.length tiles wide and one tile tall.
+                // Canvas to be a strip of tiles.length tiles wide and one tile tall.
                 let tileset_canvas = new OffscreenCanvas(_GFX.meta.dimensions.tileWidth * tiles.length, _GFX.meta.dimensions.tileHeight * 1);
                 let tileset_ctx = tileset_canvas.getContext('2d');
 
@@ -78,14 +78,17 @@ let _GFX = {
                 let tileset_ImageData = tileset_ctx.getImageData(0, 0, tileset_canvas.width, tileset_canvas.height).data;
                 let len = tileset_ImageData.byteLength;
 
-                for(let levelI=0, levelL=_GFX.fade.CONSTS.fader2.length; levelI<levelL; levelI+=1){
+                for(let levelI=0, levelL=_GFX.fade.CONSTS.fadeTable.length; levelI<levelL; levelI+=1){
+                    // Skip the creation of the full color and black version of the tile (save some RAM since the draw2logic can already handle this.)
+                    if(levelI == 0 || levelI == _GFX.fade.CONSTS.fadeTable.length -1){ continue; }
+
                     // Create empty image data.
                     let fade_canvas = new OffscreenCanvas(tileset_canvas.width, tileset_canvas.height);
                     let fade_ctx = fade_canvas.getContext("2d");
                     let fadeImageData = tileset_ctx.createImageData( tileset_canvas.width, tileset_canvas.height );
                     
                     // Get the max for red, green, and blue fade level values.
-                    let fadeColorObj = _GFX.fade.CONSTS.fader2[levelI];
+                    let fadeColorObj = _GFX.fade.CONSTS.fadeTable[levelI];
                     maxRed   = fadeColorObj[2] / 100; // 
                     maxGreen = fadeColorObj[1] / 100; // 
                     maxBlue  = fadeColorObj[0] / 100; // 
@@ -164,42 +167,56 @@ let _GFX = {
         previousFadeIndex: 0, // TODO: No used in the WebWorker?
         currentFadeIndex : 0, 
 
-        // _GFX.fade.CONSTS.currentFadeIndex
-        // _GFX.fade.CONSTS.fader2.length
         CONSTS : {
-            // *** FADER *** tim1724
-            // Modified for max red/green/blue percentages for JavaScript by nicksen782.
-            fader : [
-                //                               INDEX BB GGG RRR  B G R    DEC   HEX
-                { b: 100, g: 100 , r: 100 } , // 0  11 111 111  3 7 7  , 255 , 0xFF // FULL ON. (Is this needed?)
-                { b: 66 , g: 100 , r: 100 } , // 1  10 111 111  2 7 7  , 191 , 0xBF
-                { b: 66 , g: 100 , r: 85  } , // 2  10 111 110  2 7 6  , 190 , 0xBE
-                { b: 66 , g: 85  , r: 71  } , // 3  10 110 101  2 6 5  , 181 , 0xB5
-                { b: 66 , g: 71  , r: 71  } , // 4  10 101 101  2 5 5  , 173 , 0xAD
-                { b: 100, g: 57  , r: 57  } , // 5  11 100 100  3 4 4  , 228 , 0xE4
-                { b: 100, g: 28  , r: 28  } , // 6  11 010 010  3 2 2  , 210 , 0xD2
-                { b: 66 , g: 28  , r: 14  } , // 7  10 010 001  2 2 1  , 145 , 0x91
-                { b: 66 , g: 14  , r: 0   } , // 8  10 001 000  2 1 0  , 136 , 0x88
-                { b: 33 , g: 0   , r: 0   } , // 9  01 000 000  1 0 0  , 64  , 0x40
-                { b: 0  , g: 0   , r: 0   } , // 10 00 000 000  0 0 0  , 0   , 0x00 // FULL OFF 
-            ], // The rgb values for each fade level.
+            // Fade table created by tim1724 
+            // http://uzebox.org/forums/viewtopic.php?p=2232#p2232
+            // https://github.com/Uzebox/uzebox/blob/88991dbd76d3dd8590c1e18a47be0f7169049294/kernel/uzeboxVideoEngine.c#L259
+            srcFadeTable: [
+                //    // INDEX // DEC // B G R // BB GGG RRR // B%  G%  R%  
+                0x00, //     0 // 0   // 0 0 0 // 00 000 000 // 0   0   0   
+                0x40, //     1 // 64  // 1 0 0 // 01 000 000 // 33  0   0   
+                0x88, //     2 // 136 // 2 1 0 // 10 001 000 // 66  14  0   
+                0x91, //     3 // 145 // 2 2 1 // 10 010 001 // 66  28  14  
+                0xD2, //     4 // 210 // 3 2 2 // 11 010 010 // 100 28  28  
+                0xE4, //     5 // 228 // 3 4 4 // 11 100 100 // 100 57  57  
+                0xAD, //     6 // 173 // 2 5 5 // 10 101 101 // 66  71  71  
+                0xB5, //     7 // 181 // 2 6 5 // 10 110 101 // 66  85  71  
+                0xB6, //     8 // 182 // 2 6 6 // 10 110 110 // 66  85  85  
+                0xBE, //     9 // 190 // 2 7 6 // 10 111 110 // 66  100 85  
+                0xBF, //    10 // 191 // 2 7 7 // 10 111 111 // 66  100 100 
+                0xFF, //    11 // 255 // 3 7 7 // 11 111 111 // 100 100 100 
+            ],
             
-            fader2 : [
-                new Uint8ClampedArray([ 100, 100, 100 ]), // 0 b: 100, g: 100 , r: 100 // FULL ON. (Is this needed?)
-                new Uint8ClampedArray([ 66 , 100, 100 ]), // 1 b: 66 , g: 100 , r: 100
-                new Uint8ClampedArray([ 66 , 100, 85  ]), // 2 b: 66 , g: 100 , r: 85 
-                new Uint8ClampedArray([ 66 , 85 , 71  ]), // 3 b: 66 , g: 85  , r: 71 
-                new Uint8ClampedArray([ 66 , 71 , 71  ]), // 4 b: 66 , g: 71  , r: 71 
-                new Uint8ClampedArray([ 100, 57 , 57  ]), // 5 b: 100, g: 57  , r: 57 
-                new Uint8ClampedArray([ 100, 28 , 28  ]), // 6 b: 100, g: 28  , r: 28 
-                new Uint8ClampedArray([ 66 , 28 , 14  ]), // 7 b: 66 , g: 28  , r: 14 
-                new Uint8ClampedArray([ 66 , 14 , 0   ]), // 8 b: 66 , g: 14  , r: 0  
-                new Uint8ClampedArray([ 33 , 0  , 0   ]), // 9 b: 33 , g: 0   , r: 0  
-                new Uint8ClampedArray([ 0  , 0  , 0   ]), // 10b: 0  , g: 0   , r: 0   // FULL OFF. (Is this needed?)
-            ], // The rgb values for each fade level.
+            // Modified srcFadeTable for max red/green/blue percentages of full by nicksen782.
+            // Created by: createFadeValues.
+            fadeTable: [],
         } ,
 
+        createFadeValues: function(){
+            let src = this.CONSTS.srcFadeTable;
+            let b,g,r;
+
+            for(let i=0, l=src.length; i<l; i+=1){
+                // console.log( {
+                //     "index:"      : i,
+                //     "hex_string"  : "0x"+src[i].toString(16).toUpperCase().padStart(2, "0"), 
+                //     "dec"         : src[i], 
+                //     "bin_string_b": ( (src[i] & 0b11000000) >> 6 ).toString(2).padStart(2, "0"), 
+                //     "bin_string_g": ( (src[i] & 0b00111000) >> 3 ).toString(2).padStart(3, "0"), 
+                //     "bin_string_r": ( (src[i] & 0b00000111) >> 0 ).toString(2).padStart(3, "0"),
+                // } );
+
+                // Add the values in reverse order (round down to the nearest whole integer).
+                b = ( ( ( ( src[i] & 0b11000000 ) >> 6) / 3 ) * 100 ) << 0;
+                g = ( ( ( ( src[i] & 0b00111000 ) >> 3) / 7 ) * 100 ) << 0;
+                r = ( ( ( ( src[i] & 0b00000111 ) >> 0) / 7 ) * 100 ) << 0;
+                this.CONSTS.fadeTable.unshift( new Uint8ClampedArray([ b, g, r ]) );
+            }
+        },
         init: async function(type="postInit"){
+            // Generate the percentages version of the srcFadeTable.
+            this.createFadeValues();
+
             // Create faded versions of each tile for each tileset. 
             await _GFX.fade.convertAllTilesets(type);
             this.isEnabled = true; 
@@ -229,7 +246,7 @@ let _GFX = {
                         "mode" : "initFade", 
                         "data" : {
                             "debugData"    : debugData,
-                            "maxFadeSteps" : _GFX.fade.CONSTS.fader2.length,
+                            "maxFadeSteps" : _GFX.fade.CONSTS.fadeTable.length,
                             "fadeIsEnabled": this.isEnabled,
                         },
                         "success":true,
@@ -291,14 +308,31 @@ let _GFX = {
                         // Get the tile (main).
                         tile = tileset[tileId] ;
 
-                        // Don't draw fully transparent tiles.
-                        if(tile.isFullyTransparent){ continue; }
+                        // Clear if the previous fade index was at max.
+                        if(tile.isFullyTransparent || _GFX.fade.previousFadeIndex >= _GFX.fade.CONSTS.fadeTable.length -1){
+                            layerCanvas.ctx.clearRect(
+                                x* dimensions.tileWidth, y*dimensions.tileHeight,
+                                dimensions.tileWidth, dimensions.tileHeight
+                            );
 
-                        //
-                        if(_GFX.fade.isEnabled && _GFX.fade.currentFadeIndex != 0){ 
-                            tile = tile.fadeTiles[ _GFX.fade.currentFadeIndex ].canvas; 
+                            // Don't draw fully transparent tiles.
+                            if(tile.isFullyTransparent){ continue; }
                         }
-                        else{ tile = tile.canvas; }
+
+                        // Draw the correct tile to the canvas. 
+
+                        // If the currentFadeIndex is 0 then draw the normal tile.
+                        if(_GFX.fade.currentFadeIndex == 0 || !_GFX.fade.isEnabled){ tile = tile.canvas; }
+                        
+                        // If the currentFadeIndex is the last index in the fader2 array then draw a black tile. 
+                        else if( _GFX.fade.currentFadeIndex >= _GFX.fade.CONSTS.fadeTable.length -1 ){
+                            layerCanvas.ctx.fillStyle = "#000000";
+                            layerCanvas.ctx.fillRect( (x * dimensions.tileWidth), (y * dimensions.tileHeight), dimensions.tileWidth , dimensions.tileHeight);
+                            continue; 
+                        }
+                        
+                        // Otherwise, draw the currentFadeIndex tile minus 1 index.
+                        else{ tile = tile.fadeTiles[ _GFX.fade.currentFadeIndex-1 ].canvas; }
 
                         // Draw this canvas to the output layer. 
                         layerCanvas.ctx.drawImage(tile, x* dimensions.tileWidth, y*dimensions.tileHeight);
@@ -327,9 +361,9 @@ let _GFX = {
                 // Get the tile (main).
                 let tile = tileset[change.tileId] ;
 
-                // Clear the destination if the new tile has transparency. 
-                // (This is prevent the previous tile from showing through.)
-                if(tile.hasTransparency){
+                // Clear the destination if the new tile has transparency. (This is prevent the previous tile from showing through.)
+                // Also clear if the previous fade index was at max.
+                if(tile.hasTransparency || _GFX.fade.previousFadeIndex >= _GFX.fade.CONSTS.fadeTable.length -1){
                     _GFX.canvasLayers[ change.layerIndex ].ctx.clearRect(
                         change.x* dimensions.tileWidth, change.y*dimensions.tileHeight,
                         dimensions.tileWidth, dimensions.tileHeight
@@ -337,10 +371,19 @@ let _GFX = {
                 }
 
                 // Draw the correct tile to the canvas. 
-                if(_GFX.fade.isEnabled && _GFX.fade.currentFadeIndex != 0){ 
-                    tile = tile.fadeTiles[ _GFX.fade.currentFadeIndex ].canvas; 
+
+                // If the currentFadeIndex is 0 then draw the normal tile.
+                if(_GFX.fade.currentFadeIndex == 0 || !_GFX.fade.isEnabled){ tile = tile.canvas; }
+                
+                // If the currentFadeIndex is the last index in the fader2 array then draw a black tile. 
+                else if( _GFX.fade.currentFadeIndex >= _GFX.fade.CONSTS.fadeTable.length -1 ){
+                    _GFX.canvasLayers[ change.layerIndex ].ctx.fillStyle = "#000000";
+                    _GFX.canvasLayers[ change.layerIndex ].ctx.fillRect( (change.x * dimensions.tileWidth), (change.y * dimensions.tileHeight), dimensions.tileWidth , dimensions.tileHeight);
+                    continue; 
                 }
-                else{ tile = tile.canvas; }
+                
+                // Otherwise, draw the currentFadeIndex tile minus 1 index.
+                else{ tile = tile.fadeTiles[ _GFX.fade.currentFadeIndex-1 ].canvas; }
                 
                 // Draw to the destination. 
                 _GFX.canvasLayers[ change.layerIndex ].ctx.drawImage(tile, (change.x * dimensions.tileWidth), (change.y * dimensions.tileHeight));
@@ -367,6 +410,11 @@ let _GFX = {
             }
         }
 
+        // Draw changes to the canvases and update VRAM?.
+        if(Object.keys(event.data.data.changes).length){
+            await this.draw2("changes", event.data.data.changes);
+        }
+
         // Force a redraw using the fadetile versions.
         if(_GFX.fade.isEnabled && (_GFX.fade.previousFadeIndex != event.data.data.currentFadeIndex)){ 
             // Update to the new currentFadeIndex.
@@ -377,11 +425,6 @@ let _GFX = {
 
             // Update previousFadeIndex so that this check only happens once per fade level change.
             _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
-        }
-
-        // Draw changes to the canvases and update VRAM?.
-        if(Object.keys(event.data.data.changes).length){
-            await this.draw2("changes", event.data.data.changes);
         }
 
         // Inform the main thread that we are done. 
@@ -456,7 +499,6 @@ let _GFX = {
         );
     },
 };
-
 
 // Take care of vendor prefixes.
 self.postMessage = self.postMessage || self.webkitPostMessage;
