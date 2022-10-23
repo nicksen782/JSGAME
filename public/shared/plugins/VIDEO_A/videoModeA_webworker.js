@@ -222,7 +222,7 @@ let _GFX = {
             this.isEnabled = true; 
 
             let debugData = {};
-            if( _GFX.meta.videoModeA_config.debugMode ){
+            if( _GFX.meta.videoModeA_config.debug.generateAndReturnFadedTiles ){
                 for(let tilesetName in _GFX.cache){
                     let tilesetObj = _GFX.cache[tilesetName];
                     let tiles = tilesetObj.tileset;

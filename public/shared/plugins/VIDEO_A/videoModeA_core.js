@@ -156,7 +156,7 @@ _WEBW.videoModeA = {
             let ww_mode_key = "init";
             
             // DEBUG: Save the returned ImageData for each tile/fade. Your app's debug can display them if you want.
-            if(_GFX.config.debugMode && data.debugData && Object.keys(data.debugData).length){ 
+            if(_GFX.config.debug.recordPrevChanges && data.debugData && Object.keys(data.debugData).length){ 
                 if(_GFX._debug){ _GFX._debug.fadedTileset = data.debugData; }
             }
             if("maxFadeSteps"  in data){ _GFX.fade.maxFadeSteps = data.maxFadeSteps; }
@@ -241,7 +241,7 @@ _WEBW.videoModeA = {
             let ww_mode_key = "initFade";
 
             // DEBUG: Save the returned ImageData for each tile/fade. Your app's debug can display them if you want.
-            if(_GFX.config.debugMode && data.debugData && Object.keys(data.debugData).length){ 
+            if(_GFX.config.debug.generateAndReturnFadedTiles && data.debugData && Object.keys(data.debugData).length){ 
                 if(_GFX._debug){ _GFX._debug.fadedTileset = data.debugData; }
             }
             if("maxFadeSteps"  in data){ _GFX.fade.maxFadeSteps = data.maxFadeSteps; }
@@ -407,7 +407,12 @@ _GFX.VRAM = {
     coordsByIndex:[],
 
     // Holds the changes to VRAM that will be drawn on the next draw cycle.
+    clearVram_flag:false,
     changes: {},
+    
+    // DEBUG: Holds the PREVIOUS changes to VRAM.
+    prevDrawn_clearVram_flag:false,
+    prevDrawn_changes: {},
 
     // Stats for changes (this frame).
     changesStats: {
@@ -504,7 +509,17 @@ _GFX.VRAM = {
         return new Promise( async (resolve,reject)=>{
             // Abort if there are no changes. 
             // console.log("Changes:", this.changesStats.new);
-            if( (_GFX.fade.currentFadeIndex == _GFX.fade.previousFadeIndex) && !this.changesStats.new ){ resolve(); return; }
+            if( (_GFX.fade.currentFadeIndex == _GFX.fade.previousFadeIndex) && !this.changesStats.new ){ 
+                if(_GFX.config.debug.recordPrevChanges){
+                    // Clear the prevDrawn_changes.
+                    this.prevDrawn_changes = {}; 
+                    this.prevDrawn_clearVram_flag = false;
+                }
+
+                // Resolve and return. No drawing needs to be done. 
+                resolve(); 
+                return; 
+            }
 
             // Uses WebWorker. Draws occur in the WebWorker.
             
@@ -514,6 +529,12 @@ _GFX.VRAM = {
             // console.log("Sent draw");
             // Update the recorded fade levels. 
             _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
+
+            // DEBUG: Copy changes to prevDrawn_changes.
+            if(_GFX.config.debug.recordPrevChanges){
+                this.prevDrawn_changes = Object.assign({}, this.changes);
+                this.prevDrawn_clearVram_flag = this.clearVram_flag;
+            }
 
             // Done drawing. Clear the VRAM changes. 
             this.clearVramChanges();
@@ -1209,7 +1230,7 @@ _GFX.init = async function(canvasesDestinationDiv){
         let proms = [
             new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/VIDEO_A/videoModeA_user.js"    , t:"js", n:"videoModeA_user" }, "."); res(); } ),
         ];
-        if(_GFX.config.debugMode){
+        if(Object.keys(_GFX.config.debug).length){
             proms.push( new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/VIDEO_A/videoModeA_debug.js"   , t:"js", n:"videoModeA_debug"}, "."); res(); } ) );
         }
         await Promise.all(proms);
@@ -1237,8 +1258,10 @@ _GFX.init = async function(canvasesDestinationDiv){
         }
 
         // Set any missing defaults in _JSG.loadedConfig.jsgame_shared_plugins_config.videoModeA.
-        if(_GFX.config.fadeCreateAtStart  == undefined){ _GFX.config.fadeCreateAtStart = false; }
-        if(_GFX.config.debugMode          == undefined){ _GFX.config.debugMode         = false; }
+        if(_GFX.config.fadeCreateAtStart                 == undefined){ _GFX.config.fadeCreateAtStart                 = false; }
+        if(_GFX.config.debug                             == undefined){ _GFX.config.debug                             = {};    }
+        if(_GFX.config.debug.generateAndReturnFadedTiles == undefined){ _GFX.config.debug.generateAndReturnFadedTiles = false; }
+        if(_GFX.config.debug.recordPrevChanges           == undefined){ _GFX.config.debug.recordPrevChanges           = false; }
 
         // Init(s).
         let msg;
