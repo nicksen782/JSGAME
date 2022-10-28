@@ -404,6 +404,7 @@ _GFX.VRAM = {
     indexByCoords:[],
     
     // Lookup table: Get y, x coords by VRAM index.
+    indexByCoords:[],
     coordsByIndex:[],
 
     // Holds the changes to VRAM that will be drawn on the next draw cycle.
@@ -507,9 +508,11 @@ _GFX.VRAM = {
     // Draws to the app canvas based on the contents of the changes array.
     draw: function(){
         return new Promise( async (resolve,reject)=>{
-            // Abort if there are no changes. 
-            // console.log("Changes:", this.changesStats.new);
-            if( (_GFX.fade.currentFadeIndex == _GFX.fade.previousFadeIndex) && !this.changesStats.new ){ 
+            // The WebWorker is requred. If the webworker is not set (unexpected) then just return.
+            if(!_WEBW.videoModeA.video.webworker){ return; }
+
+            // Abort if there are no changes.
+            if( !this.clearVram_flag && _GFX.fade.currentFadeIndex == _GFX.fade.previousFadeIndex && !this.changesStats.new ){ 
                 if(_GFX.config.debug.recordPrevChanges){
                     // Clear the prevDrawn_changes.
                     this.prevDrawn_changes = {}; 
@@ -543,20 +546,97 @@ _GFX.VRAM = {
         });
     },
 
-    // TODO
     // Returns a copy of the specified VRAM region.
-    getVramRegion: function(x, y, w, h){
+    getVramRegion: function(x, y, w, h, layers=[]){
+        // Get the dimensions.
+        let dimensions = _JSG.loadedConfig.meta.dimensions;
+        
+        
         let vramRegionObj = {};
+        let i, l, layerCopy, yi, yl, xi, xl, vramIndex1, vramIndex2;
+        
+        //. Get the specified VRAM layers layers.
+        for(i=0, l=layers.length; i<l; i+=1){
+            // Create a new layerCopy.
+            layerCopy = {};
 
-        //. Get all layers.
+            // Create the _VRAM arraybuffer and the _VRAM dataview.
+            if(dimensions.pointersSize == 8){
+                // Get the total size for the layerCopy _VRAM. (number of layers * 2 bytes per layer * rows * cols) * 1.
+                layerCopy.buffer = new ArrayBuffer( (2 * (h * w) * 1) );
+                
+                // Create the view using the layerCopy buffer.
+                layerCopy.view   = new Uint8Array(layerCopy.buffer);
+            }
+            else if(dimensions.pointersSize == 16){
+                // Get the total size for the layerCopy _VRAM. (number of layers * 2 bytes per layer * rows * cols) * 2.
+                layerCopy.buffer = new ArrayBuffer( (2 * (h * w)) * 2) ;
 
+                // Create the view using the layerCopy buffer.
+                layerCopy.view   = new Uint16Array(layerCopy.buffer);
+            }
+            // This should not be reached because initChecks should have already caught it.
+            else{
+                let msg1 = `ERROR: getVramRegion: Invalid pointerSize.`;
+                console.error(msg1);
+                throw msg1;
+            }
+
+            // Update the layerCopy's view with data from VRAM.
+            for(yi=0, yl=h; yi<yl; yi+=1){
+                for( xi=0, xl=w; xi<xl; xi+=1){
+                    // Get the full VRAM vramIndex for this coordinate.
+                    vramIndex1 = this.indexByCoords[y + yi][x + xi];
+
+                    // Get the layerCopy VRAM vramIndex.
+                    vramIndex2 = (yi * (w * 2)) + (xi * 2);
+
+                    // Update the layerCopy.
+                    layerCopy.view[vramIndex2 + 0] = this._VRAM[ layers[i] ].view[vramIndex1 + 0]; // tilesetIndex
+                    layerCopy.view[vramIndex2 + 1] = this._VRAM[ layers[i] ].view[vramIndex1 + 1]; // tileId
+                }
+            }
+
+            // Save the layerCopy object along with some supporting data.
+            vramRegionObj[i] =  { 
+                x: x, y: y, 
+                w: w, h: h, 
+                l: layers[i], 
+                vram: layerCopy.view,
+            };
+        }
+        
+        // Return the completed vramRegionObj.
         return vramRegionObj;
     },
     
-    // TODO
     // Sets the specified VRAM region (usually data from getVramRegion).
     setVramRegion: function(vramRegionObj){
-        // this.updateVram();
+        let layerIndex, yi, yl, xi, xl, vramIndex2;
+
+        // For each layer in the vramRegionObj...
+        for(layerIndex in vramRegionObj){
+            // For each row...
+            for(yi=0, yl=vramRegionObj[layerIndex].h; yi<yl; yi+=1){
+                // For each col...
+                for(xi=0, xl=vramRegionObj[layerIndex].w; xi<xl; xi+=1){
+                    // Get the vram index from within the copied region.
+                    vramIndex2 = ((yi) * (vramRegionObj[layerIndex].w *2)) + ((xi) * 2);
+
+                    // Make sure not to send any undefined values. 
+                    if(vramRegionObj[layerIndex].vram[vramIndex2 + 1] == undefined || vramRegionObj[layerIndex].vram[vramIndex2 + 0] == undefined){ continue; }
+
+                    // Update VRAM.
+                    this.updateVram(
+                        vramRegionObj[layerIndex].vram[vramIndex2 + 1], // tileId
+                        vramRegionObj[layerIndex].x + xi,               // x
+                        vramRegionObj[layerIndex].y + yi,               // y
+                        vramRegionObj[layerIndex].vram[vramIndex2 + 0], // tilesetIndex
+                        vramRegionObj[layerIndex].l                     // layerIndex
+                    );
+                }
+            }
+        }
     },
 
     // INIT: Creates the VRAM._VRAM typedArray. (Should only be run once).
@@ -661,11 +741,11 @@ _GFX.draw = {
         checks: {
             setTile                    : function(tileId, x, y, tilesetIndex, layerIndex){
                 // Checks.
-                if(tileId == null)      { console.error("setTile: The tileId was not specified."); return false; }
-                if(x == null)           { console.error("setTile: The x was not specified."); return false; }
-                if(y == null)           { console.error("setTile: The y was not specified."); return false; }
-                if(tilesetIndex == null){ console.error("setTile: The tilesetIndex was not specified."); return false; }
-                if(layerIndex == null)  { console.error("setTile: The layerIndex was not specified."); return false; }
+                if(tileId == null)      { console.error("setTile: The tileId was not specified. ARGS:"      , `tileId: ${tileId}, x: ${x}, y: ${y}, tilesetIndex: ${tilesetIndex}, layerIndex: ${layerIndex}`); return false; }
+                if(x == null)           { console.error("setTile: The x was not specified. ARGS:"           , `tileId: ${tileId}, x: ${x}, y: ${y}, tilesetIndex: ${tilesetIndex}, layerIndex: ${layerIndex}`); return false; }
+                if(y == null)           { console.error("setTile: The y was not specified. ARGS:"           , `tileId: ${tileId}, x: ${x}, y: ${y}, tilesetIndex: ${tilesetIndex}, layerIndex: ${layerIndex}`); return false; }
+                if(tilesetIndex == null){ console.error("setTile: The tilesetIndex was not specified. ARGS:", `tileId: ${tileId}, x: ${x}, y: ${y}, tilesetIndex: ${tilesetIndex}, layerIndex: ${layerIndex}`); return false; }
+                if(layerIndex == null)  { console.error("setTile: The layerIndex was not specified. ARGS:"  , `tileId: ${tileId}, x: ${x}, y: ${y}, tilesetIndex: ${tilesetIndex}, layerIndex: ${layerIndex}`); return false; }
 
                 // Make sure that the layerIndex is valid.
                 let numLayers = _JSG.loadedConfig.meta.layers.length;
@@ -758,7 +838,7 @@ _GFX.draw = {
         // Set one tile into VRAM.
         setTile : function(tileId, x, y, tilesetIndex, layerIndex){
             // Checks.
-            if(! this.checks.setTile(tileId, x, y, tilesetIndex, layerIndex)){ return; }
+            if(! this.checks.setTile(tileId, x, y, tilesetIndex, layerIndex)){ return false; }
 
             // "Draw" the tile to VRAM.
             _GFX.VRAM.updateVram(tileId, x, y, tilesetIndex, layerIndex);
@@ -805,7 +885,7 @@ _GFX.draw = {
         // Draw the individual tiles of a tilemap to VRAM.
         drawTilemap : function(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex=0){
             // Checks.
-            if(!this.checks.drawTilemap(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex)){ return; }
+            if(!this.checks.drawTilemap(tilemapName, x, y, tilesetIndex, layerIndex, rotationIndex)){ return false; }
             
             // Get the tilesetName.
             let tilesetName = _JSG.loadedConfig.meta.tilesets[tilesetIndex];
@@ -840,7 +920,7 @@ _GFX.draw = {
         // Draw the individual tiles of a custom tilemap to VRAM.
         drawTilemap_custom : function(x, y, tilesetIndex, layerIndex, tilemap){
             // Checks.
-            if(!this.checks.drawTilemap_custom(x, y, tilesetIndex, layerIndex, tilemap)){ return; }
+            if(!this.checks.drawTilemap_custom(x, y, tilesetIndex, layerIndex, tilemap)){ return false; }
 
             // The width of the tilemap is first.
             let w = tilemap[0];
@@ -866,7 +946,7 @@ _GFX.draw = {
         // Creates a tilemap from a string. (draw with drawTilemap_custom).
         customTilemapFromTextString: function(str, tilesetIndex){
             // Checks.
-            if(!this.checks.customTilemapFromTextString(str, tilesetIndex)){ return; }
+            if(!this.checks.customTilemapFromTextString(str, tilesetIndex)){ return false; }
 
             // NOTE: print assumes that the text tileset's first tilemap is the fontset and that those tiles are generated in ASCII order.
 
