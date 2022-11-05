@@ -43,6 +43,7 @@ _INPUT.util = {
 
     // Convert the given gamepad state (held, _prev, press, release) to an object.
     stateByteToObj: function(byte){
+        // EXAMPLE USAGE: _INPUT.util.stateByteToObj(_INPUT.states.p1.press)
         let keys = Object.keys(this.parent.consts.bits);
         let state = {};
 
@@ -74,7 +75,7 @@ _INPUT.util = {
     },
 
     // Utility function to check user-input state.
-    checkButton: function(playerKey="p1", type="press", buttonNames=[]){
+    checkButton: function(playerKeys=["p1"], types=["press"], buttonNames=[]){
         // Function: 
         //   Will return true on matches and false otherwise.
         //   Can check for one button of a type.
@@ -82,41 +83,47 @@ _INPUT.util = {
         //   Can check against ANY button being active for a type. (Ex: "Press any button to continue")
 
         // Example usages:
-        //   _INPUT.util.checkButton("p1", "press"  , "BTN_Y");            // One button: press.
-        //   _INPUT.util.checkButton("p1", "release", "BTN_Y");            // One button: release.
-        //   _INPUT.util.checkButton("p2", "held"   , "BTN_A");            // One button: held.
-        //   _INPUT.util.checkButton("p1", "press"  , ["BTN_A", "BTN_B"]); // Multiple button: press.
+        //   _INPUT.util.checkButton("p1",         "press"  ,         "BTN_Y");                 // One button: press.
+        //   _INPUT.util.checkButton("p1",         "release",         "BTN_Y");                 // One button: release.
+        //   _INPUT.util.checkButton("p2",         ["held", "press"], "BTN_A");                 // One button: Either held or press.
+        //   _INPUT.util.checkButton(["p1", "p2"], "press",            ["BTN_START", "BTN_A"]); // Multiple button: press for either player.
 
-        // Input checks:
-        // Will return false if the buttonName(s) specified are not valid.
-        if(!_INPUT.states[playerKey]){ return false; }
-        if(["press", "held", "release"].indexOf(type) == -1){ return false; }
+        // Convert inputs to arrays.
+        if(!Array.isArray(playerKeys))  { playerKeys   = [playerKeys]; }
+        if(!Array.isArray(types))       { types        = [types]; }
+        if(!Array.isArray(buttonNames)){ buttonNames = [buttonNames]; }
 
-        // If buttonNames is not an array, do the simple check. 
-        if(!Array.isArray(buttonNames)){
-            if(_INPUT.consts.bits[buttonNames]){
-                let data = _INPUT.states[playerKey][type];
-                if(data & (1 <<_INPUT.consts.bits[buttonNames])){ return true; }
-            }
-        }
-        
-        // If the buttonNames is an array...
-        else{
-            // If the array is empty then check for a non-zero value matching the type specified for the player.
-            if(buttonNames.length == 0){ 
-                if(_INPUT.states[playerKey][type]){ return true; } 
-            }
+        // For each player specified...
+        for(let p=0, pl=playerKeys.length; p<pl; p+=1){
+            // Skip this player if the playerKey isn't valid.
+            if(_INPUT.states[playerKeys[p]] == undefined){ continue; }
 
-            // Look for any of the specified buttons matching the specified type for the player.
-            else{
+            // For each type specified...
+            for(let t=0, tl=types.length; t<tl; t+=1){
+                // Skip this type if it is not valid.
+                if(["press", "held", "release"].indexOf(types[t]) == -1){ 
+                    continue; 
+                }
+
+                // (ANY BUTTON OF TYPE) If the array is empty then check for a non-zero value matching the type specified for the player.
+                if(buttonNames.length == 0){ 
+                    if(_INPUT.states[ playerKeys[p] ][ types[t] ]){ return true; } 
+                }
+
+                // Check each specified button against the playerKey and type.
                 for(let button of buttonNames){ 
+                    // Make sure the button name is valid. 
                     if(_INPUT.consts.bits[button]){
-                        let data = _INPUT.states[playerKey][type];
+                        // Get the data byte.
+                        let data = _INPUT.states[ playerKeys[p] ][ types[t] ];
+
+                        // Look for this button being active.
                         if(data & (1 <<_INPUT.consts.bits[button])){ return true; }
                     }
                 }
             }
         }
+
         return false;
     },
 

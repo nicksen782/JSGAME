@@ -136,17 +136,20 @@ _GFX.util = {
 
         // Returns a copy of the specified VRAM region.
         getVramRegion: function(obj){
-            // Example usage: _GFX.util.VRAM.getVramRegion({x:0, y:0, w:10, h:10, l:[0,1,2]});
+            // Example usage: _GFX.util.VRAM.getVramRegion( { x:0, y:0, w:10, h:10, l: [0,1,2] } );
             let x      = obj.x | 0;
             let y      = obj.y | 0;
             let w      = obj.w | 0;
             let h      = obj.h | 0;
-            let layers = obj.l | 0;
+            let layers; 
+            if(Array.isArray(obj.l)){ layers = obj.l; } 
+            else{ layers = []; }
             return _GFX.VRAM.getVramRegion(x,y,w,h, layers);
         },
         
         // Sets the specified VRAM region (usually data from getVramRegion).
         setVramRegion: function(vramRegionObj){
+            // Example usage: _GFX.util.VRAM.setVramRegion( vramRegionObj );
             return _GFX.VRAM.setVramRegion(vramRegionObj);
         },
     },

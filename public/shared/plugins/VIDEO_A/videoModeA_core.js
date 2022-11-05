@@ -448,23 +448,28 @@ _GFX.VRAM = {
     },
 
     addToVramChanges: function(tileId, x, y, tilesetIndex, layerIndex){
+        // NOTE: updateVram already makes sure that a layer/coordinate is not rewritten with the same exact values.
+        // NOTE: The check for an existing change is needed if a VRAM value changes more than once within the same frame.
+        // NOTE: If a tile were to change more than once in the same frame then the checks here will update the existing change.
+
+        // Because each change has an addressable key there is no need to iterate through the whole list of changes. 
         let key = `C${layerIndex}:${x}:${y}`;
         
-        // Is there a change with this key?
+        // Does this key exist?
         if(this.changes[key]){
             // Yes. Has either the tileId or tilesetIndex changed? 
             if(
                 this.changes[key].tileId       != tileId       || 
                 this.changes[key].tilesetIndex != tilesetIndex
             ){
-                // Update the values that have changed. 
+                // YES. Update the values that have changed. 
                 if(this.changes[key].tileId       != tileId      ){ this.changes[key].tileId       = tileId; }
                 if(this.changes[key].tilesetIndex != tilesetIndex){ this.changes[key].tilesetIndex = tilesetIndex; }
                 this.changesStats.overwrite += 1;
                 return;
             }
 
-            // No.
+            // No. The requested change is the same as an existing change.
             else{
                 this.changesStats.ignore += 1;
                 return;
@@ -484,10 +489,15 @@ _GFX.VRAM = {
 
     // Clears the changes array.
     clearVramChanges: function(){
-        // console.log(`clearVramChanges`);
+        // Clears the data used by changes.
+
+        // Clear changes. 
         this.changes = {};
+
+        // Clear the clearVram_flag.
         this.clearVram_flag = false;
 
+        // Reset the changeStats.
         this.changesStats.new      = 0;
         this.changesStats.overwrite= 0;
         this.changesStats.ignore   = 0;
@@ -498,7 +508,7 @@ _GFX.VRAM = {
         // Dump the changes. 
         this.clearVramChanges();
 
-        // Fill all VRAM layers with 0 (tileIndex to 0, tileId to 0, and x,y coordinate to 0.)
+        // Fill all VRAM layers with 0 (tileIndex to 0, tileId to 0, and each x, y value to 0.)
         for(let i=0, l=this._VRAM.length; i<l; i+=1){ this._VRAM[i].view.fill(0); }
 
         // Set flag to indicate a full clear of VRAM. (draw will use clearRect to Clear the whole canvas).
@@ -511,8 +521,9 @@ _GFX.VRAM = {
             // The WebWorker is requred. If the webworker is not set (unexpected) then just return.
             if(!_WEBW.videoModeA.video.webworker){ return; }
 
-            // Abort if there are no changes.
+            // Abort if there are no changes and there are no changes to the currentFadeIndex.
             if( !this.clearVram_flag && _GFX.fade.currentFadeIndex == _GFX.fade.previousFadeIndex && !this.changesStats.new ){ 
+                // DEBUG. Update prevDrawn_changes and prevDraw_clearVram_flag.
                 if(_GFX.config.debug.recordPrevChanges){
                     // Clear the prevDrawn_changes.
                     this.prevDrawn_changes = {}; 
@@ -529,7 +540,6 @@ _GFX.VRAM = {
             // Request the draw.
             await _WEBW.videoModeA.video.drawSend_useOffscreenCanvas(true);
 
-            // console.log("Sent draw");
             // Update the recorded fade levels. 
             _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
 
@@ -551,19 +561,19 @@ _GFX.VRAM = {
         // Get the dimensions.
         let dimensions = _JSG.loadedConfig.meta.dimensions;
         
-        
         let vramRegionObj = {};
         let i, l, layerCopy, yi, yl, xi, xl, vramIndex1, vramIndex2;
-        
-        //. Get the specified VRAM layers layers.
-        for(i=0, l=layers.length; i<l; i+=1){
+
+        //.For each requested layer...
+        for(i=0, l=layers.length; i<l; i += 1){
+
             // Create a new layerCopy.
             layerCopy = {};
 
             // Create the _VRAM arraybuffer and the _VRAM dataview.
             if(dimensions.pointersSize == 8){
                 // Get the total size for the layerCopy _VRAM. (number of layers * 2 bytes per layer * rows * cols) * 1.
-                layerCopy.buffer = new ArrayBuffer( (2 * (h * w) * 1) );
+                layerCopy.buffer = new ArrayBuffer( (2 * (h * w) ) );
                 
                 // Create the view using the layerCopy buffer.
                 layerCopy.view   = new Uint8Array(layerCopy.buffer);
@@ -583,7 +593,11 @@ _GFX.VRAM = {
             }
 
             // Update the layerCopy's view with data from VRAM.
+
+            // For each row...
             for(yi=0, yl=h; yi<yl; yi+=1){
+                
+                // For each col...
                 for( xi=0, xl=w; xi<xl; xi+=1){
                     // Get the full VRAM vramIndex for this coordinate.
                     vramIndex1 = this.indexByCoords[y + yi][x + xi];
@@ -599,10 +613,11 @@ _GFX.VRAM = {
 
             // Save the layerCopy object along with some supporting data.
             vramRegionObj[i] =  { 
-                x: x, y: y, 
-                w: w, h: h, 
-                l: layers[i], 
-                vram: layerCopy.view,
+                x: x, y: y,            // Origin coordinates of the layerCopy.
+                w: w, h: h,            // Dimensions of the layerCopy.
+                l: layers[i],          // The layerIndex of the layerCopy.
+                vram: layerCopy.view,  // The data for the layerCopy.
+                lastChange: new Date() // When this layerCopy was made (can be used for debugging.)
             };
         }
         
@@ -616,15 +631,20 @@ _GFX.VRAM = {
 
         // For each layer in the vramRegionObj...
         for(layerIndex in vramRegionObj){
+
             // For each row...
             for(yi=0, yl=vramRegionObj[layerIndex].h; yi<yl; yi+=1){
+                
                 // For each col...
                 for(xi=0, xl=vramRegionObj[layerIndex].w; xi<xl; xi+=1){
-                    // Get the vram index from within the copied region.
+                    // Get the vram index from within the layerCopy.
                     vramIndex2 = ((yi) * (vramRegionObj[layerIndex].w *2)) + ((xi) * 2);
 
                     // Make sure not to send any undefined values. 
-                    if(vramRegionObj[layerIndex].vram[vramIndex2 + 1] == undefined || vramRegionObj[layerIndex].vram[vramIndex2 + 0] == undefined){ continue; }
+                    if(vramRegionObj[layerIndex].vram[vramIndex2 + 1] == undefined || vramRegionObj[layerIndex].vram[vramIndex2 + 0] == undefined){ 
+                        console.error("ERROR: setVramRegion: undefined values found:", `tilesetIndex: ${vramRegionObj[layerIndex].vram[vramIndex2 + 0]}, tileId: ${vramRegionObj[layerIndex].vram[vramIndex2 + 1]}`);
+                        continue; 
+                    }
 
                     // Update VRAM.
                     this.updateVram(
@@ -714,7 +734,7 @@ _GFX.VRAM = {
         }
     },
 
-    // Init function for the VRAM object.
+    // INIT: Init function for the VRAM object.
     init: async function(){
         return new Promise(async (resolve, reject)=>{
             // Create the lookup table(s) for VRAM.
@@ -1310,7 +1330,7 @@ _GFX.init = async function(canvasesDestinationDiv){
         let proms = [
             new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/VIDEO_A/videoModeA_user.js"    , t:"js", n:"videoModeA_user" }, "."); res(); } ),
         ];
-        if(Object.keys(_GFX.config.debug).length){
+        if(_GFX.config.debug != undefined && Object.keys(_GFX.config.debug).length){
             proms.push( new Promise( async (res,rej) => { await _JSG.addFile({f:"shared/plugins/VIDEO_A/videoModeA_debug.js"   , t:"js", n:"videoModeA_debug"}, "."); res(); } ) );
         }
         await Promise.all(proms);
