@@ -1,4 +1,4 @@
-_GFX = {};
+var _GFX = {};
 
 // INTERNAL: WebWorker functions.
 _WEBW.videoModeA = {

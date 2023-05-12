@@ -3,6 +3,7 @@
  * Player 2 is always assigned the keyboard at key "p2". This player will get the second available gamepad index. 
  * Additional gamepads are ignored.
  */
+var INPUT = {};
 
 _INPUT = {
     // Constant values.

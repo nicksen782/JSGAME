@@ -2,13 +2,13 @@
 let _APP = undefined;
 
 // Holds the loaded _GFX plugin.
-let _GFX = undefined;
+// let _GFX = undefined;
 
 // Holds the loaded _SND plugin.
-let _SND = undefined;
+// let _SND = undefined;
 
 // Holds the loaded _INPUT plugin.
-let _INPUT = {};
+// let _INPUT = {};
 
 // Holds the any JSGAME WebWorker code.
 let _WEBW = {};
@@ -280,11 +280,11 @@ let _JSG = {
                 try{
                     console.log("");
                     console.log("JSGAME DEBUG: VARS:");
-                    if(_JSG)  { console.log("  _JSG  :", _JSG  ); } else { console.log("  _JSG  :", "NOT LOADED"); }
-                    if(_APP)  { console.log("  _APP  :", _APP  ); } else { console.log("  _APP  :", "NOT LOADED"); }
-                    if(_GFX)  { console.log("  _GFX  :", _GFX  ); } else { console.log("  _GFX  :", "NOT LOADED"); }
-                    if(_SND)  { console.log("  _SND  :", _SND  ); } else { console.log("  _SND  :", "NOT LOADED"); }
-                    if(_INPUT){ console.log("  _INPUT:", _INPUT); } else { console.log("  _INPUT:", "NOT LOADED"); }
+                    if(typeof _JSG   !== "undefined"){ console.log("  _JSG  :", _JSG  ); } else { console.log("  _JSG  :", "NOT LOADED"); }
+                    if(typeof _APP   !== "undefined"){ console.log("  _APP  :", _APP  ); } else { console.log("  _APP  :", "NOT LOADED"); }
+                    if(typeof _GFX   !== "undefined"){ console.log("  _GFX  :", _GFX  ); } else { console.log("  _GFX  :", "NOT LOADED"); }
+                    if(typeof _SND   !== "undefined"){ console.log("  _SND  :", _SND  ); } else { console.log("  _SND  :", "NOT LOADED"); }
+                    if(typeof _INPUT !== "undefined"){ console.log("  _INPUT:", _INPUT); } else { console.log("  _INPUT:", "NOT LOADED"); }
                     console.log("");
                 }
                 catch(e){

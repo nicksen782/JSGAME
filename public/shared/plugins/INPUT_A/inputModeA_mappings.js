@@ -33,6 +33,7 @@ _INPUT.gamepadMappings = {
         "ids": [
             { "genName":"(N:Xbox 360 Controller (XInput STANDARD GAMEPAD)):(A:4):(B:17)"  , "active": true, "mapKey": "standard_xinput" },
             { "genName":"(N:xinput):(A:4):(B:17)"                                         , "active": true, "mapKey": "standard_xinput" },
+            { "genName": "(N:8Bitdo SNES30 GamePad):(A:8):(B:16):(V:2dc8):(P:2840)"       , "active": true, "mapKey": "8Bitdo_SNES30_bluetooth" },
         ],
         "maps":{
             "standard_xinput": {
@@ -62,6 +63,20 @@ _INPUT.gamepadMappings = {
                 "BTN_SELECT": "B:8:1"  ,
                 "BTN_Y"     : "B:2:1"  ,
                 "BTN_B"     : "B:0:1"  ,
+            },
+            "8Bitdo_SNES30_bluetooth": {
+                "BTN_SR"    : "B:7:1" ,
+                "BTN_SL"    : "B:6:1" ,
+                "BTN_X"     : "B:3:1" ,
+                "BTN_A"     : "B:0:1" ,
+                "BTN_RIGHT" : "A:0:1" ,
+                "BTN_LEFT"  : "A:0:-1",
+                "BTN_DOWN"  : "A:1:1" ,
+                "BTN_UP"    : "A:1:-1",
+                "BTN_START" : "B:11:1",
+                "BTN_SELECT": "B:10:1",
+                "BTN_Y"     : "B:4:1" ,
+                "BTN_B"     : "B:1:1"
             },
         }
     },
