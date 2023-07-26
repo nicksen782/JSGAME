@@ -1,0 +1,19 @@
+/* AUDIO: USER INPUT NEEDED */
+#audio_userInputNeeded_container {
+    background-color: rgb(174 157 0 / 75%);
+    color: black;
+    position: fixed;
+    left: 20px;
+    top: 20px;
+    z-index: 1100;
+    box-shadow: 0px 0px 10px 10px rgb(32 32 48 / 90%);
+}
+#audio_userInputNeeded {
+    border: 1px solid gold;
+    display: inline-block;
+    padding: 10px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 42px;
+    padding: 0.5em;
+}

@@ -1,0 +1,131 @@
+<div id="gfxDebug">
+    <!-- Tabs can be added dynamically before _APP.navBarMAIN.init -->
+    <nav id="gfx_mainNavMenu" class="navMenu1">
+        <ul id="gfx_mainNavMenu_ul">
+            <li id="gfx_navTab_colorFinder">Color Finder</li>
+            <li id="gfx_navTab_drawTimings">Draw Timings</li>
+            <li class="hidden" id="gfx_navTab_globalFade">Global Fade</li>
+            <li class="hidden" id="gfx_navTab_hashCache">Hash Cache</li>
+            <li class="hidden" id="gfx_navTab_layerObjects">Layer Objects</li>
+        </ul>
+    </nav>
+
+    <!-- Views can be added dynamically before _APP.navBarMAIN.init -->
+    <div id="gfx_mainNavMenuViews">
+        <div id="gfx_navView_alwaysVisible">
+            <!-- STATS/CONTROLS<br> -->
+
+            <canvas id="gfx_debug_statsControls_timingsCanvas"></canvas>
+            <table id="gfx_debug_statsControls">
+                <!-- <caption>Toggle Options</caption> -->
+                <tr>
+                    <td><button id="gfx_debug_statsControls_loop">LOOP</button></td>
+                    <td><button id="gfx_debug_statsControls_logic">LOGIC</button></td>
+                    <td><button id="gfx_debug_statsControls_awaitDraw">AWAIT DRAW</button></td>
+                    <td><button id="gfx_debug_statsControls_debug_all">DEBUG (ALL)</button></td>
+                    <td><button id="gfx_debug_statsControls_debug_game">DEBUG (GAME)</button></td>
+                    <td><button id="gfx_debug_statsControls_hashcache">HASHCACHE</button></td>
+                    <td><button id="gfx_debug_statsControls_grid">GRID</button></td>
+                </tr>
+            </table>
+            <br>
+            fd
+            <!--  -->
+            <!-- <table> -->
+                <!-- <caption>Gamestate Control</caption> -->
+                <!-- <tr> -->
+                    <!-- <td>  -->
+                        <!-- GS1: -->
+                    <!-- </td>  -->
+                    <!-- <td>  -->
+                        <!-- <select> <option>gs_PLAYING2</option> </select>  -->
+                        <!-- <br> -->
+                        <!-- <button>SET</button> -->
+                    <!-- </td> -->
+                <!-- </tr> -->
+                <!-- <tr> <td>GS1:</td> <td> <button>RESTART</button> </td> </tr> -->
+                <!-- <tr> <td>GS1:</td> <td> gs_PLAYING2 </td> </tr> -->
+                <!-- <tr> <td>GS2:</td> <td> title </td> </tr> -->
+            <!-- </table> -->
+            <!-- <br> -->
+
+            <!-- <button>L1: clearType: smart</button><br> -->
+            <!-- <button>L2: clearType: simple</button><br> -->
+            <!-- <button>L3: clearType: simple</button><br> -->
+            <!-- <button>L4: clearType: simple</button><br> -->
+            <!-- <br> -->
+        </div>
+        
+        <div id="gfx_navView_colorFinder"  class="navView">
+            <div class="gfx_debug_scrollable_parent">
+                <div class="gfx_debug_scrollable">
+
+                    <span id="debug_test_colorFinder_copyButtons">
+                    </span>
+                    <br>
+                    <br>
+                    
+                    <div id="debug_colorFinder">
+                        <div id="debug_colorFinder_canvases">
+                            <div>
+                                <canvas width="8" height="8" id="debug_colorFinder_zoomCanvas"></canvas>
+                                <canvas width="256" height="256" id="debug_colorFinder_copyCanvas"></canvas>
+                            </div>
+                        </div>
+                        <br>
+                        
+                        <div id="debug_colorFinder_pixelRGBA"></div>
+                        <br>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div id="gfx_navView_drawTimings"  class="navView">
+            <div class="gfx_debug_scrollable_parent">
+                <div class="gfx_debug_scrollable">
+                    <table id="gfx_debug_drawTimings_counts1">
+                        <caption>Counts 1</caption>
+                    </table>
+                    <br>
+                    
+                    <table id="gfx_debug_drawTimings_timings">
+                        <caption>Timings</caption>
+                    </table>
+                    <br>
+
+                    <table id="gfx_debug_drawTimings_FPS">
+                        <caption>FPS</caption>
+                    </table>
+                    <br>
+                </div>
+            </div>
+        </div>
+
+        <div id="gfx_navView_globalFade"   class="navView">
+            <div class="gfx_debug_scrollable_parent">
+                <div class="gfx_debug_scrollable">
+                    TESTLINE<br>
+                </div>
+            </div>
+        </div>
+
+        <div id="gfx_navView_hashCache"    class="navView">
+            <div class="gfx_debug_scrollable_parent">
+                <div class="gfx_debug_scrollable">
+                    TESTLINE<br>
+                </div>
+            </div>
+        </div>
+
+        <div id="gfx_navView_layerObjects" class="navView">
+            <div class="gfx_debug_scrollable_parent">
+                <div class="gfx_debug_scrollable">
+                    TESTLINE<br>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

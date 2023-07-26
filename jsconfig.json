@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es6",
+        "checkJs": false
+    },
+    "include": [
+        "public/LOADER/*.js",
+        "SHARED/BASEUI_A/**/*.js",
+        "SHARED/INPUT_A/*.js",
+        "SHARED/SOUND_B/*.js",
+        "SHARED/VIDEO_B/*.js",
+    ]
+}
