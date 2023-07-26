@@ -3,6 +3,58 @@
 // Holds a version of the parent's _GFX data.
 let _GFX = {
     // SHARED
+    timeItData: {},
+    timeIt: function(key, func, value=0){
+        // funcs: "start", "stop", "get", "reset", "set"
+
+        // _APP.utility.timeIt("KEY_NAME", "start");
+        // _APP.utility.timeIt("KEY_NAME", "stop");
+        // _APP.utility.timeIt("KEY_NAME", "get");
+        // _APP.utility.timeIt("KEY_NAME", "reset");
+        // _APP.utility.timeIt("KEY_NAME", "set", 14);
+        // _APP.utility.timeIt("", "getAll");
+        
+        if     (func == "start"){
+            this.timeItData[key] = { t:0, s:performance.now(), e:0 };
+            return this.timeItData[key].t;
+        }
+        else if(func == "stop"){
+            this.timeItData[key].e = performance.now();
+            this.timeItData[key].t = this.timeItData[key].e - this.timeItData[key].s;
+            return this.timeItData[key].t;
+        }
+        else if(func == "get"){
+            return this.timeItData[key] ? this.timeItData[key].t : 0;
+        }
+        else if(func == "set"){
+            return this.timeItData[key].t = value;
+        }
+        else if(func == "getAll"){
+            let data = {};
+            for(let key in this.timeItData){ data[key] = this.timeItData[key].t; }
+            return data;
+        }
+        else if(func == "reset"){
+            this.timeItData[key] = { t:0, s:0, e:0 };
+            return this.timeItData[key].t;
+        }
+    },
+    returnInitTimes: function(){
+        let timings = {
+            createCtxAndClears    : _GFX.timeIt("createCtxAndClears", "get"),
+            createTilesetCanvases : _GFX.timeIt("createTilesetCanvases", "get"),
+            // fadeCreateAtStart     : _GFX.timeIt("fadeCreateAtStart", "get"),
+            createFadeValues      : _GFX.timeIt("createFadeValues", "get"),
+            convertAllFadeTilesets: _GFX.timeIt("convertAllFadeTilesets", "get"),
+            // __ALL    : _GFX.timeIt("", "getAll"),
+        }
+
+        self.postMessage( {  
+            "mode" : "returnInitTimes", 
+            "data" : timings, 
+        }, [] );
+    },
+
     cache:undefined,
     VRAM:{
         _VRAM        : undefined,
@@ -49,7 +101,7 @@ let _GFX = {
 
     fade: {
         isEnabled: false,
-
+        inited: false,
         convertForTileset: async function(tilesetName){
             return new Promise(async (resolve,reject)=>{
                 let i_32 = new Uint16Array(1);
@@ -153,10 +205,10 @@ let _GFX = {
                         let ts = performance.now();
                         await _GFX.fade.convertForTileset(tilesetName);
                         let msg = `Created fade tileset: ${tilesetName}, length: ${tiles.length.toString().padStart(4, " ")} tiles. (${(performance.now()-ts).toFixed(2)}ms)`;
-                        if(type=="init"){
-                            self.postMessage( {  "mode" : "loading_progress", "data" : msg, }, [] );
-                        }
-                        console.log(msg);
+                        // if(type=="init"){
+                        //     self.postMessage( {  "mode" : "loading_progress", "data" : msg, }, [] );
+                        // }
+                        // console.log(msg);
                         res();
                     })
                 );
@@ -190,7 +242,7 @@ let _GFX = {
             // Modified srcFadeTable for max red/green/blue percentages of full by nicksen782.
             // Created by: createFadeValues.
             fadeTable: [],
-        } ,
+        },
 
         createFadeValues: function(){
             let src = this.CONSTS.srcFadeTable;
@@ -214,15 +266,21 @@ let _GFX = {
             }
         },
         init: async function(type="postInit"){
-            // Generate the percentages version of the srcFadeTable.
-            this.createFadeValues();
+            if(this.inited){ console.log("ALREADY DONE: fade.init:", type); return; }
 
+            // Generate the percentages version of the srcFadeTable.
+            _GFX.timeIt("createFadeValues", "start");
+            this.createFadeValues();
+            _GFX.timeIt("createFadeValues", "stop");
+            
             // Create faded versions of each tile for each tileset. 
+            _GFX.timeIt("convertAllFadeTilesets", "start");
             await _GFX.fade.convertAllTilesets(type);
+            _GFX.timeIt("convertAllFadeTilesets", "stop");
             this.isEnabled = true; 
 
             let debugData = {};
-            if( _GFX.meta.videoModeA_config.debug.generateAndReturnFadedTiles ){
+            if( _GFX.meta.videoModeA_config.debugGFX.generateAndReturnFadedTiles ){
                 for(let tilesetName in _GFX.cache){
                     let tilesetObj = _GFX.cache[tilesetName];
                     let tiles = tilesetObj.tileset;
@@ -238,7 +296,22 @@ let _GFX = {
                 }
             }
 
-            // if(type=="init"){}
+            if(type=="init"){
+                // Send a response.
+                self.postMessage( 
+                    { 
+                        "mode" : "initFade", 
+                        "data" : {
+                            "debugData"    : debugData,
+                            "maxFadeSteps" : _GFX.fade.CONSTS.fadeTable.length,
+                            // "maxFadeSteps" : 11, // DEBUG: the fadeTable should already be this value.
+                            "fadeIsEnabled": this.isEnabled,
+                        },
+                        "success":true,
+                    },
+                    []
+                );
+            }
             if(type=="postInit"){
                 // Send a response.
                 self.postMessage( 
@@ -247,6 +320,7 @@ let _GFX = {
                         "data" : {
                             "debugData"    : debugData,
                             "maxFadeSteps" : _GFX.fade.CONSTS.fadeTable.length,
+                            // "maxFadeSteps" : 11, // DEBUG: the fadeTable should already be this value.
                             "fadeIsEnabled": this.isEnabled,
                         },
                         "success":true,
@@ -255,6 +329,7 @@ let _GFX = {
                 );
             }
 
+            this.inited = true;
             return debugData;
         }, 
     },
@@ -458,14 +533,17 @@ let _GFX = {
         _GFX.meta.videoModeA_config = event.data.data.meta.videoModeA_config;
 
         // Break-out the layer data and store the drawing contexts. 
+        _GFX.timeIt("createCtxAndClears", "start");
         for(let layer of event.data.data.offscreenLayers){
             layer.ctx = layer.canvas.getContext("2d", layer.canvasOptions || {});
             layer.ctx.clearRect(0, 0, layer.canvas.width, layer.canvas.height);
-            _GFX.gfxConversion.setPixelated(layer.ctx);
+            // _GFX.gfxConversion.setPixelated(layer.ctx);
             _GFX.canvasLayers.push(layer);
         }
-
+        _GFX.timeIt("createCtxAndClears", "stop");
+        
         // Create canvases for each tileset tile (from the supplied imageData).
+        _GFX.timeIt("createTilesetCanvases", "start");
         let dimensions = _GFX.meta.dimensions;
         for(let tilesetName in _GFX.cache){
             let tilesetObj = _GFX.cache[tilesetName];
@@ -477,16 +555,20 @@ let _GFX = {
                 let height = dimensions.tileHeight * dimensions.rows;
                 tiles[i].canvas = new OffscreenCanvas(width, height);
                 tiles[i].ctx = tiles[i].canvas.getContext('2d');
-                _GFX.gfxConversion.setPixelated(tiles[i].ctx);
+                // _GFX.gfxConversion.setPixelated(tiles[i].ctx);
                 tiles[i].ctx.putImageData( tiles[i].imgData, 0, 0 );
             }
         }
-
+        _GFX.timeIt("createTilesetCanvases", "stop");
+        
+        // _GFX.timeIt("fadeCreateAtStart", "start");
         let debugData = {};
         if( _GFX.meta.videoModeA_config.fadeCreateAtStart ){
+            // console.log("_GFX.meta.videoModeA_config.fadeCreateAtStart was true. running _GFX.fade.init('init').");
             // Create faded versions of each tile for each tileset. 
             debugData = await _GFX.fade.init("init");
         }
+        // _GFX.timeIt("fadeCreateAtStart", "stop");
 
         // Send a response.
         self.postMessage( 
@@ -508,6 +590,7 @@ self.onmessage = function(event) {
         // Method 0: useOffscreenCanvas: false
         case "init"     : { _GFX.init(event);           break; } 
         case "initFade" : { _GFX.fade.init("postInit"); break; } 
+        case "returnInitTimes" : { _GFX.returnInitTimes(); break; } 
 
         // Method 1: useOffscreenCanvas: true
         case "drawSend_useOffscreenCanvas" : { _GFX.draw(event); break; } // Method 1

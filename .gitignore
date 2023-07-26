@@ -8,6 +8,9 @@ GAMES/**
 # CONFIGS.
 public/shared/config.json
 
+# OLD
+SHARED/VIDEO_A_V2/*
+
 # DATABASE.
 backend/db/db_init_importFile.js
 backend/db/JSGAME.db

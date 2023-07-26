@@ -95,13 +95,12 @@ _APP.utility = {
             // if(relativePath){ relativePath = ""; }
             // console.log(`${relativePath}${rec.f}`, rec); 
             switch(rec.t){
+                // Adds the JAVASCRIPT to the document.
                 case "js": { 
                     // Create the script. 
                     let script = document.createElement('script');
 
                     // Set the name. 
-                    // if(rec.n){ script.setAttribute("name", rec.n); }
-                    // else{ script.setAttribute("name", rec.f); }
                     script.setAttribute("name", rec.f); 
 
                     // Set defer.
@@ -123,6 +122,7 @@ _APP.utility = {
                     break; 
                 }
 
+                // Returns the IMAGE object.
                 case "image": {
                     // Get the data.
                     let img = new Image();
@@ -139,43 +139,25 @@ _APP.utility = {
                     break; 
                 }
 
-                // DISABLED. SHOULD BE FIXED.
+                // Returns the parsed JSON.
                 case "json": { 
                     // Get the data.
-                    // let data = await _JSG.net.http.send(`${relativePath}${rec.f}`, { type:"json", method:"GET" }, 5000);
-                    // if(data === false){
-                    //     console.log("addFile: json: FAILURE:", `${relativePath}${rec.f}`);
-                    //     rej(data); return;
-                    // }
-
-                    // Determine the data name. 
-                    // let dataName;
-                    // if(rec.n){ dataName = rec.n; }
-                    // else{ dataName = rec.f }
-
-                    // Create the files key in the game if it doesn't exist. 
-                    // if(!_APP.files){ _APP.files = {"_WARNING":"_WARNING"}};
-
-                    // // Save the data to the files object. 
-                    // _APP.files[dataName] = data;
+                    let data = await (await fetch(`${relativePath}${rec.f}`)).json();
 
                     res(data);
                     break; 
                 }
                 
+                // Returns the HTML text.
                 case "html": { 
                     // Get the data.
-                    // let data = await _JSG.net.http.send(`${relativePath}${rec.f}`, { type:"text", method:"GET" }, 5000);
                     let data = await (await fetch(`${relativePath}${rec.f}`)).text();
-                    // if(data === false){
-                    //     console.log("addFile: html: FAILURE:", `${relativePath}${rec.f}`);
-                    //     rej(data); return;
-                    // }
 
                     res(data);
                     break; 
                 }
 
+                // Adds the CSS to the document.
                 case "css": { 
                     // Create CSS link.
                     let link = document.createElement('link');
@@ -202,6 +184,7 @@ _APP.utility = {
                     break; 
                 }
 
+                // MISMATCHED TYPE.
                 default  : { 
                     let msg = `Cannot load: ${rec.f}. Unknown file type: ${rec.t}`;
                     console.log(msg);
@@ -327,6 +310,8 @@ _APP.utility = {
 
     timeItData: {},
     timeIt: function(key, func, value=0){
+        // funcs: "start", "stop", "get", "reset", "set"
+
         // _APP.utility.timeIt("KEY_NAME", "start");
         // _APP.utility.timeIt("KEY_NAME", "stop");
         // _APP.utility.timeIt("KEY_NAME", "get");
@@ -351,9 +336,7 @@ _APP.utility = {
         }
         else if(func == "getAll"){
             let data = {};
-            for(let key in this.timeItData){
-                data[key] = this.timeItData[key].t;
-            }
+            for(let key in this.timeItData){ data[key] = this.timeItData[key].t; }
             return data;
         }
         else if(func == "reset"){
@@ -539,19 +522,6 @@ _APP.loader = {
         });
     },
 
-    // Used by JSGAME to load the HTML.
-    loadHtml: async function(){
-        // Add the HTML
-        let html;
-        await new Promise( async (res,rej) => { html = await _APP.utility.addFile({f:"index.html", t:"html"  }, _APP.relPath); res(); } );
-        let dest = document.getElementById("jsgame_app");
-        dest.innerHTML = "";
-
-        let div = document.createElement("div");
-        div.innerHTML = html;
-        dest.append( div.querySelector("#wrapper") );
-    },
-
     loadFilesFromConfig: async function(){
         let loadConfigFiles = async function(key, showMessage=false){
             if(showMessage){ console.log(`FILES: ${key}: loading: ${_APP.configObj[key].files.length} files`); }
@@ -623,7 +593,15 @@ _APP.loader = {
 
         // Gameloop init.
         if(_APP.configObj.gameConfig && _APP.configObj.gameConfig.enabled){
-            await _APP.game.gameLoop.init();
+            // Game init. 
+            if(_APP.game && _APP.game.init){
+                await _APP.game.init();
+            }
+
+            // Game loop init.
+            if(_APP.game && _APP.game.gameLoop && _APP.game.gameLoop.init){
+                await _APP.game.gameLoop.init();
+            }
         }
 
         // DEBUG inits.
@@ -877,21 +855,7 @@ _APP.navBarMAIN = {
 _APP.init_standAlone = async function(){
     _APP.globalsBefore = new Set(Object.getOwnPropertyNames(window)); //  DEBUG
     return new Promise(async (resolve,reject)=>{
-        await _APP.loader.loadFiles();
-        _APP.utility.errorHandler.init();
-
-        // INITS
-        await _APP.loader.inits();
-
-        resolve();
-    });
-};
-
-_APP.init_standAlone2 = async function(){
-    _APP.globalsBefore = new Set(Object.getOwnPropertyNames(window)); //  DEBUG
-    return new Promise(async (resolve,reject)=>{
         // Set the relPath for the _APP.
-        // _APP.relPath = _APP.usingJSGAME ? `./games/${_APP.configObj.gameConfig.appRelPath}` : `.`;
         _APP.relPath = ``;
 
         // Get the appConfigs.js file. (Populates _APP.configObj.)
@@ -902,18 +866,19 @@ _APP.init_standAlone2 = async function(){
         let wrapper = document.getElementById("wrapper");
         wrapper.style.display = "none";
 
+        // Load the files specified by the _APP.configObj.
         await _APP.loader.loadFiles();
+
+        // Init the error handler.
         _APP.utility.errorHandler.init();
 
-        // INITS
+        // Inits for loaded files.
         await _APP.loader.inits();
 
-        setTimeout(()=>{ 
-            loading.style.display = "none";
-            wrapper.style.display = "";
-            _APP.game.gameLoop.loop_start(); 
-            if(_APP.debugActive && ('_DEBUG' in window) && ('toggleButtons1' in _DEBUG)){_DEBUG.toggleButtons1.setCurrentStates(); }
-        }, 250);
+        loading.style.display = "none";
+        wrapper.style.display = "";
+        _APP.game.gameLoop.loop_start(); 
+        // if(_APP.debugActive && ('_DEBUG' in window) && ('toggleButtons1' in _DEBUG)){_DEBUG.toggleButtons1.setCurrentStates(); }
 
         resolve();
     });
@@ -925,7 +890,10 @@ _APP.init_standAlone2 = async function(){
             // Remove this listener.
             window.removeEventListener('load', handler);
 
-            await _APP.init_standAlone2(); 
+            let loadTime = performance.now(); 
+            await _APP.init_standAlone(); 
+            loadTime = performance.now() - loadTime; 
+            console.log(`LOADED: '${_APP.configObj.gameConfig.appNameText}' (${loadTime.toFixed(2)}ms)`);
         };
         window.addEventListener('load', handler);
     }

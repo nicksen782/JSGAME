@@ -1,0 +1,81 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>[NEW GAME]</title>
+    
+    <!-- Use's the game's base files. -->
+    <!-- <link   href="BASE/css/ui.css" rel="stylesheet"/> -->
+    <!-- <script src ="BASE/js/ui.js" defer></script> -->
+    <!-- <script src ="BASE/js/gameloop.js" defer></script> -->
+    
+    <!-- Use's JSGAME's base files. -->
+    <link   href="/SHARED/BASEUI_A/css/ui.css" rel="stylesheet"/>
+    <script src ="/SHARED/BASEUI_A/js/ui.js" defer></script>
+    <script src ="/SHARED/BASEUI_A/js/gameloop.js" defer></script>
+    
+</head>
+
+<body style="background-color: #181818;">
+    <!-- Stand-Alone loading indicator. -->
+    <div id="loading" style="position:fixed; top:5px; left:5px;">
+        LOADING
+        <div class="lds-spinner"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    </div>
+
+    <!-- The main HTML. -->
+    <div id="wrapper">
+        <!-- NEEDS USER INPUT FOR AUDIO -->
+        <div id="audio_userInputNeeded_container" style="display:none;">
+            <div id="audio_userInputNeeded">
+                Please click the screen<br>
+                to allow audio to load.<br>
+            </div>
+        </div>
+
+        <!-- ERROR DISPLAY -->
+        <div id="error_display" style="display:none;">
+            <div id="error_display_title">
+                APPLICATION ERROR
+                <div id="error_display_close">X</div>
+            </div>
+            <div id="error_display_text">
+                <div id="error_display_text_inner"></div>
+                <div>GAME LOOP STOPPED</div>
+            </div>
+        </div>
+
+        <!-- Tabs can be added dynamically before _APP.navBarMAIN.init -->
+        <nav id="mainNavMenu" class="navMenu1">
+            <ul id="mainNavMenu_ul">
+                <!-- <li id="navTab_MENUBUTTON" onclick="this.classList.toggle('change');"> -->
+                <li id="navTab_MENUBUTTON">
+                    <div class="bar1"></div>
+                    <div class="bar2"></div>
+                    <div class="bar3"></div>
+                </li>
+
+                <li id="navTab_gameName">GAME</li>
+                <!-- <li id="navTab_info">Info</li> -->
+            </ul>
+        </nav>
+
+        <div id="main">
+
+            <!-- Views can be added dynamically before _APP.navBarMAIN.init -->
+            <div id="mainNavMenuViews">
+                <!-- <div id="navView_info"    class="navView"> -->
+                    <!-- navView_info<br> -->
+                <!-- </div> -->
+            </div>
+
+            <!-- Contains the canvas layers for the game. -->
+            <div id="gameView" tabindex="0">
+                <!-- <canvas class="canvasLayer" width="224" height="224"></canvas> -->
+            </div>
+
+        </div>
+    </div>
+</body>
+
+</html>

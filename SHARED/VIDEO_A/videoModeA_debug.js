@@ -39,11 +39,11 @@ _GFX._debug = {
     drawTest_setTile: function(type){
         // TEST: setTile:
         // setTile : function(tileId, x, y, tilesetIndex, layerIndex)
-        let dimensions = _JSG.loadedConfig.meta.dimensions;
+        let dimensions = _APP.configObj.gfxConfig.dimensions;
 
         let x=0;
         let y=0;
-        for(let ts=0; ts < _JSG.loadedConfig.meta.tilesets.length; ts+=1){
+        for(let ts=0; ts < _APP.configObj.gfxConfig.tilesets.length; ts+=1){
             x=0;
             for(let tid=0; tid<dimensions.cols-1; tid+=1){
                 if     (type==1){ _GFX.draw.tiles.setTile(tid,  x, y,  ts, 0); }
