@@ -1,0 +1,40 @@
+{
+    "toggles": {
+        "show_APP_consolelog": true
+    },
+    "node": {
+        "debug":true,
+        "http": {
+            "host": "localhost",
+            "port": 33890,
+            "useHttps": false
+        },
+        "routes":{
+            "rel":"./backend/routes.js",
+            "req":"./routes",
+            "seedData_relative"     : "./backend/db/db_init_seedData.js",
+            "seedData_require"      : "../db/db_init_seedData"
+        }
+    },
+    "db": {
+        "examples": {
+            "file": {
+                "type": "file",
+                "file": "backend/db/AFA.db",
+                "doSeed":false
+            },
+            "memory": {
+                "type": "memory",
+                "file": "",
+                "doSeed":true
+            }
+        },
+        "type": "file",
+        "file": "backend/db/JSGV3.db",
+        "doSeedOnInit":false,
+        "seedData_relative"     : "./backend/db/db_init_seedData.js",
+        "seedData_require"      : "../db/db_init_seedData",
+        "structureData_relative": "./backend/db/db_init_structure.js",
+        "structureData_require" : "../db/db_init_structure"
+    }
+}

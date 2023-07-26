@@ -1,0 +1,51 @@
+:root {
+    /* --background-color: #DBDBDB; */
+    /* --nav-background-color: #333333; */
+    /* --tab-color: #A7A7A7; */
+    /* --tab-hover-color: #FFFFFF; */
+    /* --tab-hover-background: #484848; */
+    /* --tab-active-color: #FFFFFF; */
+    /* --tab-active-background: #000000; */
+    /* --tab-active-underline-color: #00D70D; */
+    /* --underline-height: 0.25rem; */
+}
+
+
+/* SHARED */
+.displayNone {
+    display: none !important;
+}
+
+
+/* DEFAULT STYLING */
+* {
+    box-sizing: border-box;
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+    /* font-size: 14px; */
+    color:white;
+}
+
+
+/* WRAPPER */
+#wrapper{
+    background-color: #303030;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+    padding-bottom: 5px;
+}
+
+a              { color:white; }
+/* a:active       { background-color:burlywood; } */
+/* a:focus        { background-color:burlywood; } */
+/* a:focus-within { background-color:burlywood; } */
+/* a:target       { background-color:burlywood; } */
+/* a:hover        { background-color:burlywood; } */
+/* a:visited      { background-color:burlywood; } */
+/* a:focus-visible{ background-color:burlywood; } */

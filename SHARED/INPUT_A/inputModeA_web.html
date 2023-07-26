@@ -1,0 +1,324 @@
+<div class="" id="jsgame_input">
+    <div id="gamepadsDisplay">
+        <div id="gamepadsDisplay_top_title_bar">
+            <div>Gamepad Configuration Manager</div>
+            <div>
+                <div class="close">
+                    &times;
+                </div>
+            </div>
+        </div>
+
+        <div id="gamepadsDisplay_top">
+            <div id="gamepad_nav">
+                <div class="gamepad_nav_tab active" id="gamepad_nav_tab_help" ><div class="gamepad_nav_tab_label">HELP</div> </div>
+                <div class="gamepad_nav_tab" id="gamepad_nav_tab_userMappings"><div class="gamepad_nav_tab_label">User Mappings</div> </div>
+                <div class="gamepad_nav_tab" id="gamepad_nav_tab_gp_p1"       ><div class="gamepad_nav_tab_indicator disconnected" id="gamepad_nav_tab_gp_p1_indicator"></div><div class="gamepad_nav_tab_label">Gamepad P1</div></div>
+                <div class="gamepad_nav_tab" id="gamepad_nav_tab_gp_p2"       ><div class="gamepad_nav_tab_indicator disconnected" id="gamepad_nav_tab_gp_p2_indicator"></div><div class="gamepad_nav_tab_label">Gamepad P2</div></div>
+            </div>
+
+            <div id="gamepad_views">
+                <div class="gamepad_view active" id="gamepad_nav_view_help">
+                    HOW DO GAMEPADS AND BUTTON MAPPINGS WORK?<br>
+                    <br>
+                    <br>When a gamepad is connected it will be indicated in one one of the "Gamepad #" tabs.
+                    <br>In the same tab, a connected Gamepad will have either a red, yellow, or green icon to indicate it's readiness.
+                    <br>Red is disconnected.
+                    <br>Yellow is connected but no gamepad button map was found.
+                    <br>Green is connected and a gamepad button map was found.
+                    <br>
+                    <br>There are two types of mappings: "internal" and "user".
+                    <br>"internal" are built-in mappings and include a mapping for a standard gamepad and also some gamepads that I either have or have created button mappings for.
+                    <br>"user" mappings are mappings that are created by the user. These are saved and loaded from HTML5 Local Storage and can be downloaded and restored if desired.
+                    <br>NOTE: The "user" mappings are checked first which means that a "user" button mapping can override an "internal" button mapping. 
+                    <br>
+                </div>
+                <div class="gamepad_view" id="gamepad_nav_view_userMappings">
+                    <div id="gamepad_nav_view_userMappings_flexCont">
+                        <!-- _INPUT.gamepadMappings.user -->
+                        <textarea id="gamepad_nav_view_userMappings_textOutput"></textarea>
+                        <div id="gamepad_nav_view_userMappings_controls">
+                            <button class="userMappings_controls" id="mapped_downloadH5ls">Download as file</button>
+                            <!-- <button class="userMappings_controls" id="mapped_updateFromFileH5ls">Update with file</button> -->
+                            <button class="userMappings_controls" id="mapped_updateFromTextH5ls">Update with text</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gamepad_view" id="gamepad_nav_view_gp_p1"></div>
+                <div class="gamepad_view" id="gamepad_nav_view_gp_p2"></div>
+            </div>
+        </div>
+
+        <div id="gamepadsDisplay_status">There are 0 gamepads connected.</div>
+    </div>
+
+    <!-- Hidden DOM - cloneNode with true to use them -->
+    <div style="display:none;">
+        <!-- SNES GAMEPAD SECTION-->
+        <div class="mappedGpDiv" id="mappedGpDiv">
+            <table>
+                <tr>
+                    <td colspan="2">Button Remapped Gamepad:</td>
+                </tr>
+                <tr>
+                    <td>MapKey:</td>
+                    <td><span class="mappedGp_id"></span></td>
+                </tr>
+                <tr>
+                    <td>Mapping:</td>
+                    <td><span class="mappedGp_mapping"></span></td>
+                </tr>
+                <tr>
+                    <td>MISC:</td>
+                    <td>
+                        foundBy: "<span class="mappedGp_foundBy"></span>",
+                        gamepad index: "<span class="mappedGp_index"></span>",
+                        player key: "<span class="mappedGp_playerKey"></span>"
+                    </td>
+                </tr>
+            </table>
+
+            <div class="snesGpDiv_gp">
+                <div class="SNESGamepad">
+                    <svg viewBox="0 0 250 120">
+                        <g transform="translate(0,5)">
+                            <!-- BUTTONS: BTN_SL, BTN_SR -->
+                            <g fill="#aaaaaa">
+                                <rect
+                                        width="60"
+                                        height="30"
+                                        rx="10"
+                                        ry="10"
+                                        x="25"
+                                        y="1"
+                                        name="BTN_SL"
+                                        class="button"
+                                />
+                                <rect
+                                        width="60"
+                                        height="30"
+                                        rx="10"
+                                        ry="10"
+                                        x="165"
+                                        y="1"
+                                        name="BTN_SR"
+                                        class="button"
+                                />
+                            </g>
+
+                            <rect x="50" y="10" width="150" height="90" fill="#cfcfcd" />
+                            <circle cx="50" cy="60" r="50" fill="#cfcfcd" />
+                            <circle cx="200" cy="60" r="50" fill="#cfcfcd" />
+                            <circle cx="200" cy="60" r="45" fill="#a5a7a4" />
+                            <circle cx="50" cy="60" r="28" fill="#c8c8c8" />
+                            <g fill="#cfcfcd" stroke="#cfcfcd" stroke-width="25" stroke-linecap="round">
+                                <path d="M180,60 200,40" />
+                                <path d="M202,82 222,62" />
+                            </g>
+
+                            <!-- BUTTONS: BTN_X, BTN_Y, BTN_A, BTN_B -->
+                            <circle cx="200" cy="40" r="10" fill="#000080" name="BTN_X" class="button" />
+                            <circle cx="180" cy="60" r="10" fill="#009922" name="BTN_Y" class="button" />
+                            <circle cx="222" cy="62" r="10" fill="#cc0000" name="BTN_A" class="button" />
+                            <circle cx="202" cy="82" r="10" fill="#ccbb00" name="BTN_B" class="button" />
+
+                            <!-- BUTTONS: BTN_SELECT, BTN_START -->
+                            <g fill="#444" stroke="#444" fill="#ccbb00" stroke-width="5" stroke-linecap="round">
+                                <path d="M100,70 110,60" name="BTN_SELECT" class="button" />
+                                <path d="M125,70 135,60" name="BTN_START" class="button" />
+                            </g>
+                            
+
+                            <path
+                                d="M43,53 43,39 57,39 57,53 71,53 71,67 57,67 57,81 43,81 43,67 29,67 29,53 43,53Z"
+                                fill="#444"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+
+                            <!-- BUTTONS: BTN_UP, BTN_RIGHT, BTN_DOWN, BTN_LEFT -->
+                            <g fill="#333">
+                                <path d="M 45,51 50,41 55,51 Z" name="BTN_UP"    class="button" />
+                                <path d="M 59,55 69,60 59,65 Z" name="BTN_RIGHT" class="button" />
+                                <path d="M 45,69 50,79 55,69 Z" name="BTN_DOWN"  class="button" />
+                                <path d="M 41,55 31,60 41,65 Z" name="BTN_LEFT"  class="button" />
+                                
+                                <circle cx="50" cy="60" r="3" />
+                            </g>
+                            
+
+                            <!-- fill="#cfcfcd" -->
+                            <!-- fill="#999" -->
+
+                            <!-- BUTTON LABELS: -->
+                            <g
+                                dominant-baseline="middle"
+                                text-anchor="middle"
+                                fill="#000"
+                                font-size="10"
+                                font-family="'Arial Narrow',Arial,sans-serif"
+                                font-weight="bold"
+                            >
+                                <text x="55"  y="6">L</text>
+                                <text x="195" y="6">R</text>
+                                <text x="215" y="30">X</text>
+                                <text x="235" y="49">A</text>
+                                <text x="167" y="75">Y</text>
+                                <text x="190" y="97">B</text>
+                                <text x="135" y="85">START</text>
+                                <text x="95" y="85">SELECT</text>
+                            </g>
+
+                            <!-- CLICKABLE AREAS -->
+                            <rect x="25"  y="0"  width="60" height="15" fill="transparent" class="clickableArea" data-name="BTN_SL"></rect>
+                            <rect x="165" y="0"  width="60" height="15" fill="transparent" class="clickableArea" data-name="BTN_SR"></rect>
+                            <rect x="94" y="54" width="22" height="22" fill="transparent" class="clickableArea" data-name="BTN_SELECT"></rect>
+                            <rect x="119" y="54" width="22" height="22" fill="transparent" class="clickableArea" data-name="BTN_START"></rect>
+                            <rect x="43"  y="39" width="14" height="14" fill="transparent" class="clickableArea" data-name="BTN_UP"></rect>
+                            <rect x="57"  y="53" width="14" height="14" fill="transparent" class="clickableArea" data-name="BTN_RIGHT"></rect>
+                            <rect x="43"  y="67" width="14" height="14" fill="transparent" class="clickableArea" data-name="BTN_DOWN"></rect>
+                            <rect x="29"  y="53" width="14" height="14" fill="transparent" class="clickableArea" data-name="BTN_LEFT"></rect>
+
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="snesGpDiv_tables">
+                <table class="snesGpDiv_table1">
+                    <tr>
+                        <td class="top header">BTN</td>       <td class="top data">MAP</td>
+                        <td class="top header">BTN</td>       <td class="top data">MAP</td>
+                    </tr>
+                        <tr> 
+                            <td class="header">BTN_UP</td>    <td class="data setOneButton" name="BTN_UP"></td>
+                            <td class="header">BTN_X</td>     <td class="data setOneButton" name="BTN_X"></td>
+                        </tr>
+                        <tr> 
+                            <td class="header">BTN_DOWN</td>  <td class="data setOneButton" name="BTN_DOWN"></td>
+                            <td class="header">BTN_Y</td>     <td class="data setOneButton" name="BTN_Y"></td>
+                        </tr>
+                        <tr> 
+                            <td class="header">BTN_RIGHT</td> <td class="data setOneButton" name="BTN_RIGHT"></td>
+                            <td class="header">BTN_B</td>     <td class="data setOneButton" name="BTN_B"></td>
+                        </tr>
+                        <tr> 
+                            <td class="header">BTN_LEFT</td>  <td class="data setOneButton" name="BTN_LEFT"></td>
+                            <td class="header">BTN_A</td>     <td class="data setOneButton" name="BTN_A"></td>
+                        </tr>
+                        <tr> 
+                            <td class="header">BTN_SL</td>    <td class="data setOneButton" name="BTN_SL"></td>
+                            <td class="header">BTN_SR</td>    <td class="data setOneButton" name="BTN_SR"></td>
+                        </tr>
+                        <tr> 
+                            <td class="header">BTN_SELECT</td><td class="data setOneButton" name="BTN_SELECT"></td>
+                            <td class="header">BTN_START</td> <td class="data setOneButton" name="BTN_START"></td>
+                        </tr>
+                </table>
+            </div>
+
+            <div class="mappedGpConfig">
+                <button class="mapped_updateOrCreateMap">Update Map in memory</button>
+                <button class="mapped_updateFromRamH5ls">Save Maps to Local Storage</button>
+            </div>
+        </div>
+
+        <!-- W3C STANDARD GAMEPAD 1-->
+        <div class="standardGpDiv" id="standardGpDiv">
+            <table>
+                <tr>
+                    <td>Raw Gamepad Data:</td>
+                    <td>
+                        <span class="standardGp_id"></span>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="standardGpDiv_gp">
+                <div class="standardGamepad">
+                    <svg viewBox="0 0 600 300">
+                        <g fill="#ddd" stroke="#222" stroke-width="3">
+                        <rect x="150" y="10" width="100" height="100" rx="5" ry="5" name="button-6" class=""></rect>
+                        <rect x="350" y="10" width="100" height="100" rx="5" ry="5" name="button-7" class=""></rect>
+                        <rect x="100" y="25" width="100" height="40" rx="5" ry="5"  name="button-4" class=""></rect>
+                        <rect x="400" y="25" width="100" height="40" rx="5" ry="5"  name="button-5" class=""></rect>
+                        <path d="M135,50 C 45,50 20,180 20,240 20,300 80,330 175,220 175,220 
+                        425,220 425,220 520,330 580,300 580,240 580,180 555,50 465,50 Z"></path>
+                        <circle cx="200" cy="200" r="35"></circle>
+                        <circle cx="400" cy="200" r="35"></circle>
+                        <circle cx="200" cy="200" r="15" name="button-10" class=""></circle>
+                        <circle cx="400" cy="200" r="15" name="button-11" class=""></circle>
+                        <path d="M190,182 210,182 200,168 Z" stroke-width="0" name="axe-0-up"></path>
+                        <path d="M190,218 210,218 200,232 Z" stroke-width="0" name="axe-0-down" class=""></path>
+                        <path d="M218,190 218,210 232,200 Z" stroke-width="0" name="axe-0-right"></path>
+                        <path d="M182,190 182,210 168,200 Z" stroke-width="0" name="axe-0-left" class=""></path>
+                        <path d="M390,182 410,182 400,168 Z" stroke-width="0" name="axe-1-up"></path>
+                        <path d="M390,218 410,218 400,232 Z" stroke-width="0" name="axe-1-down" class=""></path>
+                        <path d="M418,190 418,210 432,200 Z" stroke-width="0" name="axe-1-right"></path>
+                        <path d="M382,190 382,210 368,200 Z" stroke-width="0" name="axe-1-left" class=""></path>
+                
+                        <circle cx="480" cy="160" r="15" name="button-0" class=""></circle>
+                        <circle cx="510" cy="130" r="15" name="button-1" class=""></circle>
+                        <circle cx="450" cy="130" r="15" name="button-2" class=""></circle>
+                        <circle cx="480" cy="100" r="15" name="button-3" class=""></circle>
+                
+                        <rect x="105" y="85" width="30" height="90" fill="#aaa" stroke="#aaa"></rect>
+                        <rect x="75" y="115" width="90" height="30" fill="#aaa" stroke="#aaa"></rect>
+                
+                        <rect x="245" y="145" width="50" height="18" rx="9" ry="9" name="button-8" class=""></rect>
+                        <rect x="305" y="145" width="50" height="18" rx="9" ry="9" name="button-9" class=""></rect>
+                
+                        <circle cx="120" cy="160" r="15" name="button-13" class=""></circle>
+                        <circle cx="90" cy="130" r="15"  name="button-14" class=""></circle>
+                        <circle cx="150" cy="130" r="15" name="button-15" class=""></circle>
+                        <circle cx="120" cy="100" r="15" name="button-12" class=""></circle>
+                
+                        <circle cx="300" cy="90" r="20" name="button-16"></circle>
+                        </g>
+                        <g dominant-baseline="middle" text-anchor="middle" fill="#222" font-size="16" font-family="Arial,sans-serif">
+                        <text x="480" y="160">0</text>
+                        <text x="510" y="130">1</text>
+                        <text x="450" y="130">2</text>
+                        <text x="480" y="100">3</text>
+                        <text x="150" y="40">4</text>
+                        <text x="450" y="40">5</text>
+                        <text x="225" y="30">6</text>
+                        <text x="375" y="30">7</text>
+                        <text x="270" y="156">8</text>
+                        <text x="330" y="156">9</text>
+                        <text x="200" y="200">10</text>
+                        <text x="400" y="200">11</text>
+                        <text x="120" y="100">12</text>
+                        <text x="120" y="160">13</text>
+                        <text x="90" y="130">14</text>
+                        <text x="150" y="130">15</text>
+                        <text x="300" y="90">16</text>
+                        <text x="270" y="175" font-size="10">SELECT</text>
+                        <text x="330" y="175" font-size="10">START</text>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="standardGpDiv_tables">
+                <table class="standardGpDiv_table1">
+                    <tr>
+                        <td name="A0"></td><td name="A1"></td><td name="A2"></td><td name="A3"></td><td name="A4"></td>
+                        <td name="A5"></td><td name="A6"></td><td name="A7"></td><td name="A8"></td><td name="A9"></td>
+                    </tr>
+                    <tr>
+                        <td name="B0"></td><td name="B1"></td><td name="B2"></td><td name="B3"></td><td name="B4"></td>
+                        <td name="B5"></td><td name="B6"></td><td name="B7"></td><td name="B8"></td><td name="B9"></td>
+                    </tr>
+                    <tr>
+                        <td name="B10"></td><td name="B11"></td><td name="B12"></td><td name="B13"></td><td name="B14"></td>
+                        <td name="B15"></td><td name="B16"></td><td name="B17"></td><td name="B18"></td><td name="B19"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+

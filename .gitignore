@@ -1,27 +1,13 @@
 # IGNORE THESE.
 _IGNORE/*
+_GITIGNORE/*
 node_modules/*
-
-# IGNORE GAMES. THEY ARE SEPARATE.
-public/games/*
-!public/games/.gitkeep
+GAMES/**
+!GAMES/.gitkeep
 
 # CONFIGS.
 public/shared/config.json
-public/shared/apps.json
 
 # DATABASE.
 backend/db/db_init_importFile.js
 backend/db/JSGAME.db
-
-# OTHERS
-public/gamepadtest/*
-public/css/layoutTest.css
-public/css/OLDindex.css
-public/css/lobby/lobby_debug.css
-public/css/lobby/lobby_profile.css
-public/css/lobby/lobby_dm.css
-public/shared/plugins/SOUND_A/*
-public/layoutTest.html
-public/shared/plugins/INPUT_A/oldCode.js
-public/shared/plugins/VIDEO_A/TODO.md

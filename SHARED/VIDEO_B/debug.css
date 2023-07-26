@@ -1,0 +1,172 @@
+/* CONTAINER */
+#gfxDebug{
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height:100%;
+}
+
+/* SHARED */
+.debug_title {
+    display: block;
+    text-align: center;
+    text-decoration: underline;
+}
+
+/* WIDTH CLASS FOR THE VIEWS CONTAINER */
+#mainNavMenuViews.active.gfxDebugWide{width: 1700px !important;}
+
+/* ADJUSTMENTS FOR THE SUBMENU */
+#navView_gfx_debug.navView.active{
+    overflow-y: unset!important;
+}
+#gfxDebug .navMenu1 ul li{
+    background-color:#20495d;
+}
+#gfxDebug .navMenu1 ul li.active{
+    background-color: black;
+}
+#gfx_mainNavMenu{
+    max-height: 40px;
+}
+#gfx_mainNavMenuViews{
+    height:100%;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+}
+#gfx_mainNavMenuViews .gfx_debug_scrollable_parent{
+    display:flex;
+    flex-direction: column;
+    /* height: calc(100% - 40px); */
+    background-color: #180018;
+    /* width: 100%; */
+    /* padding: 5px; */
+    height: 100%;
+}
+#gfx_mainNavMenuViews .gfx_debug_scrollable_parent .gfx_debug_scrollable{
+    overflow-y: auto;
+    flex-grow: 1;
+    /* background-color: #999999; */
+    /* background-color: #508dff; */
+    background-color: cornflowerblue;
+    height: 100%;
+    /* width: 100%; */
+    padding: 5px;
+}
+
+/* COLOR FINDER */
+#debug_colorFinder {
+    /* text-align: center; */
+    /* height: 100%; */
+}
+#debug_test_colorFinder_copyButtons{}
+.debug_test_colorFinder_copyButtons{
+    margin-right: 0.5em;
+}
+#debug_colorFinder_canvases {/* text-align: center; */}
+#debug_colorFinder_copyCanvas {
+  width: 40%;
+  border: 1px solid white;
+  vertical-align: top;
+}
+#debug_colorFinder_zoomCanvas {
+  border: 1px solid white;
+  width: 40%;
+  vertical-align: top;
+}
+#debug_colorFinder_pixelRGBA {
+  font-family: monospace;
+  white-space: pre;
+  display: inline-block;
+  width: 720px;
+  min-height: 115px;
+  max-height: 115px;
+  vertical-align: top;
+  font-size: 12px;
+  overflow: scroll;
+  overflow-x: auto;
+  overflow-y: auto;
+  background-color: antiquewhite;
+  text-align: center;
+}
+
+/* DRAW TIMINGS */
+#gfx_navView_drawTimings table{
+    border: 1px solid black;
+    min-height:1em;
+    /* min-width: 500px; */
+    border-collapse: collapse;
+    /* display: block; */
+    /* vertical-align: top; */
+    /* width: 100%; */
+    background-color: darkgray;
+}
+#gfx_navView_drawTimings table td{
+    border: 1px solid black;
+    padding: 1px;
+    min-width: 70px;
+}
+#gfx_navView_drawTimings table td.header.center{
+    text-align: center;
+}
+#gfx_navView_drawTimings table td.header{
+    font-weight: bold;
+    text-decoration: underline;
+}
+#gfx_navView_drawTimings table td.data{
+    font-family: monospace;
+    text-align: center;
+}
+#gfx_navView_drawTimings table caption{
+    background-color: lightslategray;
+}
+#gfx_debug_drawTimings_counts1{}
+#gfx_debug_drawTimings_timings{
+}
+#gfx_debug_drawTimings_counts2{
+}
+#gfx_debug_drawTimings_FPS{
+}
+
+/* ALWAYS VISIBLE (TOP BAR) */
+#gfx_navView_alwaysVisible{
+    display: block;
+    /* overflow-y: auto; */
+    overflow: hidden;
+    height: 90px;
+    /* width: 250px; */
+    width: 100%;
+    /* max-width: 150px; */
+    /* background-color: cornflowerblue; */
+    background-color: #508dff;
+    /* padding-right: 10px; */
+    border-bottom: 1px solid black;
+    padding: 5px;
+}
+
+/* GRID CANVAS CSS */
+#gameView canvas.canvasLayer.fixFitAndMouseCoords{
+    object-fit:unset;
+    width:unset;
+    height: 100%;
+}
+
+/* STATS/CONTROLS (Within #gfx_navView_alwaysVisible.)*/
+#gfx_debug_statsControls{
+    /* width: 100%; */
+    width: 874px;
+    border-collapse: collapse;
+}
+#gfx_debug_statsControls button{
+    width:100%;
+}
+#gfx_debug_statsControls_timingsCanvas{
+    border: 2px solid black;
+}
+.gfx_debug_bgColor_on {
+    background-color: #a8ffa8;
+}
+.gfx_debug_bgColor_off {
+    background-color: #ffa8a8;
+}
