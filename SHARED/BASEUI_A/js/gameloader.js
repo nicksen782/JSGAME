@@ -525,14 +525,14 @@ _APP.loader = {
     loadFilesFromConfig: async function(){
         let loadConfigFiles = async function(key, showMessage=false){
             if(showMessage){ console.log(`FILES: ${key}: loading: ${_APP.configObj[key].files.length} files`); }
-            if(_APP.configObj[key].files.length){
+            if(_APP.configObj[key] && _APP.configObj[key].enabled && _APP.configObj[key].files.length){
                 for(let rec of _APP.configObj[key].files){ 
                     let data = await _APP.utility.addFile( rec, _APP.relPath); 
                     if(rec.t == "html" && rec.destId){ console.log(rec); document.getElementById(rec.destId).innerHTML = data;}
                 }
             }
 
-            if(_APP.debugActive && _APP.configObj[key].debug){
+            if(_APP.configObj[key] && _APP.configObj[key].enabled && _APP.debugActive && _APP.configObj[key].debug){
                 if(showMessage){ console.log(`  DEBUG: ${key}: loading: ${_APP.configObj[key].files.length} files`); }
                 if(_APP.configObj[key].debugFiles.length){
                     for(let rec of _APP.configObj[key].debugFiles){ 
@@ -607,16 +607,16 @@ _APP.loader = {
         // DEBUG inits.
         if(_APP.debugActive){
             if(_APP.configObj.inputConfig && _APP.configObj.inputConfig.enabled && _APP.configObj.inputConfig.debug){
-                await _INPUT.DEBUG.init(); 
+                if(_INPUT.DEBUG.init){ await _INPUT.DEBUG.init(); }
             }
             if(_APP.configObj.soundConfig && _APP.configObj.soundConfig.enabled && _APP.configObj.soundConfig.debug){
-                await _SND.DEBUG.init(); 
+                if(_SND.DEBUG.init){ await _SND.DEBUG.init(); }
             }
             if(_APP.configObj.gfxConfig   && _APP.configObj.gfxConfig  .enabled && _APP.configObj.gfxConfig  .debug){
-                await _GFX.DEBUG.init(); 
+                if(_GFX.DEBUG.init){ await _GFX.DEBUG.init(); }
             }
             if(_APP.configObj.gameConfig  && _APP.configObj.gameConfig .enabled && _APP.configObj.gameConfig .debug){
-                await _APP.game.DEBUG.init(); 
+                if(_APP.game.DEBUG){ await _APP.game.DEBUG.init();  }
             }
         }
 
@@ -624,7 +624,7 @@ _APP.loader = {
         if(_APP.configObj.inputConfig && _APP.configObj.inputConfig.enabled && ('postInit' in _INPUT))   { _INPUT.postInit();    }
         if(_APP.configObj.soundConfig && _APP.configObj.soundConfig.enabled && ('postInit' in _SND))     { _SND.postInit();      }
         if(_APP.configObj.gfxConfig   && _APP.configObj.gfxConfig  .enabled && ('postInit' in _GFX))     { _GFX.postInit();      }
-        if(_APP.configObj.gameConfig  && _APP.configObj.gameConfig .enabled && ('postInit' in _APP.game)){ _APP.game.postInit(); }
+        if(_APP.configObj.gameConfig  && _APP.configObj.gameConfig .enabled && _APP && _APP.game && ('postInit' in _APP.game)){ _APP.game.postInit(); }
 
         // Init the main nav bar. (Any additional tabs/views should have already been added to the DOM object in _APP.navBarMAIN.DOM.
         _APP.navBarMAIN.init(true);
@@ -649,24 +649,56 @@ _APP.loader = {
             }
         });
 
-        // DEBUG (temporary)
-        if(_APP.debugActive && _APP.configObj.gfxConfig && _APP.configObj.gfxConfig.enabled){
-            // _APP.navBarMAIN.showOne("gfx");
+        // Prevent certain keys from shifting the window view.
+        this.preventScroll();
+        
+        // Handle changing to and from full screen.
+        this.setupFullScreen();
+    },
+
+    // Prevent certain keys from shifting the window view.
+    preventScroll: function(){
+        // Get the element ids, starting with the outputDiv.
+        _APP.utility.preventScroll_elemIds = new Set([_APP.configObj.gfxConfig.outputDiv]);
+
+        // Add elements from inputConfig.
+        if(_APP.configObj.inputConfig && _APP.configObj.inputConfig.enabled){
+            let ids = [..._APP.configObj.inputConfig.listeningElems.map(d=>d.id)];
+            ids.forEach(d=>_APP.utility.preventScroll_elemIds.add(d));
         }
 
-        // Prevent certain keys from shifting the window view.
-        _APP.utility.preventScroll_elemIds = new Set([
-            _APP.configObj.gfxConfig.outputDiv,
-            ..._APP.configObj.inputConfig.listeningElems.map(d=>d.id)
-        ]);
+        // Add onkeydown and onkeyup listeners.
         window.onkeydown = _APP.utility.preventScroll;
         window.onkeyup   = _APP.utility.preventScroll;
+    },
 
-        // Handle changing to and from full screen.
-        if(_APP.configObj.gfxConfig.outputDiv && _APP.configObj.gfxConfig.fullScreenElemId){
-            let listeningElem = document.getElementById(_APP.configObj.gfxConfig.outputDiv);
-            let fullScreenElem = document.getElementById(_APP.configObj.gfxConfig.fullScreenElemId);
+    // Handle changing to and from full screen.
+    setupFullScreen: function(){
+        let allowFullScreen = false;
+        let listeningElem  = null;
+        let fullScreenElem = null;
 
+        // Check fullScreenConfig.
+        if(_APP.configObj.fullScreenConfig && _APP.configObj.fullScreenConfig.listenOnId && _APP.configObj.fullScreenConfig.idToMakeFullscreen){ 
+            allowFullScreen = true; 
+            listeningElem  = _APP.configObj.fullScreenConfig.listenOnId;
+            fullScreenElem = _APP.configObj.fullScreenConfig.idToMakeFullscreen;
+        }
+
+        // Check within gfxConfig.
+        else if(_APP.configObj.gfxConfig.outputDiv && _APP.configObj.gfxConfig.fullScreenElemId){ 
+            allowFullScreen = true; 
+            listeningElem  = _APP.configObj.gfxConfig.outputDiv;
+            fullScreenElem = _APP.configObj.gfxConfig.fullScreenElemId;
+        }
+
+        // Do we have ids to configure fullscreen with?
+        if(allowFullScreen){
+            // Get the elements by id.
+            listeningElem  = document.getElementById(listeningElem);
+            fullScreenElem = document.getElementById(fullScreenElem);
+
+            // Add listener for dblclick to request and to exit fullscreen.
             listeningElem.addEventListener('dblclick', function() {
                 if (!document.fullscreenElement) {
                     const requestFullscreen = 
@@ -690,7 +722,6 @@ _APP.loader = {
                 }
             });
         }
-
     },
 };
 
@@ -701,7 +732,7 @@ _APP.navBarMAIN = {
         // chat   : { tab: "navTab_chat"   , view: "navView_chat"   , extraClasses: { cont: ["chatWide"]  }, onShow: null, onHide: null },
         // debug  : { tab: "navTab_debug"  , view: "navView_debug"  , extraClasses: { cont: ["debugWide"] }, onShow: null, onHide: null },
     },
-    // this.mainMenuButon
+    inited: false,
     tabsContainer : "mainNavMenu_ul",
     viewsContainer: "mainNavMenuViews",
     lastActiveView : "",
@@ -849,6 +880,9 @@ _APP.navBarMAIN = {
         if(adjustMenuButton){
             this.mainMenuButon = document.getElementById("navTab_MENUBUTTON");
         }
+
+        // Set the inited flag.
+        this.inited = true;
     },
 };
 
@@ -875,9 +909,16 @@ _APP.init_standAlone = async function(){
         // Inits for loaded files.
         await _APP.loader.inits();
 
+        let navTab_gameName = document.getElementById("navTab_gameName");
+        if(navTab_gameName && _APP.configObj.gameConfig && _APP.configObj.gameConfig.appNameText){
+            navTab_gameName.innerText = _APP.configObj.gameConfig.appNameText;
+        }
+
         loading.style.display = "none";
         wrapper.style.display = "";
-        _APP.game.gameLoop.loop_start(); 
+        if(_APP.game && _APP.game.gameLoop && _APP.game.gameLoop.loop_start){
+            _APP.game.gameLoop.loop_start(); 
+        }
         // if(_APP.debugActive && ('_DEBUG' in window) && ('toggleButtons1' in _DEBUG)){_DEBUG.toggleButtons1.setCurrentStates(); }
 
         resolve();

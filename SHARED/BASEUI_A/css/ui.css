@@ -114,6 +114,7 @@ body {
     cursor:unset;
     font-weight: bold;
     font-family: monospace;
+    font-size: 16px;
 }
 .navMenu1 ul li{
     display: flex;

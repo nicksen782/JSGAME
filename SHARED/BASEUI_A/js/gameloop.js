@@ -144,8 +144,6 @@ _APP.game = {
 
         // Game loop init.
         init: async function(){
-            document.getElementById("navTab_gameName").innerText = _APP.configObj.gameConfig.appNameText;
-
             // Calculate the ms required per frame.
             this.msFrame = 1000 / this.fps;
         
