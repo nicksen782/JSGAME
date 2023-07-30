@@ -7,9 +7,162 @@ var _APP = {
     usingJSGAME_INPUT: false,
 }; 
 
+_APP.basePath = window.location.pathname.includes('/JSGAME/') ? '/JSGAME' : '';
+
 _APP.debugActive = false;
 _APP.debug2Active = false;
 _APP.configObj = {}; // Populated by appConfigs.js.
+_APP.sharedPlugins = {
+    __util: {
+        loadFiles1: async function(recs, syncType){
+            let proms = [];
+            for(let rec of recs){
+                // Load files in order sequentially.
+                if     (syncType == "sync") { await _APP.utility.addFile( rec, _APP.relPath);  }
+                
+                // Load files in order in parallel.
+                else if(syncType == "async"){
+                    proms.push( _APP.utility.addFile( rec, _APP.relPath) );
+                }
+            }
+
+            // Wait for all promises to resolve. 
+            if(proms.length){ await Promise.all(proms); }
+        },
+        fileLoadFunc1: async function(config, pluginObj){
+            // NOTE: debugFiles2 and webWorker are loaded elsewhere.
+            // for files and debugFiles, do the "loadFirst" files then the rest.
+            let loadFirst;
+            let loadAfter;
+
+            // Load files: do the "loadFirst" files then the rest.
+            if(config && config.enabled && config.files.length){
+                loadFirst = pluginObj.files.filter(d=>d.syncType == "sync");
+                loadAfter = pluginObj.files.filter(d=>d.syncType == "async");
+                // console.log("files:", loadFirst, loadAfter);
+                await _APP.sharedPlugins.__util.loadFiles1(loadFirst, "sync");
+                await _APP.sharedPlugins.__util.loadFiles1(loadAfter, "async");
+            }
+            
+            // Load debugFiles: do the "loadFirst" files then the rest.
+            if(config && config.enabled && config.debugFiles.length){
+                loadFirst = pluginObj.debugFiles.filter(d=>d.syncType == "sync");
+                loadAfter = pluginObj.debugFiles.filter(d=>d.syncType == "async");
+                // console.log("debug files:", loadFirst, loadAfter);
+                await _APP.sharedPlugins.__util.loadFiles1(loadFirst, "sync");
+                await _APP.sharedPlugins.__util.loadFiles1(loadAfter, "async");
+            }
+        },
+    },
+    GAME: {
+        // Populate this via the appConfigs.js file.
+        // Example: 
+        // _APP.sharedPlugins.GAME.fileLoadFunc = async function(){
+        //     await _APP.sharedPlugins.__util.fileLoadFunc1(_APP.configObj["gameConfig"], _APP.configObj["gameConfig"]);
+        // };
+    },
+    INPUT_A:{
+        files:[
+            { f: `${_APP.basePath}/SHARED/INPUT_A/inputModeA_core.js`      , t:"js"  , syncType: "sync" },
+            { f: `${_APP.basePath}/SHARED/INPUT_A/inputModeA_user.js`      , t:"js"  , syncType: "async" },
+            { f: `${_APP.basePath}/SHARED/INPUT_A/inputModeA_mappings.js`  , t:"js"  , syncType: "async" },
+            { f: `${_APP.basePath}/SHARED/INPUT_A/inputModeA_web.js`       , t:"js"  , syncType: "async" },
+            { f: `${_APP.basePath}/SHARED/INPUT_A/inputModeA_web.css`      , t:"css" , syncType: "async" },
+            { f: `${_APP.basePath}/SHARED/INPUT_A/inputModeA_customized.js`, t:"js"  , syncType: "async" },
+        ],
+        files2:[
+            { f: `${_APP.basePath}/SHARED/INPUT_A/inputModeA_web.html`     , t:"html", type:"webConfig", syncType: "" },
+        ],
+        debugFiles:[
+            // { f: `${_APP.basePath}/SHARED/INPUT_A/debug.js` , t:"js" , syncType: "async" },
+            // { f: `${_APP.basePath}/SHARED/INPUT_A/debug.css`, t:"css", syncType: "async" },
+        ],
+        debugFiles2:[
+        ],
+        webWorker: ``,
+        fileLoadFunc: async function(){
+            await _APP.sharedPlugins.__util.fileLoadFunc1(_APP.configObj["inputConfig"], this);
+        },
+    },
+    VIDEO_A:{
+        files:[
+            { f: `${_APP.basePath}/SHARED/VIDEO_A/videoModeA_core.js` , t:"js" , syncType: "sync" },
+            { f: `${_APP.basePath}/SHARED/VIDEO_A/videoModeA_user.js` , t:"js" , syncType: "async" },
+            { f: `${_APP.basePath}/SHARED/VIDEO_A/videoModeA.css`     , t:"css", syncType: "async" },
+        ],
+        files2:[
+        ],
+        debugFiles: [
+            // { f: `${_APP.basePath}/SHARED/VIDEO_A/videoModeA_debug.js`, t:"js" , syncType: "async" },
+            // { f: `${_APP.basePath}/SHARED/VIDEO_A/debug.js`  , t:"js" , syncType: "async" },
+            // { f: `${_APP.basePath}/SHARED/VIDEO_A/debug.css` , t:"css" , syncType: "async" },
+        ],
+        debugFiles2: [
+            { f:`${_APP.basePath}/SHARED/VIDEO_A/debug.html`, t:"html", syncType: "async", destId: "navView_gfx_debug" },
+        ],
+        webWorker: `${_APP.basePath}/SHARED/VIDEO_A/videoModeA_webworker.js`,
+        fileLoadFunc: async function(){
+            await _APP.sharedPlugins.__util.fileLoadFunc1(_APP.configObj["gfxConfig"], this);
+        },
+    },
+    VIDEO_B:{
+        files:[
+            { f:`${_APP.basePath}/SHARED/VIDEO_B/gfx.js`  , t:"js" , syncType: "async" },
+            { f:`${_APP.basePath}/SHARED/VIDEO_B/gfx.css` , t:"css", syncType: "async" },
+        ],
+        files2:[
+        ],
+        debugFiles: [
+            { f:`${_APP.basePath}/SHARED/VIDEO_B/debug.js`  , t:"js" , syncType: "async" },
+            { f:`${_APP.basePath}/SHARED/VIDEO_B/debug.css` , t:"css", syncType: "async" },
+        ],
+        debugFiles2: [
+            { f:`${_APP.basePath}/SHARED/VIDEO_B/debug.html`, t:"html", destId: "navView_gfx_debug", syncType: "" },
+        ],
+        webWorker: `${_APP.basePath}/SHARED/VIDEO_B/video_webworker.js`,
+        fileLoadFunc: async function(){
+            await _APP.sharedPlugins.__util.fileLoadFunc1(_APP.configObj["gfxConfig"], this);
+        },
+    },
+    SOUND_A:{
+        files:[
+            // { f:"${_APP.basePath}/SHARED/SOUND_A/soundModeA_core.js", t:"js" , syncType: "sync"  },
+            // { f:"${_APP.basePath}/SHARED/SOUND_A/soundModeA_user.js", t:"js" , syncType: "async" },
+            // { f:"${_APP.basePath}/SHARED/SOUND_A/soundModeA.css"    , t:"css", syncType: "async" },
+        ],
+        files2:[
+        ],
+        debugFiles: [
+            // { f:"${_APP.basePath}/SHARED/SOUND_A/debug.js" , t:"js" , syncType: "async" },
+            // { f:"${_APP.basePath}/SHARED/SOUND_A/debug.css", t:"css", syncType: "async" },
+        ],
+        debugFiles2: [
+        ],
+        webWorker: ``,
+        fileLoadFunc: async function(){
+            await _APP.sharedPlugins.__util.fileLoadFunc1(_APP.configObj["soundConfig"], this);
+        },
+    },
+    SOUND_B:{
+        files:[
+            // { f:"${_APP.basePath}/SHARED/SOUND_B/soundModeB_core.js", t:"js" , syncType: "sync"  },
+            // { f:"${_APP.basePath}/SHARED/SOUND_B/soundModeB_user.js", t:"js" , syncType: "async" },
+            // { f:"${_APP.basePath}/SHARED/SOUND_B/soundModeB.css"    , t:"css", syncType: "async" },
+        ],
+        files2:[
+        ],
+        debugFiles: [
+            // { f:"${_APP.basePath}/SHARED/SOUND_B/debug.js" , t:"js" , syncType: "async" },
+            // { f:"${_APP.basePath}/SHARED/SOUND_B/debug.css", t:"css", syncType: "async" },
+        ],
+        debugFiles2: [
+        ],
+        webWorker: ``,
+        fileLoadFunc: async function(){
+            await _APP.sharedPlugins.__util.fileLoadFunc1(_APP.configObj["soundConfig"], this);
+        },
+    },
+};
 
 _APP.utility = {
     // If debug is requested this function makes sure that it is allowed.
@@ -91,6 +244,10 @@ _APP.utility = {
     // Adds the specified file.
     addFile: function(rec, relativePath){
         return new Promise(async (res,rej)=>{
+            // let timeItKey = `addFile_timer_${rec.f.split("/").pop()}`;
+            let timeItKey = `addFile_timer_${rec.f}`;
+            _APP.utility.timeIt(timeItKey, "start");
+
             // if(relativePath){ relativePath += "/"; }
             // if(relativePath){ relativePath = ""; }
             // console.log(`${relativePath}${rec.f}`, rec); 
@@ -107,10 +264,16 @@ _APP.utility = {
                     script.defer=true;
 
                     // Onload.
-                    script.onload = function () { res(); script.onload = null; };
+                    script.onload = function () { 
+                        _APP.utility.timeIt(timeItKey, "stop"); 
+                        res(); 
+                        script.onload = null; 
+                    };
                     script.onerror = function (err) { 
                         console.log("addFile: js: FAILURE:", `${relativePath}${rec.f}`);
-                        rej(err); script.onload = null; 
+                        _APP.utility.timeIt(timeItKey, "stop");
+                        rej(err); 
+                        script.onload = null; 
                     };
 
                     // Append the element. 
@@ -127,12 +290,15 @@ _APP.utility = {
                     // Get the data.
                     let img = new Image();
                     img.onload = function(){
+                        _APP.utility.timeIt(timeItKey, "stop");
                         res(img);
                         img.onload = null;
                     };
                     img.onerror = function (err) { 
                         console.log("addFile: image: FAILURE:", `${relativePath}${rec.f}`);
-                        rej(err); img.onload = null; 
+                        _APP.utility.timeIt(timeItKey, "stop");
+                        rej(err); 
+                        img.onload = null; 
                     };
                     img.src = `${relativePath}${rec.f}`;
 
@@ -144,6 +310,7 @@ _APP.utility = {
                     // Get the data.
                     let data = await (await fetch(`${relativePath}${rec.f}`)).json();
 
+                    _APP.utility.timeIt(timeItKey, "stop");
                     res(data);
                     break; 
                 }
@@ -153,6 +320,7 @@ _APP.utility = {
                     // Get the data.
                     let data = await (await fetch(`${relativePath}${rec.f}`)).text();
 
+                    _APP.utility.timeIt(timeItKey, "stop");
                     res(data);
                     break; 
                 }
@@ -170,9 +338,14 @@ _APP.utility = {
                     link.setAttribute("name", rec.f);
 
                     // Onload.
-                    link.onload = function() { res(); link.onload = null; };
+                    link.onload = function() { 
+                        _APP.utility.timeIt(timeItKey, "stop");
+                        res(); 
+                        link.onload = null; 
+                    };
                     link.onerror = function (err) { 
                         console.log("addFile: css: FAILURE:", `${relativePath}${rec.f}`, err);
+                        _APP.utility.timeIt(timeItKey, "stop");
                         rej(err); link.onload = null; 
                     };
                     // Append the element. 
@@ -188,6 +361,7 @@ _APP.utility = {
                 default  : { 
                     let msg = `Cannot load: ${rec.f}. Unknown file type: ${rec.t}`;
                     console.log(msg);
+                    _APP.utility.timeIt(timeItKey, "stop");
                     rej(msg);
                     break; 
                 }
@@ -310,7 +484,7 @@ _APP.utility = {
 
     timeItData: {},
     timeIt: function(key, func, value=0){
-        // funcs: "start", "stop", "get", "reset", "set"
+        // funcs: "start", "stop", "get", "reset", "set", "getBySimilarKey"
 
         // _APP.utility.timeIt("KEY_NAME", "start");
         // _APP.utility.timeIt("KEY_NAME", "stop");
@@ -318,6 +492,7 @@ _APP.utility = {
         // _APP.utility.timeIt("KEY_NAME", "reset");
         // _APP.utility.timeIt("KEY_NAME", "set", 14);
         // _APP.utility.timeIt("", "getAll");
+        // _APP.utility.timeIt("addFile_timer", "getBySimilarKey");
         
         if     (func == "start"){
             this.timeItData[key] = { t:0, s:performance.now(), e:0 };
@@ -332,12 +507,16 @@ _APP.utility = {
             return this.timeItData[key] ? this.timeItData[key].t : 0;
         }
         else if(func == "set"){
-            return this.timeItData[key].t = value;
+            this.timeItData[key] = { t:value, s:0, e:0 };
         }
         else if(func == "getAll"){
             let data = {};
             for(let key in this.timeItData){ data[key] = this.timeItData[key].t; }
             return data;
+        }
+        else if(func == "getBySimilarKey"){
+            let keys = Object.keys(this.timeItData).filter(d=>d.indexOf(key) != -1);
+            return keys;
         }
         else if(func == "reset"){
             this.timeItData[key] = { t:0, s:0, e:0 };
@@ -544,10 +723,30 @@ _APP.loader = {
         };
 
         // Load the files from these configs.
+        let proms = [];
         for(let key of _APP.configObj.configKeys){
-            await loadConfigFiles(key  , false);
-            // await loadConfigFiles(key  , true);
+            // Skip configs that are not set to enabled.
+            if(!_APP.configObj[key].enabled){ continue; }
+
+            // Faster: Load sequentially and/or in parallel based on each file's syncType setting.
+            if(_APP.configObj[key].useSharedPluginLoader){
+                // console.log(`'${key}' is using: useSharedPluginLoader`);
+                proms.push(
+                    _APP.sharedPlugins[ _APP.configObj[key].useSharedPluginLoader ].fileLoadFunc()
+                );
+                // await _APP.sharedPlugins[ _APP.configObj[key].useSharedPluginLoader ].fileLoadFunc();
+            }
+            
+            // Slower but more simple: Load sequentially.
+            else{
+                if(_APP.debugActive){
+                    console.log(`'${key}' is NOT using: useSharedPluginLoader`);
+                }
+                await loadConfigFiles(key  , false);
+                // await loadConfigFiles(key  , true);
+            }
         }
+        await Promise.all(proms);
         // await loadConfigFiles("gfxConfig"  , false);
         // await loadConfigFiles("inputConfig", false);
         // await loadConfigFiles("soundConfig", false);
@@ -559,14 +758,9 @@ _APP.loader = {
 
         // Input init.
         if(_APP.configObj.inputConfig && _APP.configObj.inputConfig.enabled){
-            await _INPUT.customized.init(_APP.configObj.inputConfig);
-
-            // if(_APP.configObj[key].files.length){
-            //     for(let rec of _APP.configObj[key].files){ 
-            //         let data = await _APP.utility.addFile( rec, _APP.relPath); 
-            //         if(rec.t == "html" && rec.destId){ console.log(rec); document.getElementById(rec.destId).innerHTML = data;}
-            //     }
-            // }
+            if(_INPUT.customized && _INPUT.customized.init){
+                await _INPUT.customized.init(_APP.configObj.inputConfig);
+            }
         }
 
         // Sound init.
@@ -583,12 +777,16 @@ _APP.loader = {
             }
 
             // console.log("INIT: sound");
-            await _SND.init(_APP, _APP.configObj.soundConfig);
+            if(_SND.init){
+                await _SND.init(_APP, _APP.configObj.soundConfig);
+            }
         }
 
         // Graphics init.
         if(_APP.configObj.gfxConfig && _APP.configObj.gfxConfig.enabled){
-            await _GFX.init(); // Graphics (main thread)
+            if(_GFX.init){
+                await _GFX.init(); // Graphics (main thread)
+            }
         }
 
         // Gameloop init.
@@ -607,16 +805,16 @@ _APP.loader = {
         // DEBUG inits.
         if(_APP.debugActive){
             if(_APP.configObj.inputConfig && _APP.configObj.inputConfig.enabled && _APP.configObj.inputConfig.debug){
-                if(_INPUT.DEBUG.init){ await _INPUT.DEBUG.init(); }
+                if(_INPUT && _INPUT.DEBUG.init){ await _INPUT.DEBUG.init(); }
             }
             if(_APP.configObj.soundConfig && _APP.configObj.soundConfig.enabled && _APP.configObj.soundConfig.debug){
-                if(_SND.DEBUG.init){ await _SND.DEBUG.init(); }
+                if(_SND.DEBUG && _SND.DEBUG.init){ await _SND.DEBUG.init(); }
             }
             if(_APP.configObj.gfxConfig   && _APP.configObj.gfxConfig  .enabled && _APP.configObj.gfxConfig  .debug){
-                if(_GFX.DEBUG.init){ await _GFX.DEBUG.init(); }
+                if(_GFX.DEBUG && _GFX.DEBUG.init){ await _GFX.DEBUG.init(); }
             }
             if(_APP.configObj.gameConfig  && _APP.configObj.gameConfig .enabled && _APP.configObj.gameConfig .debug){
-                if(_APP.game.DEBUG){ await _APP.game.DEBUG.init();  }
+                if(_APP.game && _APP.game.DEBUG){ await _APP.game.DEBUG.init();  }
             }
         }
 
@@ -892,8 +1090,12 @@ _APP.init_standAlone = async function(){
         // Set the relPath for the _APP.
         _APP.relPath = ``;
 
+        _APP.utility.timeIt("GAMELOADER_preInit", "set", performance.now());
+
         // Get the appConfigs.js file. (Populates _APP.configObj.)
+        _APP.utility.timeIt("GAMELOADER_getAppConfigs", "start");
         await _APP.utility.addFile( { f:"appConfigs.js"  , t:"js"  }, _APP.relPath); 
+        _APP.utility.timeIt("GAMELOADER_getAppConfigs", "stop");
 
         // Show/hide.
         let loading = document.getElementById("loading");
@@ -901,18 +1103,23 @@ _APP.init_standAlone = async function(){
         wrapper.style.display = "none";
 
         // Load the files specified by the _APP.configObj.
+        _APP.utility.timeIt("GAMELOADER_loadFiles", "start");
         await _APP.loader.loadFiles();
-
+        _APP.utility.timeIt("GAMELOADER_loadFiles", "stop");
+        
         // Init the error handler.
         _APP.utility.errorHandler.init();
-
+        
         // Inits for loaded files.
+        _APP.utility.timeIt("GAMELOADER_inits", "start");
         await _APP.loader.inits();
+        _APP.utility.timeIt("GAMELOADER_inits", "stop");
 
         let navTab_gameName = document.getElementById("navTab_gameName");
         if(navTab_gameName && _APP.configObj.gameConfig && _APP.configObj.gameConfig.appNameText){
             navTab_gameName.innerText = _APP.configObj.gameConfig.appNameText;
         }
+        document.title = _APP.configObj.gameConfig.appNameText;
 
         loading.style.display = "none";
         wrapper.style.display = "";
@@ -921,6 +1128,7 @@ _APP.init_standAlone = async function(){
         }
         // if(_APP.debugActive && ('_DEBUG' in window) && ('toggleButtons1' in _DEBUG)){_DEBUG.toggleButtons1.setCurrentStates(); }
 
+        // _APP.utility.timeIt("GAMELOADER_init_TOTAL", "set", performance.now());
         resolve();
     });
 };
@@ -931,10 +1139,12 @@ _APP.init_standAlone = async function(){
             // Remove this listener.
             window.removeEventListener('load', handler);
 
-            let loadTime = performance.now(); 
+            // let loadTime = performance.now(); 
             await _APP.init_standAlone(); 
-            loadTime = performance.now() - loadTime; 
-            console.log(`LOADED: '${_APP.configObj.gameConfig.appNameText}' (${loadTime.toFixed(2)}ms)`);
+            // loadTime = performance.now() - loadTime; 
+            // console.log(`LOADED: '${_APP.configObj.gameConfig.appNameText}' (${loadTime.toFixed(2)}ms)`);
+            _APP.utility.timeIt("GAMELOADER_init_TOTAL", "set", performance.now());
+            console.log(`LOADED: '${_APP.configObj.gameConfig.appNameText}' (${_APP.utility.timeIt("GAMELOADER_init_TOTAL", "get").toFixed(1)} ms)`);
         };
         window.addEventListener('load', handler);
     }

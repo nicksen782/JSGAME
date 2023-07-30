@@ -983,24 +983,6 @@ var gfxCoreV5 = {
         if(!newDims){ return; }
         let {maxY, x_start, x_end, y_start, y_end } = newDims;
 
-        // // Calculate the maximum X (width) and Y (height) based on the given source and source width
-        // let maxY = source.length / srcWidth;
-
-        // // Determine the start and end of the destination region in both dimensions.
-        // // If dx or dy are negative (indicating a region starting outside the actual source data), they're clamped to 0.
-        // let x_start = dx < 0            ? 0    : dx;
-        // let x_end   = dx + w > srcWidth ? srcWidth : dx + w;
-
-        // // Similarly, if the destination extends beyond the source data, the end of the region is clamped.
-        // let y_start = dy < 0            ? 0    : dy;
-        // let y_end   = dy + h > maxY     ? maxY : dy + h;
-
-        // // If the entire destination region outside the valid source area, exit the function early.
-        // // This could occur if dx,dy and dx+w,dy+h both point outside the valid source area.
-        // if (x_start == srcWidth || y_start == maxY || x_end == 0 || y_end == 0) {
-        //     return;
-        // }
-
         // Iterate through the region defined by x_start to x_end and y_start to y_end.
         let start; 
         let end; 
@@ -1014,44 +996,20 @@ var gfxCoreV5 = {
         }
     },
     // COPY a region of the source to a new Uint8Array.
-    copyRegion: function(source, srcWidth, dx, dy, w, h) {
+    copyRegion: function(source, srcWidth, dx, dy, w, h, asImageData=false) {
         // Boundary check.
-        let newDims = gfxCoreV5.boundaryCheck1(source, srcWidth, dx, dy, w, h, true);
-        if(!newDims){ return new Uint8Array(0); }
+        let newDims = this.boundaryCheck1(source, srcWidth, dx, dy, w, h, true);
+        if(!newDims){ 
+            if(asImageData){ return new ImageData(w,h); }
+            else           { return new Uint8Array(0); }
+        }
         let {maxY, x_start, x_end, y_start, y_end } = newDims;
         ({w, h} = newDims);
 
-        // // Calculate the maximum X (width) and Y (height) based on the given source and source width
-        // let maxY = source.length / srcWidth;
-
-        // // Determine the start and end of the destination region in both dimensions.
-        // // If dx or dy are negative (indicating a region starting outside the actual source data), they're clamped to 0.
-        // let x_start = dx < 0            ? 0    : dx;
-        // let x_end   = dx + w > srcWidth ? srcWidth : dx + w;
-
-        // // Similarly, if the destination extends beyond the source data, the end of the region is clamped.
-        // let y_start = dy < 0            ? 0    : dy;
-        // let y_end   = dy + h > maxY     ? maxY : dy + h;
-
-        // // If the entire destination region outside the valid source area, exit the function early.
-        // // This could occur if dx,dy and dx+w,dy+h both point outside the valid source area.
-        // if (x_start == srcWidth || y_start == maxY || x_end == 0 || y_end == 0) {
-        //     return;
-        // }
-
-        // // If the region to be copied starts outside the actual source data,
-        // // the size of the region is adjusted accordingly.
-        // if (dx < 0) w += dx;
-        // if (dy < 0) h += dy;
-
-        // // If the entire destination region outside the valid source area, exit the function early and return an empty array.
-        // // This could occur if dx,dy and dx+w,dy+h both point outside the valid source area.
-        // if (x_start >= srcWidth || y_start >= maxY || x_end <= 0 || y_end <= 0 || w <= 0 || h <= 0) {
-        //     return new Uint8Array(0);
-        // }
-
         // Prepare the result array.
-        let resultData = new Uint8Array(w * h * 4);
+        let resultData;
+        if(asImageData){ resultData = new ImageData(w, h); }
+        else           { resultData = new Uint8Array(w * h * 4); }
         let resultIndex = 0;
 
         // Iterate through the region defined by x_start to x_end and y_start to y_end.
@@ -1061,7 +1019,8 @@ var gfxCoreV5 = {
             let end = (y * srcWidth + x_end) << 2;
 
             // Copy the row.
-            resultData.set(source.subarray(start, end), resultIndex);
+            if(asImageData){ resultData.data.set(source.subarray(start, end), resultIndex); }
+            else           { resultData.set(source.subarray(start, end), resultIndex); }
 
             // Increment the result index for the next pixel.
             resultIndex += (x_end - x_start) << 2;

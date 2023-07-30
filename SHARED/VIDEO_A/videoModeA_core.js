@@ -59,7 +59,8 @@ var _WEBW = {
                 return new Promise(async(resolve,reject)=>{
                     // Update the message state.
                     let ww_mode_key = "init";
-    
+                    
+                    _GFX.timeIt("WEBWORKER_INITSEND_innerA", "start");
                     let data = { 
                         cache: {},
                         VRAM: { 
@@ -74,11 +75,13 @@ var _WEBW = {
                         },
                         offscreenLayers: []
                     };
+                    _GFX.timeIt("WEBWORKER_INITSEND_innerA", "stop");
                     // console.log("DATA:", data);
     
                     for(let i=0, l=_APP.configObj.gfxConfig.layers.length; i<l; i+=1){
                     }
     
+                    _GFX.timeIt("WEBWORKER_INITSEND_innerB", "start");
                     // Need full json, each tile imageData, hasTransparency, isFullyTransparent, each tilemap name, rot 0, and orgTilemap.
                     let ts_keys = Object.keys(_GFX.cache);
                     for(let ts_key=0, l=ts_keys.length; ts_key<l; ts_key+=1){
@@ -99,16 +102,14 @@ var _WEBW = {
                             tileset: tileset.json.tileset,
                         }  ;
                         
-                        // Get the tileWidth and tileHeight for this tileset.
-                        let tileWidth  = tileset.json.config.tileWidth;
-                        let tileHeight = tileset.json.config.tileHeight;
-    
+
                         // Go through each tile in the tileset and use the ctx to create imageData.
                         for(let t=0, tl= tileset.tileset.length; t<tl; t+=1){
                             let tile = tileset.tileset[t];
                             data.cache[key].tileset.push( {
-                                imgData : tile.ctx.getImageData(0, 0, tileWidth, tileHeight),
-                                hasTransparency: tile.hasTransparency, 
+                                // imgData : tile.ctx.getImageData(0, 0, tileWidth, tileHeight),
+                                imgData           : tile.tileImageData,
+                                hasTransparency   : tile.hasTransparency, 
                                 isFullyTransparent: tile.isFullyTransparent, 
                             } ) ;
                         }
@@ -130,7 +131,7 @@ var _WEBW = {
                             type  : rec.type,
                         });
                     }
-    
+
                     // console.log("_WEBW.videoModeA: initSend:", data);
                     _WEBW.videoModeA.video.webworker.postMessage(
                         {
@@ -192,8 +193,8 @@ var _WEBW = {
                     // Wait until finished?
                     if(waitForResp){ 
                         this.differedProms[ww_mode_key] = this.createDeferredPromise();
-                        await this.differedProms[ww_mode_key].promise;
-                        resolve(); 
+                        let data = await this.differedProms[ww_mode_key].promise;
+                        resolve(data); 
                         return; 
                     }
     
@@ -211,7 +212,10 @@ var _WEBW = {
                 _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
                 
                 // Update the message state.
-                if(this.differedProms[ww_mode_key]){ this.differedProms[ww_mode_key].resolve(); }
+                if(this.differedProms[ww_mode_key]){ 
+                    this.differedProms[ww_mode_key].resolve(data); 
+                    return this.differedProms[ww_mode_key].promise;
+                }
             },
     
             // FADE: Request/Receive fade layers.
@@ -313,6 +317,7 @@ var _WEBW = {
                     if(_APP.configObj.gfxConfig.webWorker){
                         _WEBW.videoModeA.video.webworker = new Worker( `${_APP.configObj.gfxConfig.webWorker}` );
                         _WEBW.videoModeA.video.webworker.addEventListener("message", (e)=>_WEBW.videoModeA.video.RECEIVE(e), false);
+                        
                         await _WEBW.videoModeA.video.initSend(true, 0);
                         resolve();
                     }
@@ -577,6 +582,8 @@ _GFX.VRAM = {
 
     // Draws to the app canvas based on the contents of the changes array.
     draw: function(){
+        let useAwait = true;
+        // let useAwait = false;
         return new Promise( async (resolve,reject)=>{
             // The WebWorker is required. If the webworker is not set (unexpected) then just return.
             if(!_WEBW.videoModeA.video.webworker){ return; }
@@ -598,7 +605,12 @@ _GFX.VRAM = {
             // Uses WebWorker. Draws occur in the WebWorker.
             
             // Request the draw.
-            await _WEBW.videoModeA.video.drawSend_useOffscreenCanvas(true);
+            if(useAwait){
+                this.afterDraw( await _WEBW.videoModeA.video.drawSend_useOffscreenCanvas(true) );
+            }
+            else{
+                // _WEBW.videoModeA.video.drawSend_useOffscreenCanvas(false);
+            }
 
             // Update the recorded fade levels. 
             _GFX.fade.previousFadeIndex = _GFX.fade.currentFadeIndex;
@@ -614,6 +626,19 @@ _GFX.VRAM = {
 
             resolve();
         });
+    },
+    afterDraw(data){
+        if(_APP.debugActive && _APP.configObj.gfxConfig.debug){
+            return;
+            // console.log("afterDraw:", data);
+            if(_GFX.fade.currentFadeIndex != 0){
+                console.log("afterDraw:", data.DRAW_TOTAL.toFixed(1), "_GFX.fade.currentFadeIndex:", _GFX.fade.currentFadeIndex);
+            }
+            else{
+            }
+            console.log("afterDraw:", data.DRAW_TOTAL.toFixed(1), "_GFX.fade.currentFadeIndex:", _GFX.fade.currentFadeIndex);
+            // debugger;
+        }
     },
 
     // Returns a copy of the specified VRAM region.
@@ -1157,6 +1182,7 @@ _GFX.gfxConversion = {
             _GFX.cache[jsonTileset.tilesetName].tileset.push( { 
                 canvas            : tileCanvas, 
                 ctx               : tileCtx, 
+                tileImageData     : tileImageData, 
                 hasTransparency   : hasTransparency, 
                 isFullyTransparent: isFullyTransparent 
             } );
@@ -1215,14 +1241,37 @@ _GFX.gfxConversion = {
     // This runs the tile/tilemap conversions.
     generateAndCache_tileSetData: function(){
         return new Promise(async (resolve, reject)=>{
-            // Create tileset config references.
+            // Preload the files concurrently instead of sequentially.
+            let files = [];
+            let proms = [];
+            _GFX.timeIt("VIDEOMODEA_generateAndCache_tileSetData_fileDownloads", "start");
             for(let i=0; i<_APP.configObj.gfxConfig.tilesets.length; i+=1){
                 let tilesetKey = _APP.configObj.gfxConfig.tilesets[i];
                 let tilesetFile = _APP.configObj.gfxConfig.tilesetFiles.find(d=>d.indexOf(tilesetKey)!=-1);
-                
-                // Get the json tileset data.
-                let rec = { "f":tilesetFile, "t":"json" , "n":tilesetKey };
-                let jsonTileset = await _APP.utility.addFile( rec, _APP.relPath); 
+                // Add the key immediately to maintain tileset order. (tilesets have numbered indexes that need to be maintained.)
+                files[tilesetKey] = {};
+                proms.push(
+                    new Promise(async function(res,rej){
+                        // let data = await _APP.utility.addFile( { "f":tilesetFile, "t":"json" , "n":tilesetKey }, _APP.relPath);
+                        // files[tilesetKey] = await _APP.utility.addFile( { "f":tilesetFile, "t":"json" , "n":tilesetKey }, _APP.relPath); 
+                        // res();
+
+                        _APP.utility.addFile( { "f":tilesetFile, "t":"json" , "n":tilesetKey }, _APP.relPath).then(
+                            (file)=>{
+                                files[tilesetKey] = file;
+                                res();
+                            }, 
+                            (err)=>{ console.log("ERROR: generateAndCache_tileSetData:", err); rej(err); }
+                        );
+                    })
+                );
+            }
+            await Promise.all(proms);
+            _GFX.timeIt("VIDEOMODEA_generateAndCache_tileSetData_fileDownloads", "stop");
+
+            // Create tileset config references.
+            for(let tilesetKey in files){
+                let jsonTileset = files[tilesetKey]; 
 
                 // Make sure that the required file is loaded.
                 if(!jsonTileset){ 
@@ -1360,6 +1409,8 @@ _GFX.init = async function(canvasesDestinationDiv){
     };
 
     return new Promise(async (resolve, reject)=>{
+        _GFX.timeIt("VIDEOMODEA_INIT_TOTAL", "start");
+
         // Save the videoMode config.
         _GFX.config = _APP.configObj.gfxConfig.jsgame_shared_plugins_config.videoModeA;
 
@@ -1434,6 +1485,7 @@ _GFX.init = async function(canvasesDestinationDiv){
         await _GFX.fade.init();
         _GFX.timeIt("initFade", "stop");
         
+        _GFX.timeIt("VIDEOMODEA_INIT_TOTAL", "stop");
         resolve();
     });
 };
